@@ -80,8 +80,8 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       // View of the south-polar side: the camera orbits around the Moon's spin axis (three.js Y),
       // looking up at the pole from below at a fixed tilt. Users can spin freely around the pole,
       // tilt a little, and the tilt springs back when they let go.
-      const PHI0 = 2.62; // polar angle from +Y (north): ~150°, i.e. looking up at the pole from 30° off the axis
-      const TILT = 0.22; // allowed tilt either way (~13°)
+      const PHI0 = 2.88; // polar angle from +Y (north): ~165°, i.e. looking up at the pole from 15° off the axis
+      const TILT = 0.24; // allowed tilt either way (~14°)
       controls.minPolarAngle = PHI0 - TILT;
       controls.maxPolarAngle = PHI0 + TILT;
       let dragging = false;
@@ -153,18 +153,25 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       // ---- light: real Sun direction; faint fill so the night side is not pure black (Earthshine-like)
       const sun = new THREE.DirectionalLight(0xffffff, 3.2);
       scene.add(sun);
-      scene.add(new THREE.AmbientLight(0xffffff, 0.09));
+      // Earthshine: sunlight reflected by Earth lights the lunar night side from Earth's real direction.
+      const earthshine = new THREE.DirectionalLight(0xc9dcff, 0.55);
+      scene.add(earthshine);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.06));
       const setSun = (t: number) => {
         const s = frameVectors(new Date(t)).sun;
         const n = Math.hypot(s[0], s[1], s[2]);
         const v = toThree([s[0] / n, s[1] / n, s[2] / n]);
         sun.position.set(v[0] * 10, v[1] * 10, v[2] * 10);
+        const e = frameVectors(new Date(t)).earth;
+        const en = Math.hypot(e[0], e[1], e[2]);
+        const ev = toThree([e[0] / en, e[1] / en, e[2] / en]);
+        earthshine.position.set(ev[0] * 10, ev[1] * 10, ev[2] * 10);
         return v;
       };
 
       // ---- site markers
       const markers: { id: string; mesh: import("three").Mesh; normal: import("three").Vector3 }[] = [];
-      const markGeo = new THREE.SphereGeometry(0.0075, 12, 8);
+      const markGeo = new THREE.SphereGeometry(0.0055, 12, 8);
       for (const s of SITES.filter((x) => x.lat <= -80)) {
         const p = toThree(bodyUnit(s.lat, s.lon));
         const mat = new THREE.MeshBasicMaterial({ color: 0xd8d8dc });
@@ -174,7 +181,7 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         moon.add(mesh);
         markers.push({ id: s.id, mesh, normal: new THREE.Vector3(...p) });
       }
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.014, 0.018, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 }));
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.013, 0.016, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 }));
       moon.add(ring);
       let selected: string | null = null;
       const setSelected = (id: string | null) => {
@@ -182,7 +189,7 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         for (const m of markers) {
           const on = m.id === id;
           (m.mesh.material as import("three").MeshBasicMaterial).color.set(on ? 0xffffff : 0xe2e2e6);
-          m.mesh.scale.setScalar(on ? 1.5 : 1);
+          m.mesh.scale.setScalar(on ? 1.4 : 1);
           if (on) {
             ring.position.copy(m.mesh.position);
             ring.lookAt(m.normal.clone().multiplyScalar(2));
@@ -194,9 +201,9 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       // ---- camera: look at the south pole from the sunlit side
       const sunV = setSun(timeMs);
       const sunLon = Math.atan2(-sunV[2], sunV[0]) / D2R;
-      const target = new THREE.Vector3(0, -0.86, 0); // on the spin axis, just inside the south pole
+      const target = new THREE.Vector3(0, 0, 0); // whole south-facing hemisphere in view
       const horiz = toThree(bodyUnit(0, sunLon - 35));
-      const sph = new THREE.Spherical(1.6, PHI0, Math.atan2(horiz[0], horiz[2]));
+      const sph = new THREE.Spherical(4.7, PHI0, Math.atan2(horiz[0], horiz[2]));
       camera.position.copy(target).add(new THREE.Vector3().setFromSpherical(sph));
       controls.target.copy(target);
       camera.up.set(0, 1, 0);
@@ -317,14 +324,15 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   return (
     <figure className="flex flex-col items-center gap-4">
       <div className="relative aspect-square w-full">
-        {!ready && <div className="planet absolute inset-[6%] animate-pulse bg-[radial-gradient(circle_at_35%_30%,#3a3a3e,#0b0b0c_70%)]" aria-hidden />}
+        <div className="pointer-events-none absolute inset-[9%] rounded-full shadow-[0_0_90px_14px_rgba(255,255,255,0.06),0_0_0_1px_rgba(255,255,255,0.05)]" aria-hidden />
+        {!ready && <div className="absolute inset-[9%] animate-pulse rounded-full bg-[radial-gradient(circle_at_40%_35%,#3a3a3e,#0b0b0c_70%)]" aria-hidden />}
         <div ref={mount} className="absolute inset-0 cursor-grab active:cursor-grabbing" role="img" aria-label="3D view of the Moon's south-pole side, lit by the Sun at the selected time, with landing sites marked. Drag to spin around the pole; click a marker to select a site." />
         <div ref={label} className="pointer-events-none absolute left-0 top-0 whitespace-nowrap border border-line bg-black/80 px-2 py-1 text-[11px] uppercase tracking-[0.2em] opacity-0 transition-opacity" style={{ fontFamily: "var(--font-orbitron)" }}>
           {sel?.name}
         </div>
       </div>
       <figcaption className="max-w-md text-center text-xs text-muted">
-        South-pole side, lit by the real Sun at the selected time. NASA LROC mosaic; relief from LOLA (×3). Drag to spin around the pole, click a marker to pick a site.
+        South-pole side, lit by the real Sun at the selected time; the night side glows with Earthshine from Earth’s real direction. NASA LROC mosaic, relief from LOLA (×3). Drag to spin around the pole, click a marker to pick a site.
       </figcaption>
     </figure>
   );
