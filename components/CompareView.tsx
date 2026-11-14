@@ -13,6 +13,7 @@ import { CopyLinkButton } from "./CopyLinkButton";
 import { ExpertOnly, Tip, useMode } from "./ModeProvider";
 import { plainDuration, plainShare } from "@/lib/plain";
 import { score } from "@/lib/score";
+import { simulateBattery } from "@/lib/battery";
 import { SectionTitle } from "./ui";
 
 const KEYS = ["a", "b", "c", "d"] as const;
@@ -32,7 +33,7 @@ const colToParam = (c: Col) => `${c.custom ? `@${c.custom.lat},${c.custom.lon}` 
 
 interface RowDef {
   label: string;
-  get: (m: WindowMetrics, extra: { sunClear: number; earthClear: number }) => number;
+  get: (m: WindowMetrics, extra: { sunClear: number; earthClear: number; battery: number }) => number;
   fmt: (v: number) => string;
   better: "high" | "low";
   /** Simple mode: friendlier label and wording; rows without it are Pro-only */
@@ -47,6 +48,7 @@ const ROWS: RowDef[] = [
   { label: "Comms available", get: (m) => m.commsPct, fmt: (v) => `${v.toFixed(1)}%`, better: "high", simple: { label: "⊕ Earth in view", fmt: plainShare } },
   { label: "Longest blackout", get: (m) => m.longestBlackoutH, fmt: fmtHours, better: "low", simple: { label: "Longest silence", fmt: (v) => plainDuration(v) } },
   { label: "Light + comms", get: (m) => m.combinedH, fmt: fmtHours, better: "high", simple: { label: "Sun and Earth together", fmt: (v) => plainDuration(v) } },
+  { label: "Battery, lowest (reference lander)", get: (_m, e) => e.battery, fmt: (v) => `${Math.round(v)}%`, better: "high", simple: { label: "Battery at its lowest", fmt: (v) => (v <= 0 ? "runs flat" : `${Math.round(v)}%`) } },
   { label: "Sun over terrain at landing", get: (_m, e) => e.sunClear, fmt: (v) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}°`, better: "high" },
   { label: "Earth over terrain at landing", get: (_m, e) => e.earthClear, fmt: (v) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}°`, better: "high" },
 ];
@@ -102,15 +104,21 @@ export function CompareView() {
   };
 
   const simple = mode === "simple";
+  // battery low point per column, for the delayed and the on-time window
+  const battery = computed.map((c, i) => {
+    if (!c) return { now: NaN, onTime: NaN };
+    const at = (start: number) => simulateBattery(c.series, start, start + settings.windowDays * DAY, settings).minSoc * 100;
+    return { now: at(cols[i].start + delay * DAY), onTime: at(cols[i].start) };
+  });
   const rows = ROWS.filter((r) => !simple || r.simple).map((r) => {
     const vals = computed.map((c, i) => {
       if (!c) return { v: NaN, v0: NaN };
       const m = c.sweep[delay];
       const s = sampleAt(c.site, alignTime(cols[i].start + delay * DAY));
-      const v = r.get(m, { sunClear: s.sunEl - s.sunHz, earthClear: s.earthClear });
+      const v = r.get(m, { sunClear: s.sunEl - s.sunHz, earthClear: s.earthClear, battery: battery[i].now });
       const m0 = c.sweep[0];
       const s0 = sampleAt(c.site, alignTime(cols[i].start));
-      const v0 = r.get(m0, { sunClear: s0.sunEl - s0.sunHz, earthClear: s0.earthClear });
+      const v0 = r.get(m0, { sunClear: s0.sunEl - s0.sunHz, earthClear: s0.earthClear, battery: battery[i].onTime });
       return { v, v0 };
     });
     const ready = vals.map((x) => x.v).filter((v) => !Number.isNaN(v));

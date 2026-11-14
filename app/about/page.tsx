@@ -100,6 +100,11 @@ export default function AboutPage() {
             {THRESHOLDS.power.poorNightH} h. Comms is Good with ≥ {THRESHOLDS.comms.goodPct}% and blackouts ≤ {THRESHOLDS.comms.goodBlackoutH} h; Poor below {THRESHOLDS.comms.poorPct}% or with
             blackouts over {THRESHOLDS.comms.poorBlackoutH} h. Otherwise Marginal. Overall is the worse of the two; both are shown separately too.
           </Panel>
+          <Panel title="Battery and score">
+            The battery card simulates a reference lander (300 W sun-tracking panels, 2 kWh battery, 120 W constant load, 90% charge efficiency) on the real sunlight series.
+            The 0–100 score is 0.4 × illumination% and 0.4 × comms% (each reduced by up to half for nights over 120 h or blackouts over 96 h) plus 0.2 × the share of time with light and
+            comms together; 70+ green, 40–69 amber, below 40 red.
+          </Panel>
           <Panel title="Azimuth">
             Degrees clockwise from lunar north (N 0°, E 90°). At a south-polar site “north” points away from the pole, so Earth (toward the 0° meridian) appears across the pole.
           </Panel>

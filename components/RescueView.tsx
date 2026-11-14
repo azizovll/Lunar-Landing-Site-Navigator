@@ -11,6 +11,7 @@ import { SITES, getSite, resolvePreset } from "@/lib/sites";
 import { useUrlState } from "@/lib/useUrlState";
 import { ProOnly, Tip, useMode } from "./ModeProvider";
 import { SectionTitle } from "./ui";
+import { PrintButton, PrintHeader } from "./PrintReport";
 
 const SOUTH = SITES.filter((s) => s.lat <= -80);
 const FLEX = [3, 7, 14];
@@ -47,6 +48,7 @@ export function RescueView() {
 
   return (
     <div className="flex flex-col gap-10">
+      <PrintHeader title={`Mission rescue: ${planName}, launch +${delay} days`} />
       <SectionTitle
         as="h1"
         center
@@ -110,6 +112,7 @@ export function RescueView() {
       <section className="flex flex-col gap-5">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <h2 className="display text-xl sm:text-2xl">Best alternatives</h2>
+          <PrintButton />
           <span className="text-xs text-muted">
             {SOUTH.length} sites × {2 * flex + 1} landing days around {toUtcInput(newStart, false)}, {windowDays}-day mission
           </span>

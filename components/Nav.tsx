@@ -29,7 +29,7 @@ export function Nav() {
   const path = usePathname();
   const { mode, setMode } = useMode();
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-black/85 backdrop-blur">
+    <header className="no-print sticky top-0 z-30 border-b border-line bg-black/85 backdrop-blur">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
         <Link href="/" className="flex items-center gap-3">
           <Logo />

@@ -19,6 +19,9 @@ import { LIGHT_COLOR, light, score, why } from "@/lib/score";
 import { ExpertOnly, Tip, useMode } from "./ModeProvider";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { SimpleSummary } from "./SimpleSummary";
+import { BatteryPanel } from "./BatteryPanel";
+import { PoleExplainer } from "./PoleExplainer";
+import { PrintButton, PrintHeader } from "./PrintReport";
 import { Eyebrow, StatBox } from "./ui";
 
 const TIMELINE_DAYS = 30;
@@ -127,7 +130,7 @@ export function SiteView() {
   return (
     <div className="flex flex-col gap-16 sm:gap-24">
       {/* ---------- hero ---------- */}
-      <section className="relative flex flex-col gap-8">
+      <section className="no-print relative flex flex-col gap-8">
         {/* decorative Moon (rendered from the NASA LROC mosaic, south pole toward the viewer) */}
         <div
           className="pointer-events-none absolute -right-[22%] -top-10 z-0 w-[78%] max-w-[620px] opacity-45 sm:-right-[6%] sm:-top-16 sm:w-[46%] sm:opacity-80"
@@ -191,8 +194,13 @@ export function SiteView() {
         </div>
       </section>
 
+      <div className="no-print">
+        <PoleExplainer />
+      </div>
+
       {/* ---------- sky view ---------- */}
       <section id="sky" className="flex scroll-mt-24 flex-col gap-6">
+        <PrintHeader title={`Site report: ${site?.name ?? "custom point"}`} />
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="flex flex-col gap-4">
             <Eyebrow>Sky view</Eyebrow>
@@ -260,11 +268,12 @@ export function SiteView() {
             <Link className="btn btn-solid" href={`/compare?a=${site?.id === "custom" ? DEFAULT_SITE_ID : siteId}:${toUtcInput(start, false)}`}>
               Compare
             </Link>
+            <PrintButton />
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
-          <aside className="order-2 flex flex-col gap-4 lg:order-none">
+        <div className="grid gap-4 lg:grid-cols-[300px_1fr] print:block">
+          <aside className="no-print order-2 flex flex-col gap-4 lg:order-none">
             <PolarMap selectedId={siteId} custom={customPoint} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />
             <SiteList selectedId={customLat !== null ? null : siteId} from={windowFrom} settings={settings} onSelect={selectSite} />
             <CustomForm onSubmit={(lat, lon) => set({ lat, lon, site: null })} />
@@ -278,7 +287,7 @@ export function SiteView() {
                 <Panorama horizon={site.horizon} now={now} sunTrack={sunTrack} earthTrack={earthTrack} expert={expert} marginDeg={settings.marginDeg} />
 
                 {/* scrubber */}
-                <div className="card flex flex-wrap items-center gap-4 p-4">
+                <div className="no-print card flex flex-wrap items-center gap-4 p-4">
                   <button className="btn btn-solid w-24" onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Pause" : "Play"}>
                     {playing ? "❚❚ Pause" : "▶ Play"}
                   </button>
@@ -370,6 +379,7 @@ export function SiteView() {
                 </ExpertOnly>
                   </>
                 )}
+                <BatteryPanel series={series} from={windowFrom} to={windowTo} settings={settings} t={clampedT} simple={mode === "simple"} />
               </>
             )}
           </div>
