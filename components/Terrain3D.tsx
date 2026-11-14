@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { frameVectors, type Vec3 } from "@/lib/astro";
 import { SITES, fmtLatLon, resolvePreset } from "@/lib/sites";
-import { DAY, alignTime, sampleAt, sampleSeries, windowMetrics } from "@/lib/metrics";
+import { DAY, HOUR, alignTime, sampleAt, sampleSeries, windowMetrics } from "@/lib/metrics";
+import { LIGHT_COLOR, light, score } from "@/lib/score";
 import { NEIGHBORS } from "@/lib/neighbors";
 
 /**
@@ -59,7 +60,14 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   const thumb = useRef<HTMLDivElement>(null);
   const caret = useRef<HTMLDivElement>(null);
   const hoveredRef = useRef<string | null>(null);
-  const api = useRef<{ setTime: (t: number) => void; flyTo: (id: string | null) => void; standAt: (id: string) => void } | null>(null);
+  const api = useRef<{
+    setTime: (t: number) => void;
+    flyTo: (id: string | null) => void;
+    standAt: (id: string) => void;
+    setRays: (id: string | null, sunOk: boolean, earthOk: boolean) => void;
+  } | null>(null);
+  const scaleBar = useRef<HTMLDivElement>(null);
+  const scaleLabel = useRef<HTMLSpanElement>(null);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
   const [focus, setFocus] = useState<string | null>(null);
@@ -403,6 +411,70 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       const camTry = new THREE.Vector3();
       const sphTry = new THREE.Spherical();
 
+      // ---- lines of sight from the focused station to the Sun and to Earth.
+      // Colour comes from the exact horizon calculation (the same numbers as the sky view); the 3D
+      // terrain only decides where a blocked ray visibly ends.
+      const gRay = new THREE.CylinderGeometry(0.07, 0.07, 1, 6, 1, true).translate(0, 0.5, 0);
+      const gHit = new THREE.SphereGeometry(0.35, 12, 8);
+      const rayMat = (c: number) => new THREE.MeshBasicMaterial({ color: c, fog: false, transparent: true, opacity: 0.95 });
+      const mSun = rayMat(0xe2bd6a);
+      const mEarth = rayMat(0x8ab4ff);
+      const mBlock = rayMat(0xff5a4f);
+      const mkRay = () => {
+        const line = new THREE.Mesh(gRay, mSun);
+        const hit = new THREE.Mesh(gHit, mBlock);
+        line.visible = hit.visible = false;
+        scene.add(line, hit);
+        return { line, hit };
+      };
+      const sunRay = mkRay();
+      const earthRay = mkRay();
+      let rayState: { a: (typeof anchors)[number]; sunOk: boolean; earthOk: boolean } | null = null;
+      const yAxis = new THREE.Vector3(0, 1, 0);
+      const rayStart = new THREE.Vector3();
+      const rayDir = new THREE.Vector3();
+      const rayP = new THREE.Vector3();
+      /** first point where the ray from `from` along `d` dips under the (exaggerated) 3D terrain, in km; null if none within `max` */
+      const terrainHit = (from: import("three").Vector3, d: import("three").Vector3, max: number) => {
+        for (let k = 0.6; k < max; k += 0.4) {
+          rayP.copy(from).addScaledVector(d, k);
+          const y = rayP.y + R_KM;
+          const r = Math.hypot(rayP.x, y, rayP.z);
+          const lat = -Math.asin(y / r) / D2R;
+          if (lat > -78) return null;
+          if (r < R_KM + (EXAG * heightAt(lat, Math.atan2(rayP.z, rayP.x) / D2R)) / 1000) return k;
+        }
+        return null;
+      };
+      const RAY_KM = 60;
+      const placeRay = (ray: ReturnType<typeof mkRay>, d: [number, number, number], ok: boolean, okMat: import("three").MeshBasicMaterial) => {
+        if (!rayState) {
+          ray.line.visible = ray.hit.visible = false;
+          return;
+        }
+        rayStart.copy(rayState.a.ground).addScaledVector(rayState.a.up, 0.6);
+        rayDir.set(d[0], d[1], d[2]).normalize();
+        const hitK = ok ? null : terrainHit(rayStart, rayDir, RAY_KM);
+        const len = hitK ?? RAY_KM;
+        ray.line.material = ok ? okMat : mBlock;
+        ray.line.position.copy(rayStart);
+        ray.line.quaternion.setFromUnitVectors(yAxis, rayDir);
+        ray.line.scale.set(1, len, 1);
+        ray.line.visible = true;
+        ray.hit.visible = hitK !== null;
+        if (hitK !== null) ray.hit.position.copy(rayStart).addScaledVector(rayDir, hitK);
+      };
+      let lastSun: [number, number, number] = setTime(timeMs).s;
+      const updateRays = () => {
+        placeRay(sunRay, lastSun, rayState?.sunOk ?? false, mSun);
+        placeRay(earthRay, lastEarth, rayState?.earthOk ?? false, mEarth);
+      };
+      const setRays = (id: string | null, sunOk: boolean, earthOk: boolean) => {
+        const a = id ? anchors.find((x) => x.id === id) : undefined;
+        rayState = a ? { a, sunOk, earthOk } : null;
+        updateRays();
+      };
+
       // ---- fly-to
       let flight: {
         t0: number;
@@ -549,6 +621,13 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           camera.updateProjectionMatrix();
         }
         renderer.render(scene, camera);
+        // scale bar for the distance of the point we look at
+        if (scaleBar.current && scaleLabel.current) {
+          const pxPerKm = el.clientHeight / (2 * dist * Math.tan((camera.fov * D2R) / 2));
+          const nice = [1, 2, 5, 10, 20, 50, 100].find((k) => k * pxPerKm >= 48) ?? 100;
+          scaleBar.current.style.width = `${Math.round(nice * pxPerKm)}px`;
+          scaleLabel.current.textContent = `${nice} km`;
+        }
         // pins
         const w = el.clientWidth;
         const h = el.clientHeight;
@@ -595,10 +674,13 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         setTime: (t) => {
           const { s: sd, e: ed } = setTime(t);
           lastEarth = ed;
+          lastSun = sd;
           aimLanders(sd, ed);
+          if (rayState) updateRays();
         },
         flyTo,
         standAt,
+        setRays,
       };
       setReady(true);
 
@@ -616,7 +698,9 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         starMat.dispose();
         normalTex.dispose();
         regolithTex.dispose();
-        [metal, dark, cell].forEach((m) => m.dispose());
+        [metal, dark, cell, mSun, mEarth, mBlock].forEach((m) => m.dispose());
+        gRay.dispose();
+        gHit.dispose();
         [gBody, gTop, gLeg, gPad, gMast, gPanel, gDish].forEach((x) => x.dispose());
         glowTex.dispose();
         sun.shadow.map?.dispose();
@@ -672,6 +756,20 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
     setPlayBase(timeMs);
   };
   const shownT = playBase === timeMs ? sceneT : timeMs;
+  // Score of every station for a 14-day mission starting today: colours the pins like the site list.
+  const [today] = useState(() => alignTime(Date.now(), DAY));
+  const scores = useMemo(() => {
+    const to = today + 14 * DAY;
+    return Object.fromEntries(SOUTH_SITES.map((s) => [s.id, score(windowMetrics(sampleSeries(resolvePreset(s), today, to, 2 * HOUR), today, to))]));
+  }, [today]);
+  // Sun and Earth right now for the focused station, from the exact LOLA horizon (same as the sky view).
+  const live = useMemo(() => (focused ? sampleAt(resolvePreset(focused), Math.round(shownT)) : null), [focused, shownT]);
+  const sunOk = !!live && live.sunFrac > 0;
+  const earthOk = !!live && live.earthClear > 0;
+  const rayId = focused && !standing ? focused.id : null;
+  useEffect(() => {
+    api.current?.setRays(rayId, sunOk, earthOk);
+  }, [rayId, sunOk, earthOk, ready]);
   const goTo = (id: string) => {
     onSelect(id);
     setFocus(id);
@@ -850,7 +948,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
                     }`}
                     style={{ fontFamily: "var(--font-orbitron)" }}
                   >
-                    {s.name}
+                    {s.name} · {scores[s.id]}
                   </span>
                   <svg
                     width={sel ? 22 : 16}
@@ -861,10 +959,9 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
                   >
                     <path
                       d="M11 29 C11 29 2 17 2 10.5 A9 9 0 0 1 20 10.5 C20 17 11 29 11 29 Z"
-                      fill={hot ? "#e2bd6a" : sel ? "#ffffff" : "#cfcfd4"}
-                      stroke="#000"
-                      strokeWidth="1.2"
-                      style={{ transition: "fill 0.2s" }}
+                      stroke={sel && !hot ? "#fff" : "#000"}
+                      strokeWidth={sel && !hot ? 1.6 : 1.2}
+                      style={{ fill: hot ? "#e2bd6a" : LIGHT_COLOR[light(scores[s.id] ?? 0)], transition: "fill 0.2s" }}
                     />
                     <circle cx="11" cy="10.5" r="3.4" fill="#000" />
                   </svg>
@@ -899,6 +996,36 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           {focused && (
             <span className="text-sm text-foreground">
               {focused.name} <span className="text-muted">· {fmtLatLon(focused.lat, focused.lon)}</span>
+            </span>
+          )}
+          {live && !standing && (
+            <div className="mt-1 flex flex-col gap-0.5 border-l-2 border-line bg-black/55 px-2.5 py-1.5 text-xs backdrop-blur-sm" aria-live="polite">
+              <span style={{ color: sunOk ? "var(--sun)" : "var(--poor)" }}>
+                ☀ {sunOk ? "Sun above the hills: panels charging" : live.sunEl > 0 ? `Sun hidden by hills (${live.sunHz.toFixed(1)}° high)` : "Sun below the horizon"}
+              </span>
+              <span style={{ color: earthOk ? "var(--earth)" : "var(--poor)" }}>
+                ⊕ {earthOk ? "Earth in view: radio link works" : live.earthEl > 0 ? `Earth hidden by hills (${live.earthHz.toFixed(1)}° high)` : "Earth below the horizon"}
+              </span>
+              <span className="text-muted">
+                Score <b className="num" style={{ color: LIGHT_COLOR[light(scores[focused!.id] ?? 0)] }}>{scores[focused!.id]}</b> for the next 14 days
+              </span>
+            </div>
+          )}
+          {!focused && (
+            <span className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted">
+              Pin colour = score, next 14 days:
+              <span style={{ color: "var(--good)" }}>● 70+</span>
+              <span style={{ color: "var(--marginal)" }}>● 40–69</span>
+              <span style={{ color: "var(--poor)" }}>● under 40</span>
+            </span>
+          )}
+          {!standing && (
+            <span className="mt-1 flex items-center gap-2 text-[11px] text-faint">
+              <span className="flex flex-col items-start">
+                <span ref={scaleLabel} className="text-muted" />
+                <span ref={scaleBar} className="block h-1.5 border-x border-b border-muted" style={{ width: 60 }} />
+              </span>
+              <span>heights ×2 · landers ×300</span>
             </span>
           )}
         </div>
