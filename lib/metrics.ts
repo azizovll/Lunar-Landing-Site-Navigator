@@ -286,19 +286,21 @@ export function nextEvents(site: SiteInput, series: Sample[], t: number, marginD
   };
 }
 
-/** Bulk daily summary for the calendar heatmap (step 30 min). */
-export function dailySummary(site: SiteInput, startMs: number, days: number, marginDeg: number, stepMs = 30 * 60_000) {
-  const out: { day: number; lit: number; comms: number }[] = [];
+/** Daily summary for the calendar heatmap: mean lit fraction, comms share and light+comms share per UTC day. */
+export function dailySummary(site: SiteInput, startMs: number, days: number, marginDeg: number, stepMs = HOUR) {
+  const out: { day: number; lit: number; comms: number; both: number }[] = [];
   const per = Math.round(DAY / stepMs);
   const t0 = alignTime(startMs, DAY);
   for (let d = 0; d < days; d++) {
-    let lit = 0, comms = 0;
+    let lit = 0, comms = 0, both = 0;
     for (let k = 0; k < per; k++) {
       const s = sampleAt(site, t0 + d * DAY + k * stepMs);
+      const c = hasComms(s, marginDeg);
       lit += s.sunFrac;
-      if (hasComms(s, marginDeg)) comms++;
+      if (c) comms++;
+      if (c && isLit(s)) both++;
     }
-    out.push({ day: t0 + d * DAY, lit: lit / per, comms: comms / per });
+    out.push({ day: t0 + d * DAY, lit: lit / per, comms: comms / per, both: both / per });
   }
   return out;
 }

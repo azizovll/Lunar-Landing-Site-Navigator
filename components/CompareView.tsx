@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { DAY, DEFAULT_SETTINGS, alignTime, overallVerdict, sampleAt, sampleSeries, windowMetrics, type Settings, type WindowMetrics } from "@/lib/metrics";
 import { downloadCsv, fmtHours, parseUtc, toUtcInput } from "@/lib/format";
@@ -21,7 +21,7 @@ interface Col {
 
 interface RowDef {
   label: string;
-  get: (m: WindowMetrics, extra: { sunEl: number; earthClear: number }) => number;
+  get: (m: WindowMetrics, extra: { sunClear: number; earthClear: number }) => number;
   fmt: (v: number) => string;
   better: "high" | "low";
   tip?: string;
@@ -34,13 +34,13 @@ const ROWS: RowDef[] = [
   { label: "Comms available", get: (m) => m.commsPct, fmt: (v) => `${v.toFixed(1)}%`, better: "high" },
   { label: "Longest blackout", get: (m) => m.longestBlackoutH, fmt: fmtHours, better: "low" },
   { label: "Light + comms", get: (m) => m.combinedH, fmt: fmtHours, better: "high" },
-  { label: "Sun at landing", get: (_m, e) => e.sunEl, fmt: (v) => `${v.toFixed(2)}°`, better: "high" },
+  { label: "Sun over terrain at landing", get: (_m, e) => e.sunClear, fmt: (v) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}°`, better: "high" },
   { label: "Earth over terrain at landing", get: (_m, e) => e.earthClear, fmt: (v) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}°`, better: "high" },
 ];
 
 export function CompareView() {
   const { params, set } = useUrlState();
-  const today = alignTime(Date.now(), DAY);
+  const [today] = useState(() => alignTime(Date.now(), DAY));
   const delay = Math.max(0, Math.min(MAX_DELAY, Number(params.get("delay") ?? 0)));
   const settings: Settings = {
     ...DEFAULT_SETTINGS,
@@ -83,10 +83,10 @@ export function CompareView() {
     const vals = computed.map((c, i) => {
       const m = c.sweep[delay];
       const s = sampleAt(c.site, alignTime(cols[i].start + delay * DAY));
-      const v = r.get(m, { sunEl: s.sunEl, earthClear: s.earthClear });
+      const v = r.get(m, { sunClear: s.sunEl - s.sunHz, earthClear: s.earthClear });
       const m0 = c.sweep[0];
       const s0 = sampleAt(c.site, alignTime(cols[i].start));
-      const v0 = r.get(m0, { sunEl: s0.sunEl, earthClear: s0.earthClear });
+      const v0 = r.get(m0, { sunClear: s0.sunEl - s0.sunHz, earthClear: s0.earthClear });
       return { v, v0 };
     });
     const best = r.better === "high" ? Math.max(...vals.map((x) => x.v)) : Math.min(...vals.map((x) => x.v));

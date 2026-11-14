@@ -47,22 +47,32 @@
  {
   "id": "malapert-massif",
   "name": "Malapert massif",
-  "lat": -86.04,
-  "lon": 2.7,
+  "lat": -85.9895,
+  "lon": 2.0898,
   "kind": "south-pole",
-  "note": "Point M1 near the Malapert summit.",
+  "note": "Point M1 near the Malapert summit. Snapped to the local crest (≤2 km) in the LOLA DEM: the published coordinate comes from a different topography product.",
   "source": "https://ipnpr.jpl.nasa.gov/progress_report/42-176/176C.pdf",
-  "sourceLabel": "Bryant 2009, JPL IPN Progress Report 42-176"
+  "sourceLabel": "Bryant 2009, JPL IPN Progress Report 42-176",
+  "snapKm": 2,
+  "snappedFrom": [
+   -86.04,
+   2.7
+  ]
  },
  {
   "id": "leibnitz-beta",
   "name": "Leibnitz beta plateau",
-  "lat": -85.44,
-  "lon": 31.85,
+  "lat": -85.4051,
+  "lon": 31.7278,
   "kind": "south-pole",
-  "note": "Plateau point from Kaguya-based illumination study; now part of 'Mons Mouton Plateau'.",
+  "note": "Plateau point from Kaguya-based illumination study; now part of 'Mons Mouton Plateau'. Snapped to the local crest (≤2 km) in the LOLA DEM: the published coordinate comes from a different topography product.",
   "source": "https://spudislunarresources.nss.org/Bibliography/p/98.pdf",
-  "sourceLabel": "Noda et al. 2008, GRL (Kaguya topography)"
+  "sourceLabel": "Noda et al. 2008, GRL (Kaguya topography)",
+  "snapKm": 2,
+  "snappedFrom": [
+   -85.44,
+   31.85
+  ]
  },
  {
   "id": "haworth",
@@ -82,12 +92,17 @@
  {
   "id": "mons-mouton",
   "name": "Mons Mouton",
-  "lat": -84.3,
-  "lon": 30.6,
+  "lat": -84.3184,
+  "lon": 31.2386,
   "kind": "south-pole",
-  "note": "Centre of the LROC Mons Mouton Plateau region of interest (former VIPER target, IM-2 area).",
+  "note": "Centre of the LROC Mons Mouton Plateau region of interest (former VIPER target, IM-2 area). Snapped to the local crest (≤2 km) in the LOLA DEM: the published coordinate comes from a different topography product.",
   "source": "https://data.lroc.im-ldi.com/lroc/view_rdr/NAC_ROI_MOUTNPLTLO1",
-  "sourceLabel": "LROC NAC ROI MOUTNPLTLO1"
+  "sourceLabel": "LROC NAC ROI MOUTNPLTLO1",
+  "snapKm": 2,
+  "snappedFrom": [
+   -84.3,
+   30.6
+  ]
  },
  {
   "id": "shackleton-floor",

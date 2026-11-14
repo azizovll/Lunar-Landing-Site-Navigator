@@ -42,3 +42,5 @@ next-env.d.ts
 
 # DEM downloads
 pipeline/cache/
+
+/screenshots

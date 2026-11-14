@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { DAY, DEFAULT_SETTINGS, HOUR, alignTime, nextEvents, sampleAt, sampleSeries, windowMetrics, type Settings } from "@/lib/metrics";
 import { downloadCsv, fmtRelative, fmtUtc, parseUtc, toUtcInput } from "@/lib/format";
-import { DEFAULT_SITE_ID, fmtLatLon } from "@/lib/sites";
+import { DEFAULT_SITE_ID, SITES, fmtLatLon } from "@/lib/sites";
 import { useUrlState } from "@/lib/useUrlState";
 import { useResolvedSite } from "@/lib/useResolvedSite";
 import { Lens, Panorama } from "./Panorama";
@@ -56,11 +56,12 @@ export function SiteView() {
   const windowTo = start + settings.windowDays * DAY;
   const metrics = useMemo(() => windowMetrics(series, windowFrom, windowTo, settings), [series, windowFrom, windowTo, settings.marginDeg, settings.panel]); // eslint-disable-line react-hooks/exhaustive-deps
   const now = useMemo(() => (site ? sampleAt(site, Math.round(clampedT)) : null), [site, clampedT]);
+  // Events only need minute resolution (hourly while playing): avoids recomputation on every animation frame.
+  const eventStep = playing ? HOUR : 60_000;
+  const eventT = Math.floor(clampedT / eventStep) * eventStep;
   const events = useMemo(
-    () => (site && series.length ? nextEvents(site, series, clampedT, settings.marginDeg) : { sunset: null, sunrise: null, earthset: null, earthrise: null }),
-    // events only need minute resolution; avoids recomputation on every animation frame
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [site, series, Math.floor(clampedT / (playing ? HOUR : 60_000)), settings.marginDeg],
+    () => (site && series.length ? nextEvents(site, series, eventT, settings.marginDeg) : { sunset: null, sunrise: null, earthset: null, earthrise: null }),
+    [site, series, eventT, settings.marginDeg],
   );
   const sunTrack = useMemo(() => series.filter((s) => Math.abs(s.t - clampedT) <= 7 * DAY && s.t % HOUR === 0), [series, clampedT]);
   const earthTrack = useMemo(() => series.filter((s) => s.t <= start + TIMELINE_DAYS * DAY && s.t % (2 * HOUR) === 0), [series, start]);
@@ -116,13 +117,13 @@ export function SiteView() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
-      <aside className="flex flex-col gap-3">
+      <aside className="order-2 flex flex-col gap-3 lg:order-none">
         <PolarMap selectedId={siteId} custom={customLat !== null && customLon !== null ? { lat: customLat, lon: customLon } : null} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />
         <SiteList selectedId={customLat !== null ? null : siteId} from={windowFrom} settings={settings} onSelect={selectSite} />
         <CustomForm onSubmit={(lat, lon) => set({ lat, lon, site: null })} />
       </aside>
 
-      <div className="flex min-w-0 flex-col gap-3">
+      <div className="order-1 flex min-w-0 flex-col gap-3 lg:order-none">
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold sm:text-2xl">
@@ -147,6 +148,14 @@ export function SiteView() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
+            <select className="lg:hidden" value={customLat !== null ? "" : siteId} onChange={(e) => selectSite(e.target.value)} aria-label="Site">
+              {customLat !== null && <option value="">Custom point</option>}
+              {SITES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
             <label className="flex items-center gap-1.5">
               <span className="text-muted">Mission start</span>
               <input type="date" value={toUtcInput(start, false)} onChange={(e) => e.target.value && set({ start: e.target.value, t: null })} />

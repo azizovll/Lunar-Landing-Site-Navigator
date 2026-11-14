@@ -19,7 +19,18 @@ interface Props {
 /** 360° sky panorama: azimuth on x (centred on north), elevation on y (vertically exaggerated). */
 export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg }: Props) {
   const clipId = useId();
-  const center = 0; // north in the middle; at the south pole Earth is always roughly north
+  // Centre the view on Earth's mean azimuth (rounded to 15°): Earth barely moves in the lunar sky,
+  // so the comms-critical part of the horizon is always in the middle. (At a south-polar site Earth
+  // lies across the pole, i.e. roughly toward azimuth 180° - longitude.)
+  const center = useMemo(() => {
+    let sx = 0, sy = 0;
+    for (const s of earthTrack) {
+      sx += Math.sin((s.earthAz * Math.PI) / 180);
+      sy += Math.cos((s.earthAz * Math.PI) / 180);
+    }
+    const mean = earthTrack.length ? (Math.atan2(sx, sy) * 180) / Math.PI : 0;
+    return ((Math.round(mean / 15) * 15) % 360 + 360) % 360;
+  }, [earthTrack]);
   const { elMin, elMax } = useMemo(() => {
     let hi = 6;
     for (const s of sunTrack) hi = Math.max(hi, s.sunEl);
@@ -43,7 +54,7 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
     }
     const line = pts.join(" L");
     return { terrainPath: `M0,${H} L${line} L${W},${H} Z`, skyPath: `M0,0 L${line} L${W},0 Z` };
-  }, [horizon, elMin, elMax]);
+  }, [horizon, elMin, elMax, center]);
 
   const track = (samples: Sample[], get: (s: Sample) => [number, number]) => {
     let d = "";
@@ -66,9 +77,8 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
   const earthR = Math.max(4, now.earthR * pyd);
 
   const ticks = [];
-  for (let a = -180; a <= 180; a += expert ? 30 : 45) {
-    const az = (a + center + 360) % 360;
-    ticks.push({ x: (a + 180) * (W / 360), label: expert ? `${az}°` : compass(az) });
+  for (let az = 0; az < 360; az += expert ? 30 : 45) {
+    ticks.push({ x: xOf(az), label: expert ? `${az}°` : compass(az) });
   }
   const elTicks = [];
   const stepEl = elMax - elMin > 40 ? 15 : elMax - elMin > 20 ? 5 : 2;
@@ -76,7 +86,8 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
 
   return (
     <figure className="card overflow-hidden">
-      <svg viewBox={`0 0 ${W} ${H + 24}`} className="block w-full" role="img" aria-label="Panoramic sky view with terrain horizon, Sun and Earth">
+      <div className="overflow-x-auto">
+      <svg viewBox={`0 0 ${W} ${H + 24}`} className="block w-full min-w-[760px]" role="img" aria-label="Panoramic sky view with terrain horizon, Sun and Earth">
         <defs>
           <linearGradient id={`${clipId}-sky`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#05070d" />
@@ -138,6 +149,7 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
           </g>
         ))}
       </svg>
+      </div>
       <figcaption className="flex flex-wrap gap-x-4 gap-y-1 border-t border-line px-3 py-2 text-xs text-muted">
         <span>
           <span className="text-sun">●</span> Sun track ±7 days
@@ -155,9 +167,9 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
 /** True-scale (1:1) close-up of the terrain horizon around a body. */
 export function Lens({ horizon, az, el, r, kind, fraction, clearance }: { horizon: Horizon | null | undefined; az: number; el: number; r: number; kind: "sun" | "earth"; fraction?: number; clearance?: number }) {
   const id = useId();
-  const w = 240;
-  const h = 150;
-  const spanAz = 8; // degrees across
+  const w = 480;
+  const h = 240;
+  const spanAz = 6; // half-width in degrees
   const pd = w / spanAz;
   const elC = el;
   const xOf = (a: number) => w / 2 + (((a - az + 540) % 360) - 180) * pd * Math.cos((el * Math.PI) / 180);
@@ -181,7 +193,7 @@ export function Lens({ horizon, az, el, r, kind, fraction, clearance }: { horizo
           <path d={terrain} fill="#1c2232" stroke="#8592ad" />
         </g>
         <circle cx={w / 2} cy={h / 2} r={r * pd} fill="none" stroke={color} strokeDasharray="2 2" opacity={0.7} />
-        <text x={6} y={14} fontSize={11} fill="#8b97b3">
+        <text x={8} y={18} fontSize={13} fill="#8b97b3">
           1:1 close-up, {spanAz * 2}° wide
         </text>
       </svg>

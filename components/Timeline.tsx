@@ -78,10 +78,11 @@ export function Timeline({ series, start, days, t, windowFrom, windowTo, marginD
 
   return (
     <div className="card overflow-hidden">
+      <div className="overflow-x-auto">
       <svg
         ref={ref}
         viewBox={`0 0 ${W} ${H}`}
-        className="block w-full cursor-crosshair touch-none select-none"
+        className="block w-full min-w-[680px] cursor-crosshair select-none"
         onPointerDown={(e) => {
           (e.target as Element).setPointerCapture?.(e.pointerId);
           seek(e.clientX);
@@ -134,6 +135,7 @@ export function Timeline({ series, start, days, t, windowFrom, windowTo, marginD
         <line x1={xOf(t)} x2={xOf(t)} y1={0} y2={TOP + CH} stroke="#ffffff" strokeWidth={1.5} />
         <circle cx={xOf(t)} cy={TOP + CH} r={4} fill="#ffffff" />
       </svg>
+      </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-line px-3 py-2 text-xs text-muted">
         <span>
           <span className="text-sun">━</span> Sun disk centre over terrain
