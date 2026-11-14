@@ -1,0 +1,732 @@
+{
+ "source": "JPL Horizons API https://ssd.jpl.nasa.gov/api/horizons.api",
+ "fetched": "2026-11-14T07:09:13.873Z",
+ "settings": "EPHEM_TYPE=OBSERVER CENTER=coord@301 COORD_TYPE=GEODETIC QUANTITIES=4 APPARENT=AIRLESS",
+ "sites": [
+  {
+   "id": "apollo-11",
+   "lat": 0.67408,
+   "lon": 23.47297,
+   "sun": [
+    {
+     "utc": "1969-Jul-20 20:17",
+     "az": 88.805426,
+     "el": 10.697481
+    },
+    {
+     "utc": "1969-Jul-21 02:17",
+     "az": 88.832519,
+     "el": 13.753889
+    },
+    {
+     "utc": "1969-Jul-21 08:17",
+     "az": 88.856519,
+     "el": 16.809921
+    },
+    {
+     "utc": "1969-Jul-21 14:17",
+     "az": 88.877441,
+     "el": 19.865564
+    },
+    {
+     "utc": "1969-Jul-21 20:17",
+     "az": 88.895253,
+     "el": 22.920808
+    },
+    {
+     "utc": "2026-Dec-01 00:00",
+     "az": 268.648693,
+     "el": -13.422167
+    },
+    {
+     "utc": "2026-Dec-05 00:00",
+     "az": 268.164013,
+     "el": -62.09053
+    },
+    {
+     "utc": "2026-Dec-09 00:00",
+     "az": 92.267677,
+     "el": -69.138485
+    },
+    {
+     "utc": "2026-Dec-13 00:00",
+     "az": 91.241997,
+     "el": -20.4052
+    },
+    {
+     "utc": "2026-Dec-17 00:00",
+     "az": 91.884127,
+     "el": 28.261099
+    },
+    {
+     "utc": "2026-Dec-21 00:00",
+     "az": 98.391872,
+     "el": 76.728099
+    },
+    {
+     "utc": "2026-Dec-25 00:00",
+     "az": 267.036749,
+     "el": 54.582714
+    },
+    {
+     "utc": "2026-Dec-29 00:00",
+     "az": 268.851201,
+     "el": 6.08811
+    }
+   ],
+   "earth": [
+    {
+     "utc": "1969-Jul-20 20:17",
+     "az": 272.194094,
+     "el": 59.224646
+    },
+    {
+     "utc": "1969-Jul-21 02:17",
+     "az": 272.885585,
+     "el": 59.102599
+    },
+    {
+     "utc": "1969-Jul-21 08:17",
+     "az": 273.565756,
+     "el": 58.998135
+    },
+    {
+     "utc": "1969-Jul-21 14:17",
+     "az": 274.233704,
+     "el": 58.912565
+    },
+    {
+     "utc": "1969-Jul-21 20:17",
+     "az": 274.888523,
+     "el": 58.847192
+    },
+    {
+     "utc": "2026-Dec-01 00:00",
+     "az": 272.422555,
+     "el": 73.109032
+    },
+    {
+     "utc": "2026-Dec-05 00:00",
+     "az": 287.110216,
+     "el": 71.672088
+    },
+    {
+     "utc": "2026-Dec-09 00:00",
+     "az": 284.761822,
+     "el": 68.078287
+    },
+    {
+     "utc": "2026-Dec-13 00:00",
+     "az": 273.4849,
+     "el": 63.310554
+    },
+    {
+     "utc": "2026-Dec-17 00:00",
+     "az": 262.543793,
+     "el": 58.646586
+    },
+    {
+     "utc": "2026-Dec-21 00:00",
+     "az": 255.734509,
+     "el": 59.388946
+    },
+    {
+     "utc": "2026-Dec-25 00:00",
+     "az": 258.189293,
+     "el": 67.51586
+    },
+    {
+     "utc": "2026-Dec-29 00:00",
+     "az": 277.188702,
+     "el": 73.518632
+    }
+   ],
+   "urls": [
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%2723.472969999999975%2C0.67408%2C0%27&COMMAND=%2710%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%271969-07-20+20%3A17%27&STOP_TIME=%271969-07-21+20%3A17%27&STEP_SIZE=%276+h%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%2723.472969999999975%2C0.67408%2C0%27&COMMAND=%27399%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%271969-07-20+20%3A17%27&STOP_TIME=%271969-07-21+20%3A17%27&STEP_SIZE=%276+h%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%2723.472969999999975%2C0.67408%2C0%27&COMMAND=%2710%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%272026-12-01+00%3A00%27&STOP_TIME=%272026-12-29+00%3A00%27&STEP_SIZE=%274+d%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%2723.472969999999975%2C0.67408%2C0%27&COMMAND=%27399%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%272026-12-01+00%3A00%27&STOP_TIME=%272026-12-29+00%3A00%27&STEP_SIZE=%274+d%27&OBJ_DATA=NO"
+   ]
+  },
+  {
+   "id": "shackleton-rim",
+   "lat": -89.7815,
+   "lon": 204.7,
+   "sun": [
+    {
+     "utc": "1969-Jul-20 20:17",
+     "az": 258.0918,
+     "el": -1.344636
+    },
+    {
+     "utc": "1969-Jul-21 02:17",
+     "az": 255.034447,
+     "el": -1.351311
+    },
+    {
+     "utc": "1969-Jul-21 08:17",
+     "az": 251.97749,
+     "el": -1.357786
+    },
+    {
+     "utc": "1969-Jul-21 14:17",
+     "az": 248.920937,
+     "el": -1.364033
+    },
+    {
+     "utc": "1969-Jul-21 20:17",
+     "az": 245.864798,
+     "el": -1.370021
+    },
+    {
+     "utc": "2026-Dec-01 00:00",
+     "az": 75.369331,
+     "el": 1.525335
+    },
+    {
+     "utc": "2026-Dec-05 00:00",
+     "az": 26.67962,
+     "el": 1.649564
+    },
+    {
+     "utc": "2026-Dec-09 00:00",
+     "az": 337.919242,
+     "el": 1.639109
+    },
+    {
+     "utc": "2026-Dec-13 00:00",
+     "az": 289.162631,
+     "el": 1.470099
+    },
+    {
+     "utc": "2026-Dec-17 00:00",
+     "az": 240.47854,
+     "el": 1.231732
+    },
+    {
+     "utc": "2026-Dec-21 00:00",
+     "az": 191.902401,
+     "el": 1.049071
+    },
+    {
+     "utc": "2026-Dec-25 00:00",
+     "az": 143.404551,
+     "el": 0.991032
+    },
+    {
+     "utc": "2026-Dec-29 00:00",
+     "az": 94.879947,
+     "el": 1.051472
+    }
+   ],
+   "earth": [
+    {
+     "utc": "1969-Jul-20 20:17",
+     "az": 148.134769,
+     "el": -2.139169
+    },
+    {
+     "utc": "1969-Jul-21 02:17",
+     "az": 148.024211,
+     "el": -2.496481
+    },
+    {
+     "utc": "1969-Jul-21 08:17",
+     "az": 147.934626,
+     "el": -2.849584
+    },
+    {
+     "utc": "1969-Jul-21 14:17",
+     "az": 147.867127,
+     "el": -3.197326
+    },
+    {
+     "utc": "1969-Jul-21 20:17",
+     "az": 147.822798,
+     "el": -3.538518
+    },
+    {
+     "utc": "2026-Dec-01 00:00",
+     "az": 161.967815,
+     "el": -1.81793
+    },
+    {
+     "utc": "2026-Dec-05 00:00",
+     "az": 161.254483,
+     "el": -6.386699
+    },
+    {
+     "utc": "2026-Dec-09 00:00",
+     "az": 157.56532,
+     "el": -6.511755
+    },
+    {
+     "utc": "2026-Dec-13 00:00",
+     "az": 152.22248,
+     "el": -2.600274
+    },
+    {
+     "utc": "2026-Dec-17 00:00",
+     "az": 147.7953,
+     "el": 2.840062
+    },
+    {
+     "utc": "2026-Dec-21 00:00",
+     "az": 149.131441,
+     "el": 6.135843
+    },
+    {
+     "utc": "2026-Dec-25 00:00",
+     "az": 156.847698,
+     "el": 3.364717
+    },
+    {
+     "utc": "2026-Dec-29 00:00",
+     "az": 162.478225,
+     "el": -3.146478
+    }
+   ],
+   "urls": [
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%27204.70000000000005%2C-89.7815%2C0%27&COMMAND=%2710%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%271969-07-20+20%3A17%27&STOP_TIME=%271969-07-21+20%3A17%27&STEP_SIZE=%276+h%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%27204.70000000000005%2C-89.7815%2C0%27&COMMAND=%27399%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%271969-07-20+20%3A17%27&STOP_TIME=%271969-07-21+20%3A17%27&STEP_SIZE=%276+h%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%27204.70000000000005%2C-89.7815%2C0%27&COMMAND=%2710%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%272026-12-01+00%3A00%27&STOP_TIME=%272026-12-29+00%3A00%27&STEP_SIZE=%274+d%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%27204.70000000000005%2C-89.7815%2C0%27&COMMAND=%27399%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%272026-12-01+00%3A00%27&STOP_TIME=%272026-12-29+00%3A00%27&STEP_SIZE=%274+d%27&OBJ_DATA=NO"
+   ]
+  },
+  {
+   "id": "malapert-massif",
+   "lat": -86.04,
+   "lon": 2.7,
+   "sun": [
+    {
+     "utc": "1969-Jul-20 20:17",
+     "az": 99.974912,
+     "el": -1.989557
+    },
+    {
+     "utc": "1969-Jul-21 02:17",
+     "az": 96.924213,
+     "el": -1.776083
+    },
+    {
+     "utc": "1969-Jul-21 08:17",
+     "az": 93.874368,
+     "el": -1.561246
+    },
+    {
+     "utc": "1969-Jul-21 14:17",
+     "az": 90.825305,
+     "el": -1.345645
+    },
+    {
+     "utc": "1969-Jul-21 20:17",
+     "az": 87.776945,
+     "el": -1.129877
+    },
+    {
+     "utc": "2026-Dec-01 00:00",
+     "az": 277.245623,
+     "el": 1.973831
+    },
+    {
+     "utc": "2026-Dec-05 00:00",
+     "az": 228.669317,
+     "el": -1.161263
+    },
+    {
+     "utc": "2026-Dec-09 00:00",
+     "az": 179.921396,
+     "el": -2.523362
+    },
+    {
+     "utc": "2026-Dec-13 00:00",
+     "az": 131.172762,
+     "el": -1.209085
+    },
+    {
+     "utc": "2026-Dec-17 00:00",
+     "az": 82.592345,
+     "el": 1.853901
+    },
+    {
+     "utc": "2026-Dec-21 00:00",
+     "az": 34.015648,
+     "el": 4.547838
+    },
+    {
+     "utc": "2026-Dec-25 00:00",
+     "az": 345.348222,
+     "el": 4.998251
+    },
+    {
+     "utc": "2026-Dec-29 00:00",
+     "az": 296.754659,
+     "el": 2.857038
+    }
+   ],
+   "earth": [
+    {
+     "utc": "1969-Jul-20 20:17",
+     "az": 350.135385,
+     "el": 1.94789
+    },
+    {
+     "utc": "1969-Jul-21 02:17",
+     "az": 350.029806,
+     "el": 1.588961
+    },
+    {
+     "utc": "1969-Jul-21 08:17",
+     "az": 349.94522,
+     "el": 1.234522
+    },
+    {
+     "utc": "1969-Jul-21 14:17",
+     "az": 349.882694,
+     "el": 0.88575
+    },
+    {
+     "utc": "1969-Jul-21 20:17",
+     "az": 349.843263,
+     "el": 0.543852
+    },
+    {
+     "utc": "2026-Dec-01 00:00",
+     "az": 3.97254,
+     "el": 2.340427
+    },
+    {
+     "utc": "2026-Dec-05 00:00",
+     "az": 3.246366,
+     "el": -2.22754
+    },
+    {
+     "utc": "2026-Dec-09 00:00",
+     "az": 359.576425,
+     "el": -2.351274
+    },
+    {
+     "utc": "2026-Dec-13 00:00",
+     "az": 354.227828,
+     "el": 1.532818
+    },
+    {
+     "utc": "2026-Dec-17 00:00",
+     "az": 349.724362,
+     "el": 6.923413
+    },
+    {
+     "utc": "2026-Dec-21 00:00",
+     "az": 351.026249,
+     "el": 10.238209
+    },
+    {
+     "utc": "2026-Dec-25 00:00",
+     "az": 358.833883,
+     "el": 7.526723
+    },
+    {
+     "utc": "2026-Dec-29 00:00",
+     "az": 4.477643,
+     "el": 1.00944
+    }
+   ],
+   "urls": [
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%272.6999999999999886%2C-86.04%2C0%27&COMMAND=%2710%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%271969-07-20+20%3A17%27&STOP_TIME=%271969-07-21+20%3A17%27&STEP_SIZE=%276+h%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%272.6999999999999886%2C-86.04%2C0%27&COMMAND=%27399%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%271969-07-20+20%3A17%27&STOP_TIME=%271969-07-21+20%3A17%27&STEP_SIZE=%276+h%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%272.6999999999999886%2C-86.04%2C0%27&COMMAND=%2710%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%272026-12-01+00%3A00%27&STOP_TIME=%272026-12-29+00%3A00%27&STEP_SIZE=%274+d%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%272.6999999999999886%2C-86.04%2C0%27&COMMAND=%27399%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%272026-12-01+00%3A00%27&STOP_TIME=%272026-12-29+00%3A00%27&STEP_SIZE=%274+d%27&OBJ_DATA=NO"
+   ]
+  },
+  {
+   "id": "chandrayaan3-vikram",
+   "lat": -69.373,
+   "lon": 32.319,
+   "sun": [
+    {
+     "utc": "1969-Jul-20 20:17",
+     "az": 71.197145,
+     "el": 5.539057
+    },
+    {
+     "utc": "1969-Jul-21 02:17",
+     "az": 68.297816,
+     "el": 6.553805
+    },
+    {
+     "utc": "1969-Jul-21 08:17",
+     "az": 65.385964,
+     "el": 7.548271
+    },
+    {
+     "utc": "1969-Jul-21 14:17",
+     "az": 62.46006,
+     "el": 8.519802
+    },
+    {
+     "utc": "1969-Jul-21 20:17",
+     "az": 59.51871,
+     "el": 9.46576
+    },
+    {
+     "utc": "2026-Dec-01 00:00",
+     "az": 248.557252,
+     "el": -6.278795
+    },
+    {
+     "utc": "2026-Dec-05 00:00",
+     "az": 200.07363,
+     "el": -18.00578
+    },
+    {
+     "utc": "2026-Dec-09 00:00",
+     "az": 148.916529,
+     "el": -16.406527
+    },
+    {
+     "utc": "2026-Dec-13 00:00",
+     "az": 101.311117,
+     "el": -2.73223
+    },
+    {
+     "utc": "2026-Dec-17 00:00",
+     "az": 55.069426,
+     "el": 13.561862
+    },
+    {
+     "utc": "2026-Dec-21 00:00",
+     "az": 4.614826,
+     "el": 21.829164
+    },
+    {
+     "utc": "2026-Dec-25 00:00",
+     "az": 313.577575,
+     "el": 15.752506
+    },
+    {
+     "utc": "2026-Dec-29 00:00",
+     "az": 267.055718,
+     "el": 0.035548
+    }
+   ],
+   "earth": [
+    {
+     "utc": "1969-Jul-20 20:17",
+     "az": 319.05347,
+     "el": 13.877662
+    },
+    {
+     "utc": "1969-Jul-21 02:17",
+     "az": 319.028373,
+     "el": 13.503983
+    },
+    {
+     "utc": "1969-Jul-21 08:17",
+     "az": 319.02334,
+     "el": 13.139292
+    },
+    {
+     "utc": "1969-Jul-21 14:17",
+     "az": 319.039103,
+     "el": 12.784975
+    },
+    {
+     "utc": "1969-Jul-21 20:17",
+     "az": 319.076351,
+     "el": 12.442435
+    },
+    {
+     "utc": "2026-Dec-01 00:00",
+     "az": 333.065396,
+     "el": 16.934495
+    },
+    {
+     "utc": "2026-Dec-05 00:00",
+     "az": 333.102265,
+     "el": 12.303847
+    },
+    {
+     "utc": "2026-Dec-09 00:00",
+     "az": 329.429036,
+     "el": 11.55054
+    },
+    {
+     "utc": "2026-Dec-13 00:00",
+     "az": 323.272355,
+     "el": 14.338859
+    },
+    {
+     "utc": "2026-Dec-17 00:00",
+     "az": 317.480968,
+     "el": 18.641119
+    },
+    {
+     "utc": "2026-Dec-21 00:00",
+     "az": 318.013999,
+     "el": 22.164968
+    },
+    {
+     "utc": "2026-Dec-25 00:00",
+     "az": 326.748344,
+     "el": 21.130903
+    },
+    {
+     "utc": "2026-Dec-29 00:00",
+     "az": 333.810649,
+     "el": 15.701955
+    }
+   ],
+   "urls": [
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%2732.31900000000002%2C-69.373%2C0%27&COMMAND=%2710%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%271969-07-20+20%3A17%27&STOP_TIME=%271969-07-21+20%3A17%27&STEP_SIZE=%276+h%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%2732.31900000000002%2C-69.373%2C0%27&COMMAND=%27399%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%271969-07-20+20%3A17%27&STOP_TIME=%271969-07-21+20%3A17%27&STEP_SIZE=%276+h%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%2732.31900000000002%2C-69.373%2C0%27&COMMAND=%2710%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%272026-12-01+00%3A00%27&STOP_TIME=%272026-12-29+00%3A00%27&STEP_SIZE=%274+d%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%2732.31900000000002%2C-69.373%2C0%27&COMMAND=%27399%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%272026-12-01+00%3A00%27&STOP_TIME=%272026-12-29+00%3A00%27&STEP_SIZE=%274+d%27&OBJ_DATA=NO"
+   ]
+  },
+  {
+   "id": "apollo-17",
+   "lat": 20.1908,
+   "lon": 30.7717,
+   "sun": [
+    {
+     "utc": "1969-Jul-20 20:17",
+     "az": 95.124043,
+     "el": 17.309308
+    },
+    {
+     "utc": "1969-Jul-21 02:17",
+     "az": 96.280811,
+     "el": 20.162839
+    },
+    {
+     "utc": "1969-Jul-21 08:17",
+     "az": 97.476805,
+     "el": 23.009499
+    },
+    {
+     "utc": "1969-Jul-21 14:17",
+     "az": 98.720396,
+     "el": 25.847772
+    },
+    {
+     "utc": "1969-Jul-21 20:17",
+     "az": 100.021074,
+     "el": 28.675935
+    },
+    {
+     "utc": "2026-Dec-01 00:00",
+     "az": 275.977777,
+     "el": -19.915536
+    },
+    {
+     "utc": "2026-Dec-05 00:00",
+     "az": 310.37303,
+     "el": -62.497428
+    },
+    {
+     "utc": "2026-Dec-09 00:00",
+     "az": 59.242001,
+     "el": -56.712941
+    },
+    {
+     "utc": "2026-Dec-13 00:00",
+     "az": 86.751404,
+     "el": -12.769879
+    },
+    {
+     "utc": "2026-Dec-17 00:00",
+     "az": 105.322882,
+     "el": 32.545764
+    },
+    {
+     "utc": "2026-Dec-21 00:00",
+     "az": 164.406264,
+     "el": 67.797124
+    },
+    {
+     "utc": "2026-Dec-25 00:00",
+     "az": 248.068165,
+     "el": 43.071525
+    },
+    {
+     "utc": "2026-Dec-29 00:00",
+     "az": 269.407538,
+     "el": -1.492408
+    }
+   ],
+   "earth": [
+    {
+     "utc": "1969-Jul-20 20:17",
+     "az": 248.318906,
+     "el": 48.434779
+    },
+    {
+     "utc": "1969-Jul-21 02:17",
+     "az": 248.871648,
+     "el": 48.511733
+    },
+    {
+     "utc": "1969-Jul-21 08:17",
+     "az": 249.40521,
+     "el": 48.602502
+    },
+    {
+     "utc": "1969-Jul-21 14:17",
+     "az": 249.91762,
+     "el": 48.707786
+    },
+    {
+     "utc": "1969-Jul-21 20:17",
+     "az": 250.406859,
+     "el": 48.828269
+    },
+    {
+     "utc": "2026-Dec-01 00:00",
+     "az": 234.34014,
+     "el": 59.703102
+    },
+    {
+     "utc": "2026-Dec-05 00:00",
+     "az": 242.781196,
+     "el": 61.890037
+    },
+    {
+     "utc": "2026-Dec-09 00:00",
+     "az": 246.890568,
+     "el": 58.819
+    },
+    {
+     "utc": "2026-Dec-13 00:00",
+     "az": 245.720231,
+     "el": 52.219511
+    },
+    {
+     "utc": "2026-Dec-17 00:00",
+     "az": 242.341251,
+     "el": 45.528619
+    },
+    {
+     "utc": "2026-Dec-21 00:00",
+     "az": 237.410976,
+     "el": 44.671577
+    },
+    {
+     "utc": "2026-Dec-25 00:00",
+     "az": 233.278506,
+     "el": 52.39664
+    },
+    {
+     "utc": "2026-Dec-29 00:00",
+     "az": 235.74881,
+     "el": 60.94804
+    }
+   ],
+   "urls": [
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%2730.77170000000001%2C20.1908%2C0%27&COMMAND=%2710%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%271969-07-20+20%3A17%27&STOP_TIME=%271969-07-21+20%3A17%27&STEP_SIZE=%276+h%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%2730.77170000000001%2C20.1908%2C0%27&COMMAND=%27399%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%271969-07-20+20%3A17%27&STOP_TIME=%271969-07-21+20%3A17%27&STEP_SIZE=%276+h%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%2730.77170000000001%2C20.1908%2C0%27&COMMAND=%2710%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%272026-12-01+00%3A00%27&STOP_TIME=%272026-12-29+00%3A00%27&STEP_SIZE=%274+d%27&OBJ_DATA=NO",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&EPHEM_TYPE=OBSERVER&CENTER=%27coord%40301%27&COORD_TYPE=GEODETIC&SITE_COORD=%2730.77170000000001%2C20.1908%2C0%27&COMMAND=%27399%27&QUANTITIES=%274%27&APPARENT=AIRLESS&ANG_FORMAT=DEG&CSV_FORMAT=YES&TIME_DIGITS=MINUTES&START_TIME=%272026-12-01+00%3A00%27&STOP_TIME=%272026-12-29+00%3A00%27&STEP_SIZE=%274+d%27&OBJ_DATA=NO"
+   ]
+  }
+ ]
+}
