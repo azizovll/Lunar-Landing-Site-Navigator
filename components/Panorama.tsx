@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo } from "react";
+import { useEffect, useId, useMemo, useRef } from "react";
 import { horizonEl, type Horizon, type Sample } from "@/lib/metrics";
 import { compass } from "@/lib/format";
 
@@ -19,6 +19,12 @@ interface Props {
 /** 360° sky panorama: azimuth on x (centred on north), elevation on y (vertically exaggerated). */
 export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg }: Props) {
   const clipId = useId();
+  const scroller = useRef<HTMLDivElement>(null);
+  // On narrow screens the panorama scrolls sideways: start centred on Earth (the middle of the view).
+  useEffect(() => {
+    const el = scroller.current;
+    if (el && el.scrollWidth > el.clientWidth) el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+  }, []);
   // Centre the view on Earth's mean azimuth (rounded to 15°): Earth barely moves in the lunar sky,
   // so the comms-critical part of the horizon is always in the middle. (At a south-polar site Earth
   // lies across the pole, i.e. roughly toward azimuth 180° - longitude.)
@@ -86,7 +92,7 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
 
   return (
     <figure className="card overflow-hidden">
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" ref={scroller}>
       <svg viewBox={`0 0 ${W} ${H + 24}`} className="block w-full min-w-[760px]" role="img" aria-label="Panoramic sky view with terrain horizon, Sun and Earth">
         <defs>
           <linearGradient id={`${clipId}-sky`} x1="0" y1="0" x2="0" y2="1">
