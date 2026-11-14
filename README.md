@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lunar Site Navigator
 
-## Getting Started
+**Team infinium · NASA Space Apps Challenge 2026 · “Lunar Landing Site Navigator”**
 
-First, run the development server:
+A web app that answers a mission planner's question in seconds: *if we land at this site on this date, or the launch slips a few weeks, will we have enough sunlight and a direct radio link to Earth?*
+
+It shows the Sun and Earth over the **real terrain horizon** of lunar south-pole sites (from NASA LOLA elevation data) and turns that geometry into power and communication metrics that you can compare side by side. Everything runs in the browser. There is no database, and the URL holds the state.
+
+## Screens
+
+| Screen | What it does |
+| --- | --- |
+| **Site** (home) | Clickable south-polar map with site list; 360° panoramic sky with terrain profile, Sun and Earth disks and their tracks; 1:1 close-ups; time scrubber with playback; Power / Comms / Combined cards with countdowns; 30-day light/comms timeline |
+| **Compare** | Up to 4 “site + date” scenarios, best value per row highlighted, launch-delay slider (0–60 days) with better/worse arrows |
+| **Calendar** | 12-month heatmap of daily light and comms; best 14-day mission starts; click a day to open it |
+| **Validation** | Our Sun/Earth positions vs saved JPL Horizons answers, a live Horizons re-check, and illumination compared with a published LOLA study |
+| **About** | Method, metric definitions, data sources, use of AI |
+
+**Explain / Expert** toggle: Explain adds plain-language tips. Expert shows exact azimuths and elevations, CSV export and a share-link button.
+
+## Accuracy
+
+- Sun and Earth topocentric az/el vs **JPL Horizons**: 130 comparisons across 5 sites × 13 epochs × Sun and Earth. Max error is **0.004°**, RMS 5.6″. The target was ≤ 0.1°.
+- Apollo 11 landing (1969-07-20 20:17 UTC): Sun at az 88.8°, el 10.7°, low in the east as expected.
+- Annual illumination from our LOLA horizon masks compared with Gläser et al. 2018:
+  - Connecting Ridge: **86.7%** (published 88.0%)
+  - Shackleton rim: **85.7%** (published 82.1%)
+  - Shackleton floor (a permanently shadowed region): 0%.
+
+## Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
+npm test           # vitest: Horizons fixtures, metrics, terrain acceptance
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Terrain pipeline (Python + numpy): see [pipeline/README.md](pipeline/README.md). Generated files are committed under `public/data/`, so the app needs no Python to run.
+- Refresh the Horizons fixtures: `node scripts/fetch-horizons.mjs`.
+- Headless page check: `node scripts/check-pages.mjs http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Code map
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `lib/astro.ts`: Sun and Earth positions from the Moon's surface (astronomy-engine plus the IAU lunar frame with libration).
+- `lib/metrics.ts`: visible solar fraction, illumination, nights, power index, comms, blackouts, verdicts.
+- `lib/horizonCore.ts` + `lib/horizon.worker.ts`: approximate horizon for custom points, computed in a Web Worker.
+- `pipeline/`: horizon masks from LOLA polar DEMs (with an orientation check on five craters).
+- `app/api/horizons/route.ts`: validated proxy to JPL Horizons for the live re-check.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See [PRESENTATION_NOTES.md](PRESENTATION_NOTES.md) for the full write-up.
