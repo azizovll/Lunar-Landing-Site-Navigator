@@ -255,7 +255,14 @@ export function SiteView() {
         </div>
         <div id="terrain3d" className="relative z-10 w-full scroll-mt-24">
           <SafeBoundary fallback={map2d}>
-            <Terrain3D selectedId={customPoint ? null : siteId} timeMs={clampedT} onSelect={selectSite} fallback={map2d} />
+            <Terrain3D
+              selectedId={customPoint ? null : siteId}
+              timeMs={clampedT}
+              onSelect={selectSite}
+              custom={customPoint}
+              onCustom={(lat, lon) => set({ lat: Number(lat.toFixed(4)), lon: Number(lon.toFixed(4)), site: null })}
+              fallback={map2d}
+            />
           </SafeBoundary>
         </div>
       </section>

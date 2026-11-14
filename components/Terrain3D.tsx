@@ -47,6 +47,10 @@ interface Props {
   timeMs: number;
   onSelect: (id: string) => void;
   fallback: React.ReactNode;
+  /** a point the user placed (from the URL), shown as "Your point" */
+  custom?: { lat: number; lon: number } | null;
+  /** clicking the terrain (not dragging) places a point there */
+  onCustom?: (lat: number, lon: number) => void;
 }
 
 const SOUTH_SITES = SITES.filter((s) => s.lat <= -80);
@@ -61,7 +65,7 @@ const deg = (v: number) => `${(Math.abs(v) < 0.05 ? 0 : v).toFixed(1)}°`;
 /** Hardware already on the surface inside the 3D area (Odysseus is shown as a station already). */
 const HARDWARE = NEIGHBORS.filter((n) => n.kind !== "planned" && (n.lat ?? 0) <= -80 && n.id !== "im1-odysseus-hw");
 
-export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
+export function Terrain3D({ selectedId, timeMs, onSelect, fallback, custom = null, onCustom }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const mount = useRef<HTMLDivElement>(null);
   const pins = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -69,6 +73,11 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   const thumb = useRef<HTMLDivElement>(null);
   const caret = useRef<HTMLDivElement>(null);
   const hoveredRef = useRef<string | null>(null);
+  const customMarker = useRef<HTMLSpanElement>(null);
+  const customInfo = useRef<HTMLSpanElement>(null);
+  const candEls = useRef<(HTMLButtonElement | null)[]>([]);
+  const onPickRef = useRef<((lat: number, lon: number) => void) | null>(null);
+  const pickBlocked = useRef(false);
   const api = useRef<{
     setTime: (t: number) => void;
     flyTo: (id: string | null) => void;
@@ -77,6 +86,8 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
     computeLight: (from: number, body: MapBody) => Promise<"ok" | "stale" | "failed">;
     setMap: (mode: MapBody | null) => void;
     mapAt: (lat: number, lon: number) => { sun: number | null; earth: number | null };
+    setCustom: (ll: { lat: number; lon: number } | null) => void;
+    candidates: () => { lat: number; lon: number; sun: number }[];
   } | null>(null);
   const scaleBar = useRef<HTMLDivElement>(null);
   const scaleLabel = useRef<HTMLSpanElement>(null);
@@ -104,6 +115,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   const [lightFrom, setLightFrom] = useState<number | null>(null);
   const [earthFrom, setEarthFrom] = useState<number | null>(null);
   const [lightFailed, setLightFailed] = useState(false);
+  const [cands, setCands] = useState<{ lat: number; lon: number; sun: number }[]>([]);
 
   useEffect(() => {
     let disposed = false;
@@ -446,6 +458,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         return outC.copy(R[k]).lerp(R[k + 1], x - k);
       };
       const heatMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+      let afterMaps: (body: MapBody) => void = () => {};
       const lits: Partial<Record<MapBody, Float32Array>> = {};
       const heatCols: Partial<Record<MapBody, Float32Array>> = {};
       let normalCol: Float32Array | null = null;
@@ -521,6 +534,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         heatCols[body] = heat;
         if (norm) normalCol = norm;
         applyColours();
+        afterMaps(body);
         return "ok" as const;
       };
       const setMap = (mode: MapBody | null) => {
@@ -532,6 +546,73 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         sun: lits.sun ? lightAt(lits.sun, lightGrid, lat, lon) : null,
         earth: lits.earth ? lightAt(lits.earth, lightGrid, lat, lon) : null,
       });
+
+      // ---- "Your point" (click on the terrain) and the brightest-spot candidates of the light map
+      const markerPos = (lat: number, lon: number) => {
+        const p = surface(lat, lon, heightAt(lat, lon));
+        return new THREE.Vector3(p[0], p[1], p[2]).addScaledVector(radial(lat, lon), 0.5);
+      };
+      let customLL: { lat: number; lon: number } | null = null;
+      let customPos: import("three").Vector3 | null = null;
+      let infoVersion = 0;
+      let infoShown = -1;
+      let infoEl: HTMLSpanElement | null = null;
+      const setCustom = (ll: { lat: number; lon: number } | null) => {
+        customLL = ll;
+        customPos = ll ? markerPos(ll.lat, ll.lon) : null;
+        infoVersion++;
+      };
+      const refreshCustomInfo = () => {
+        const target = customInfo.current;
+        if (!target || (target === infoEl && infoShown === infoVersion)) return;
+        infoEl = target;
+        infoShown = infoVersion;
+        if (!customLL) return;
+        const v = mapAt(customLL.lat, customLL.lon);
+        const parts: string[] = [];
+        if (v.sun !== null) parts.push(`☀ ~${Math.round(v.sun * 100)}% of the month in sunlight`);
+        if (v.earth !== null) parts.push(`⊕ ~${Math.round(v.earth * 100)}% with Earth in view`);
+        target.textContent = parts.length ? parts.join(" · ") : "Computing the light map…";
+      };
+      type Cand = { lat: number; lon: number; sun: number; pos: import("three").Vector3 };
+      let cands: Cand[] = [];
+      const findCandidates = (lit: Float32Array) => {
+        // brightest local maxima within 150 km of the pole, at least 6 km from any known station or hardware
+        const xy = (lat: number, lon: number) => {
+          const rho = 2 * R_KM * 1000 * Math.tan(Math.PI / 4 + (lat * D2R) / 2);
+          return [rho * Math.sin(lon * D2R), rho * Math.cos(lon * D2R)];
+        };
+        const known = [...SOUTH_SITES, ...HARDWARE].map((k) => xy(k.lat!, k.lon!));
+        const found: { x: number; y: number; v: number }[] = [];
+        for (let i = 2; i < N - 2; i++)
+          for (let j = 2; j < N - 2; j++) {
+            const v = lit[i * N + j];
+            if (v < 0.6) continue;
+            const x = (j - off) * scale;
+            const y = (off - i) * scale;
+            if (Math.hypot(x, y) > 150e3) continue;
+            let peak = true;
+            for (let a = -2; a <= 2 && peak; a++) for (let b = -2; b <= 2; b++) if (lit[(i + a) * N + j + b] > v) peak = false;
+            if (!peak || known.some(([kx, ky]) => Math.hypot(kx - x, ky - y) < 6000)) continue;
+            found.push({ x, y, v });
+          }
+        found.sort((a, b) => b.v - a.v);
+        const pick: typeof found = [];
+        for (const f of found) {
+          if (pick.every((q) => Math.hypot(q.x - f.x, q.y - f.y) > 20e3)) pick.push(f);
+          if (pick.length === 3) break;
+        }
+        cands = pick.map((f) => {
+          const rho = Math.hypot(f.x, f.y);
+          const lat = (2 * Math.atan(rho / (2 * R_KM * 1000))) / D2R - 90;
+          const lon = Math.atan2(f.x, f.y) / D2R;
+          return { lat, lon, sun: f.v, pos: markerPos(lat, lon) };
+        });
+      };
+      afterMaps = (body) => {
+        if (body === "sun" && lits.sun) findCandidates(lits.sun);
+        infoVersion++;
+      };
 
       // ---- lines of sight from the focused station to the Sun and to Earth.
       // Colour comes from the exact horizon calculation (the same numbers as the sky view); the 3D
@@ -603,6 +684,61 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         rayState = a ? { a, sunOk, earthOk } : null;
         updateRays();
       };
+
+      // ---- click (not drag) on the terrain: march the view ray over the heightfield
+      const raycaster = new THREE.Raycaster();
+      const ndc = new THREE.Vector2();
+      const pk = new THREE.Vector3();
+      const under = (o: import("three").Vector3, d: import("three").Vector3, k: number) => {
+        pk.copy(o).addScaledVector(d, k);
+        const y = pk.y + R_KM;
+        const r = Math.hypot(pk.x, y, pk.z);
+        const lat = -Math.asin(y / r) / D2R;
+        if (lat > -79.4) return false;
+        return r < R_KM + (EXAG * heightAt(lat, Math.atan2(pk.z, pk.x) / D2R)) / 1000;
+      };
+      const pickGround = (cx: number, cy: number) => {
+        const rect = renderer.domElement.getBoundingClientRect();
+        ndc.set(((cx - rect.left) / rect.width) * 2 - 1, -((cy - rect.top) / rect.height) * 2 + 1);
+        raycaster.setFromCamera(ndc, camera);
+        const o = raycaster.ray.origin;
+        const d = raycaster.ray.direction;
+        let prev = 0;
+        for (let k = 0.5; k < 1500; k += 0.5) {
+          if (under(o, d, k)) {
+            let lo = prev;
+            let hi = k;
+            for (let q = 0; q < 12; q++) {
+              const mid = (lo + hi) / 2;
+              if (under(o, d, mid)) hi = mid;
+              else lo = mid;
+            }
+            pk.copy(o).addScaledVector(d, hi);
+            const y = pk.y + R_KM;
+            const lat = -Math.asin(y / Math.hypot(pk.x, y, pk.z)) / D2R;
+            return lat <= -79.6 ? { lat, lon: Math.atan2(pk.z, pk.x) / D2R } : null;
+          }
+          prev = k;
+        }
+        return null;
+      };
+      let downX = 0;
+      let downY = 0;
+      let downT = 0;
+      const onDown = (e: PointerEvent) => {
+        downX = e.clientX;
+        downY = e.clientY;
+        downT = performance.now();
+      };
+      const onUp = (e: PointerEvent) => {
+        if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6 || performance.now() - downT > 450 || pickBlocked.current) return;
+        const ll = pickGround(e.clientX, e.clientY);
+        if (!ll) return;
+        setCustom(ll);
+        onPickRef.current?.(ll.lat, ll.lon);
+      };
+      renderer.domElement.addEventListener("pointerdown", onDown);
+      renderer.domElement.addEventListener("pointerup", onUp);
 
       // ---- fly-to
       let flight: {
@@ -779,6 +915,23 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           tipEl.style.opacity = on ? "1" : "0";
           tipEl.style.transform = `translate(${tx}px, ${ty}px)`;
         }
+        // "Your point" and the candidates
+        const placeEl = (node: HTMLElement | null, pos: import("three").Vector3 | null | undefined, show: boolean) => {
+          if (!node) return;
+          if (!pos || !show) {
+            node.style.opacity = "0";
+            node.style.pointerEvents = "none";
+            return;
+          }
+          tmp.copy(pos).project(camera);
+          const on = tmp.z < 1 && Math.abs(tmp.x) < 1 && Math.abs(tmp.y) < 1;
+          node.style.opacity = on ? "1" : "0";
+          node.style.pointerEvents = on ? "auto" : "none";
+          node.style.transform = `translate(${((tmp.x + 1) / 2) * el.clientWidth}px, ${((1 - tmp.y) / 2) * el.clientHeight}px)`;
+        };
+        placeEl(customMarker.current, customPos, true);
+        for (let q = 0; q < 3; q++) placeEl(candEls.current[q], cands[q]?.pos, mapMode === "sun");
+        refreshCustomInfo();
         // scale bar for the distance of the point we look at
         if (scaleBar.current && scaleLabel.current) {
           const pxPerKm = el.clientHeight / (2 * dist * Math.tan((camera.fov * D2R) / 2));
@@ -842,11 +995,15 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         computeLight,
         setMap,
         mapAt,
+        setCustom,
+        candidates: () => cands.map(({ lat, lon, sun }) => ({ lat, lon, sun })),
       };
       setReady(true);
 
       cleanup = () => {
         cancelAnimationFrame(raf);
+        renderer.domElement.removeEventListener("pointerdown", onDown);
+        renderer.domElement.removeEventListener("pointerup", onUp);
         ro.disconnect();
         io.disconnect();
         controls.dispose();
@@ -938,7 +1095,10 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
     const id = setTimeout(() => {
       api.current?.computeLight(lightDay, "sun").then((r) => {
         if (!alive) return;
-        if (r === "ok") setLightFrom(lightDay);
+        if (r === "ok") {
+          setLightFrom(lightDay);
+          setCands(api.current?.candidates() ?? []);
+        }
         if (r === "failed") setLightFailed(true);
       });
     }, 600);
@@ -967,6 +1127,20 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   useEffect(() => {
     api.current?.setRays(rayId, sunOk, earthOk);
   }, [rayId, sunOk, earthOk, ready]);
+  // "Your point": clicks on the terrain go to the page (URL lat/lon); the URL point comes back as `custom`
+  const cLat = custom?.lat ?? null;
+  const cLon = custom?.lon ?? null;
+  useEffect(() => {
+    api.current?.setCustom(cLat !== null && cLon !== null ? { lat: cLat, lon: cLon } : null);
+  }, [cLat, cLon, ready]);
+  useEffect(() => {
+    pickBlocked.current = standing || touring || !!photo;
+    onPickRef.current = (lat, lon) => {
+      setFocus(null);
+      api.current?.flyTo(null);
+      onCustom?.(lat, lon);
+    };
+  });
   const goTo = (id: string) => {
     onSelect(id);
     setFocus(id);
@@ -1138,6 +1312,26 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
               </span>
             </span>
           ))}
+          <span ref={customMarker} className="pointer-events-none absolute left-0 top-0 opacity-0" style={{ willChange: "transform" }} aria-hidden>
+            <span className="absolute -translate-x-1/2 -translate-y-1/2 text-lg leading-none text-white drop-shadow-[0_0_6px_rgba(0,0,0,0.9)]">✚</span>
+            <span className="absolute left-3 top-[-22px] whitespace-nowrap border border-white/70 bg-black/80 px-1.5 py-0.5 text-[11px] text-white">Your point</span>
+          </span>
+          {cands.map((c, q) => (
+            <button
+              key={q}
+              ref={(n) => {
+                candEls.current[q] = n;
+              }}
+              className="group absolute left-0 top-0 opacity-0 transition-opacity"
+              style={{ willChange: "transform", zIndex: 6 }}
+              onClick={() => onPickRef.current?.(c.lat, c.lon)}
+              title="Bright spot from the approximate light map: click to check it with the exact horizon"
+            >
+              <span className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap border border-sun bg-black/85 px-1.5 py-0.5 text-[11px] text-sun group-hover:bg-sun group-hover:text-black">
+                ✦ {q + 1} · ~{Math.round(c.sun * 100)}%
+              </span>
+            </button>
+          ))}
           {[
             { ref: sunTip, ok: sunOk, okColor: "var(--sun)", label: sunOk ? "☀ Sun" : live && live.sunEl > 0 ? "☀ blocked by hills" : "☀ below horizon" },
             { ref: earthTip, ok: earthOk, okColor: "var(--earth)", label: earthOk ? "⊕ Earth" : live && live.earthEl > 0 ? "⊕ blocked by hills" : "⊕ below horizon" },
@@ -1226,12 +1420,23 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
             </div>
           </div>
         )}
-        <div className="pointer-events-none absolute left-4 top-3 flex flex-col gap-1 sm:left-[6%] sm:top-[6%]">
+        <div className="pointer-events-none absolute left-4 top-3 flex max-w-[calc(100%-2rem)] flex-col items-start gap-1 sm:left-[6%] sm:top-[6%] sm:max-w-[46%]">
           <span className="eyebrow !text-[0.6rem] !tracking-[0.35em] text-muted">South pole · 3D terrain</span>
           {focused && (
             <span className="text-sm text-foreground">
               {focused.name} <span className="text-muted">· {fmtLatLon(focused.lat, focused.lon)}</span>
             </span>
+          )}
+          {custom && !focused && (
+            <div className="pointer-events-auto mt-1 flex flex-col gap-0.5 border-l-2 border-white/70 bg-black/55 px-2.5 py-1.5 text-xs backdrop-blur-sm">
+              <span className="text-foreground">
+                Your point <span className="text-muted">· {fmtLatLon(custom.lat, custom.lon)}</span>
+              </span>
+              <span ref={customInfo} className="text-muted" />
+              <a href="#sky" className="text-muted underline underline-offset-4 hover:text-foreground">
+                Exact horizon and dates: sky view ↓
+              </a>
+            </div>
           )}
           {live && !standing && (
             <div className="mt-1 flex flex-col gap-0.5 border-l-2 border-line bg-black/55 px-2.5 py-1.5 text-xs backdrop-blur-sm" aria-live="polite">
@@ -1263,16 +1468,20 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
                 <span className="block h-2 w-32" style={{ background: `linear-gradient(to right,${MAP_RAMP[mapMode].join(",")})` }} />
                 100%
               </span>
-              <span className="text-faint">approximate: 1.3 km grid; site numbers use 20 m horizons</span>
+              <span className="hidden text-faint sm:inline">approximate: 1.3 km grid; site numbers use 20 m horizons</span>
             </span>
           )}
-          {!focused && (
+          {!focused && !mapMode && (
             <span className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted">
               Pin colour = score, next 14 days:
               <span style={{ color: "var(--good)" }}>● 70+</span>
               <span style={{ color: "var(--marginal)" }}>● 40–69</span>
               <span style={{ color: "var(--poor)" }}>● under 40</span>
+              <span className="text-faint">· click the ground to test any point</span>
             </span>
+          )}
+          {mapMode === "sun" && cands.length > 0 && (
+            <span className="hidden bg-black/55 px-1.5 text-[11px] text-sun sm:inline">✦ brightest spots ≥6 km from known sites · approximate, click to check</span>
           )}
           {ready && !standing && (
             <span className="mt-1 flex items-center gap-2 text-[11px] text-faint">
