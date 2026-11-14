@@ -44,3 +44,6 @@ next-env.d.ts
 pipeline/cache/
 
 /screenshots
+
+# python
+__pycache__/

@@ -1,6 +1,6 @@
 # Space Apps 2026 submission texts
 
-Ready to paste into the project page. Replace `<SITE URL>` with the production Vercel address.
+Ready to paste into the project page.
 
 ---
 
@@ -14,7 +14,7 @@ Lunar Site Navigator answers a mission planner's most urgent question in seconds
 
 ## Links
 
-- Live app: `<SITE URL>`
+- Live app: https://lunar-landing-site-navigator-psi.vercel.app
 - Source code: https://github.com/azizovll/Lunar-Landing-Site-Navigator
 
 ## Detailed project description

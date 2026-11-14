@@ -128,6 +128,8 @@ export function SiteView() {
       margin: s.marginDeg ?? (params.get("margin") || null),
       panel: s.panel ?? (params.get("panel") || null),
       window: s.windowDays ?? (params.get("window") || null),
+      // pin the current site: otherwise new settings could re-rank and silently swap the default site
+      site: params.get("site") || (cLat !== null ? null : siteId),
     });
 
   const exportCsv = () => {

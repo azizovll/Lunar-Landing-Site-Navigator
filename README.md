@@ -2,6 +2,8 @@
 
 **Team infinium · NASA Space Apps Challenge 2026 · “Lunar Landing Site Navigator”**
 
+**Live app: https://lunar-landing-site-navigator-psi.vercel.app**
+
 A web app that answers a mission planner's question in seconds: *if we land at this site on this date, or the launch slips a few weeks, will we have enough sunlight and a direct radio link to Earth?*
 
 It shows the Sun and Earth over the **real terrain horizon** of lunar south-pole sites (from NASA LOLA elevation data) and turns that geometry into power and communication metrics that you can compare side by side. Everything runs in the browser. There is no database, and the URL holds the state.
