@@ -31,10 +31,10 @@ export function SiteList({ selectedId, from, settings, onSelect }: Props) {
   }, [from, settings]);
 
   return (
-    <div className="card max-h-[520px] overflow-y-auto">
+    <div className="card max-h-[560px] overflow-y-auto">
       {GROUPS.map((g) => (
         <div key={g.kind}>
-          <div className="sticky top-0 bg-panel px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">{g.label}</div>
+          <div className="eyebrow sticky top-0 z-10 border-b border-line bg-panel px-4 py-3 !text-[0.6rem] !tracking-[0.3em] text-muted">{g.label}</div>
           <ul>
             {SITES.filter((s) => (g.kind === "south-pole" ? s.kind === "south-pole" : s.kind !== "south-pole")).map((s) => {
               const m = summary[s.id];
@@ -43,11 +43,11 @@ export function SiteList({ selectedId, from, settings, onSelect }: Props) {
                 <li key={s.id}>
                   <button
                     onClick={() => onSelect(s.id)}
-                    className={`w-full border-l-2 px-3 py-2 text-left hover:bg-panel2 ${sel ? "border-sun bg-panel2" : "border-transparent"}`}
+                    className={`w-full border-b border-l-2 border-b-line px-4 py-3 text-left transition-colors hover:bg-panel2 ${sel ? "border-l-foreground bg-panel2" : "border-l-transparent"}`}
                     aria-current={sel}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{s.name}</span>
+                      <span className="text-[15px] font-normal">{s.name}</span>
                       {m && (
                         <span className="flex gap-1">
                           <Dot v={m.pv} label="Power" color="var(--sun)" />
@@ -76,8 +76,8 @@ export function SiteList({ selectedId, from, settings, onSelect }: Props) {
 function Bar({ value, color, label }: { value: number; color: string; label: string }) {
   return (
     <div className="flex items-center gap-1.5 text-[11px] text-muted">
-      <div className="h-1.5 flex-1 overflow-hidden rounded bg-[#1b2440]">
-        <div className="h-full rounded" style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: color }} />
+      <div className="h-[3px] flex-1 overflow-hidden bg-panel3">
+        <div className="h-full" style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: color }} />
       </div>
       <span className="tabular w-14 text-right">
         {value.toFixed(0)}% {label}
@@ -91,7 +91,7 @@ const VCOLOR: Record<Verdict, string> = { Good: "var(--good)", Marginal: "var(--
 /** Compact per-aspect verdict: power and comms are shown separately so a well-lit site is not hidden behind its comms verdict. */
 export function Dot({ v, label, color }: { v: Verdict; label: string; color: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border px-1.5 text-[11px] font-semibold" style={{ borderColor: VCOLOR[v], color: VCOLOR[v] }} title={`${label}: ${v}`}>
+    <span className="inline-flex items-center gap-1 border px-1.5 text-[10px] uppercase tracking-[0.1em]" style={{ borderColor: VCOLOR[v], color: VCOLOR[v] }} title={`${label}: ${v}`}>
       <span style={{ color }}>{label === "Power" ? "☀" : "⊕"}</span>
       {v}
     </span>

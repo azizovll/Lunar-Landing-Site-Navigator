@@ -96,22 +96,22 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
       <svg viewBox={`0 0 ${W} ${H + 24}`} className="block w-full min-w-[760px]" role="img" aria-label="Panoramic sky view with terrain horizon, Sun and Earth">
         <defs>
           <linearGradient id={`${clipId}-sky`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#05070d" />
-            <stop offset="1" stopColor="#0b1222" />
+            <stop offset="0" stopColor="#000000" />
+            <stop offset="1" stopColor="#0d0d10" />
           </linearGradient>
           <clipPath id={`${clipId}-above`}>
             <path d={skyPath} />
           </clipPath>
           <radialGradient id={`${clipId}-sun`}>
-            <stop offset="0.6" stopColor="#fff3c4" />
-            <stop offset="1" stopColor="#ffc23d" />
+            <stop offset="0.55" stopColor="#fbf3df" />
+            <stop offset="1" stopColor="#e2bd6a" />
           </radialGradient>
         </defs>
         <rect width={W} height={H} fill={`url(#${clipId}-sky)`} />
         {elTicks.map((e) => (
           <g key={e}>
-            <line x1={0} x2={W} y1={yOf(e)} y2={yOf(e)} stroke={e === 0 ? "#3a4a6e" : "#1a2440"} strokeDasharray={e === 0 ? "" : "2 4"} />
-            <text x={4} y={yOf(e) - 3} fontSize={11} fill="#5d6b8c">
+            <line x1={0} x2={W} y1={yOf(e)} y2={yOf(e)} stroke={e === 0 ? "#3a3a40" : "#1c1c20"} strokeDasharray={e === 0 ? "" : "2 4"} />
+            <text x={6} y={yOf(e) - 4} fontSize={11} fill="#6b6b72">
               {e}°
             </text>
           </g>
@@ -123,8 +123,8 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
         <g clipPath={`url(#${clipId}-above)`}>
           <circle cx={sunX} cy={sunY} r={sunR * 3} fill="var(--sun)" opacity={0.12} />
           <circle cx={sunX} cy={sunY} r={sunR} fill={`url(#${clipId}-sun)`} />
-          <circle cx={earthX} cy={earthY} r={earthR} fill="#2a6fd6" stroke="var(--earth)" strokeWidth={1.5} />
-          <ellipse cx={earthX - earthR * 0.25} cy={earthY - earthR * 0.2} rx={earthR * 0.45} ry={earthR * 0.3} fill="#6fbf73" opacity={0.6} />
+          <circle cx={earthX} cy={earthY} r={earthR} fill="#2f4c6e" stroke="var(--earth)" strokeWidth={1.2} />
+          <ellipse cx={earthX - earthR * 0.25} cy={earthY - earthR * 0.2} rx={earthR * 0.45} ry={earthR * 0.3} fill="#c9d6cf" opacity={0.25} />
         </g>
         {/* comms threshold line under Earth */}
         <line
@@ -136,7 +136,7 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
           strokeDasharray="4 3"
           opacity={0.7}
         />
-        <path d={terrainPath} fill="#1c2232" stroke="#8592ad" strokeWidth={1} />
+        <path d={terrainPath} fill="#141416" stroke="#b9b9bf" strokeWidth={1} />
         {/* outlines over terrain so hidden bodies are still findable */}
         <circle cx={sunX} cy={sunY} r={sunR} fill="none" stroke="var(--sun)" strokeOpacity={0.6} strokeDasharray="2 2" />
         <circle cx={earthX} cy={earthY} r={earthR} fill="none" stroke="var(--earth)" strokeOpacity={0.6} strokeDasharray="2 2" />
@@ -148,8 +148,8 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
         </text>
         {ticks.map((t) => (
           <g key={t.x}>
-            <line x1={t.x} x2={t.x} y1={H} y2={H + 5} stroke="#5d6b8c" />
-            <text x={Math.min(W - 14, Math.max(14, t.x))} y={H + 18} fontSize={12} fill="#8b97b3" textAnchor="middle">
+            <line x1={t.x} x2={t.x} y1={H} y2={H + 5} stroke="#55555c" />
+            <text x={Math.min(W - 14, Math.max(14, t.x))} y={H + 18} fontSize={11} fill="#8b8b92" textAnchor="middle" letterSpacing={1.5}>
               {t.label}
             </text>
           </g>
@@ -195,16 +195,16 @@ export function Lens({ horizon, az, el, r, kind, fraction, clearance }: { horizo
   return (
     <div className="card overflow-hidden">
       <svg viewBox={`0 0 ${w} ${h}`} className="block w-full">
-        <rect width={w} height={h} fill="#05070d" />
+        <rect width={w} height={h} fill="#000000" />
         <clipPath id={`${id}-c`}>
           <rect width={w} height={h} />
         </clipPath>
         <g clipPath={`url(#${id}-c)`}>
-          <circle cx={w / 2} cy={h / 2} r={r * pd} fill={kind === "sun" ? "#ffe9a8" : "#2a6fd6"} stroke={color} />
-          <path d={terrain} fill="#1c2232" stroke="#8592ad" />
+          <circle cx={w / 2} cy={h / 2} r={r * pd} fill={kind === "sun" ? "#fbf3df" : "#2f4c6e"} stroke={color} />
+          <path d={terrain} fill="#141416" stroke="#b9b9bf" />
         </g>
         <circle cx={w / 2} cy={h / 2} r={r * pd} fill="none" stroke={color} strokeDasharray="2 2" opacity={0.7} />
-        <text x={8} y={18} fontSize={13} fill="#8b97b3">
+        <text x={12} y={22} fontSize={12} fill="#8b8b92" letterSpacing={2}>
           1:1 close-up, {spanAz * 2}° wide
         </text>
       </svg>

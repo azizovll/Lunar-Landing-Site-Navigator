@@ -8,7 +8,7 @@ export function VerdictBadge({ v, small }: { v: Verdict; small?: boolean }) {
   const color = v === "Good" ? "var(--good)" : v === "Marginal" ? "var(--marginal)" : "var(--poor)";
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border font-semibold ${small ? "px-2 py-0 text-xs" : "px-2.5 py-0.5 text-sm"}`}
+      className={`inline-flex items-center gap-1.5 border font-normal uppercase tracking-[0.12em] ${small ? "px-1.5 py-0 text-[10px]" : "px-2 py-0.5 text-[11px]"}`}
       style={{ color, borderColor: color }}
     >
       <span aria-hidden>{v === "Good" ? "●" : v === "Marginal" ? "◐" : "○"}</span>
@@ -19,7 +19,7 @@ export function VerdictBadge({ v, small }: { v: Verdict; small?: boolean }) {
 
 function Row({ label, value, sub }: { label: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 border-t border-line/60 py-1.5 text-sm first:border-t-0">
+    <div className="flex items-baseline justify-between gap-3 border-t border-line py-2 text-sm first:border-t-0">
       <span className="text-muted">{label}</span>
       <span className="tabular text-right">
         {value}
@@ -60,14 +60,14 @@ export function MetricCards({ now, events, searchDays, metrics, settings, onSett
   const wDays = Math.round((metrics.to - metrics.from) / 86_400_000);
 
   return (
-    <div className="grid gap-3 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-3">
       {/* POWER */}
-      <section className="card p-3" style={{ borderTop: "3px solid var(--sun)" }}>
-        <header className="mb-1 flex items-center justify-between">
-          <h3 className="font-semibold text-sun">Power</h3>
+      <section className="card flex flex-col gap-1 p-5" style={{ borderTop: "1px solid var(--sun)" }}>
+        <header className="mb-2 flex items-center justify-between">
+          <h3 className="display text-xs tracking-[0.3em] text-sun">Power</h3>
           <VerdictBadge v={pv} />
         </header>
-        <div className="mb-2 text-2xl font-semibold tabular">
+        <div className="num mb-3 text-xl leading-snug">
           {lit ? `${(now.sunFrac * 100).toFixed(0)}% of Sun visible` : "Sun hidden"}
         </div>
         <Row label="Sun elevation" value={`${now.sunEl.toFixed(2)}°`} sub={expert ? `az ${now.sunAz.toFixed(2)}° · terrain ${now.sunHz.toFixed(2)}°` : `toward ${compass(now.sunAz)}`} />
@@ -94,12 +94,12 @@ export function MetricCards({ now, events, searchDays, metrics, settings, onSett
       </section>
 
       {/* COMMS */}
-      <section className="card p-3" style={{ borderTop: "3px solid var(--earth)" }}>
-        <header className="mb-1 flex items-center justify-between">
-          <h3 className="font-semibold text-earth">Comms (direct to Earth)</h3>
+      <section className="card flex flex-col gap-1 p-5" style={{ borderTop: "1px solid var(--earth)" }}>
+        <header className="mb-2 flex items-center justify-between">
+          <h3 className="display text-xs tracking-[0.3em] text-earth">Comms · direct to Earth</h3>
           <VerdictBadge v={cv} />
         </header>
-        <div className="mb-2 text-2xl font-semibold tabular">{comms ? "Earth in view" : now.earthClear > 0 ? "Earth too low" : "Earth hidden"}</div>
+        <div className="num mb-3 text-xl leading-snug">{comms ? "Earth in view" : now.earthClear > 0 ? "Earth too low" : "Earth hidden"}</div>
         <Row
           label="Earth over terrain"
           value={`${now.earthClear >= 0 ? "+" : ""}${now.earthClear.toFixed(2)}°`}
@@ -127,12 +127,12 @@ export function MetricCards({ now, events, searchDays, metrics, settings, onSett
       </section>
 
       {/* COMBINED */}
-      <section className="card p-3" style={{ borderTop: "3px solid var(--both)" }}>
-        <header className="mb-1 flex items-center justify-between">
-          <h3 className="font-semibold text-both">Combined window</h3>
+      <section className="card flex flex-col gap-1 p-5" style={{ borderTop: "1px solid var(--both)" }}>
+        <header className="mb-2 flex items-center justify-between">
+          <h3 className="display text-xs tracking-[0.3em] text-both">Combined window</h3>
           <VerdictBadge v={ov} />
         </header>
-        <div className="mb-2 text-2xl font-semibold tabular">{fmtHours(metrics.combinedH)} of light + comms</div>
+        <div className="num mb-3 text-xl leading-snug">{fmtHours(metrics.combinedH)} of light + comms</div>
         <Row label="Share of mission window" value={`${metrics.combinedPct.toFixed(1)}%`} />
         <Row label="Mission window" value={`${wDays} days`} sub={`${fmtUtc(metrics.from)} → ${fmtUtc(metrics.to)}`} />
         <Row

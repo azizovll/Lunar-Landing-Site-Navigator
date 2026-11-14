@@ -15,6 +15,7 @@ import { PolarMap } from "./PolarMap";
 import { Dot, SiteList } from "./SiteList";
 import { ExpertOnly, Tip, useMode } from "./ModeProvider";
 import { CopyLinkButton } from "./CopyLinkButton";
+import { Eyebrow, StatBox } from "./ui";
 
 const TIMELINE_DAYS = 30;
 const SERIES_DAYS = 45; // extra 15 days so countdowns near the end of the timeline still resolve
@@ -117,45 +118,79 @@ export function SiteView() {
     ]);
   };
 
-  return (
-    <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
-      <aside className="order-2 flex flex-col gap-3 lg:order-none">
-        <PolarMap selectedId={siteId} custom={customLat !== null && customLon !== null ? { lat: customLat, lon: customLon } : null} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />
-        <SiteList selectedId={customLat !== null ? null : siteId} from={windowFrom} settings={settings} onSelect={selectSite} />
-        <CustomForm onSubmit={(lat, lon) => set({ lat, lon, site: null })} />
-      </aside>
+  const customPoint = customLat !== null && customLon !== null ? { lat: customLat, lon: customLon } : null;
 
-      <div className="order-1 flex min-w-0 flex-col gap-3 lg:order-none">
-        <header className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold sm:text-2xl">
-              {site?.name ?? "Custom point"}{" "}
-              {site && (
-                <span className="inline-flex flex-wrap items-center gap-1 align-middle">
-                  <VerdictBadge v={overallVerdict(metrics)} />
-                  <Dot v={powerVerdict(metrics)} label="Power" color="var(--sun)" />
-                  <Dot v={commsVerdict(metrics)} label="Comms" color="var(--earth)" />
-                </span>
-              )}
-            </h1>
+  return (
+    <div className="flex flex-col gap-16 sm:gap-24">
+      {/* ---------- hero ---------- */}
+      <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_1fr]">
+        <div className="flex flex-col gap-7">
+          <Eyebrow>Lunar south pole</Eyebrow>
+          <h1 className="display text-4xl sm:text-6xl">Find light and signal on the Moon</h1>
+          <p className="max-w-xl text-base leading-relaxed text-muted">
+            Compare landing sites and dates near the lunar south pole. See the Sun and Earth over the real LOLA terrain horizon, with solar-power and direct-to-Earth
+            communication windows, computed in your browser.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <a href="#sky" className="btn btn-solid">
+              Open sky view
+            </a>
+            <Link href="/compare" className="btn">
+              Compare sites
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-3 pt-2">
+            <StatBox value="0.004°" label="Max error" sub="vs JPL Horizons" />
+            <StatBox value={SITES.length} label="Sites" sub="with sources" />
+            <StatBox value="1440" label="Terrain rays" sub="per site, 200 km" />
+          </div>
+        </div>
+        <div className="mx-auto w-full max-w-[560px]">
+          <PolarMap variant="planet" selectedId={siteId} custom={customPoint} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />
+        </div>
+      </section>
+
+      {/* ---------- sky view ---------- */}
+      <section id="sky" className="flex scroll-mt-24 flex-col gap-6">
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="flex flex-col gap-4">
+            <Eyebrow>Sky view</Eyebrow>
+            <h2 className="display text-3xl sm:text-4xl">{site?.name ?? "Custom point"}</h2>
+            {site && (
+              <div className="flex flex-wrap items-center gap-2">
+                <VerdictBadge v={overallVerdict(metrics)} />
+                <Dot v={powerVerdict(metrics)} label="Power" color="var(--sun)" />
+                <Dot v={commsVerdict(metrics)} label="Comms" color="var(--earth)" />
+              </div>
+            )}
             <p className="text-sm text-muted">
               {site ? fmtLatLon(site.lat, site.lon) : ""}
               {site?.terrain === "lola" && ` · terrain ${Math.round(site.heightM ?? 0)} m · horizon from ${site.dem}`}
               {site?.terrain === "approx" && (
-                <span className="ml-1 rounded bg-marginal/15 px-1.5 text-marginal" title="Tested on 4 preset sites: horizon RMS error 0.6–1.0°, up to 3°; annual illumination and comms within 7 percentage points of the precise masks.">
+                <span className="ml-1 border border-marginal/40 px-1.5 text-marginal" title="Tested on 4 preset sites: horizon RMS error 0.6–1.0°, up to 3°; annual illumination and comms within 7 percentage points of the precise masks.">
                   lower accuracy: approximate horizon from 480 m/px DEM (illumination/comms ±7 pp)
                 </span>
               )}
-              {site?.terrain === "flat" && <span className="ml-1 rounded bg-panel2 px-1.5">flat horizon (outside the polar DEM)</span>}
+              {site?.terrain === "flat" && <span className="ml-1 border border-line px-1.5">flat horizon (outside the polar DEM)</span>}
               {site?.meta && (
                 <>
                   {" · "}
-                  <a href={site.meta.source} target="_blank" rel="noreferrer" className="underline decoration-dotted hover:text-foreground">
+                  <a href={site.meta.source} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-4 hover:text-foreground">
                     source
                   </a>
                 </>
               )}
             </p>
+            {site?.meta?.note && (
+              <p className="max-w-3xl text-sm text-muted">
+                {site.meta.snapKm && (
+                  <span className="mr-2 border border-line px-1.5 text-foreground" title="Region-level coordinate moved to the highest DEM point nearby: results describe the best local spot, not the whole region.">
+                    crest point (snapped ≤{site.meta.snapKm} km)
+                  </span>
+                )}
+                {site.meta.note}
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <select className="lg:hidden" value={customLat !== null ? "" : siteId} onChange={(e) => selectSite(e.target.value)} aria-label="Site">
@@ -166,102 +201,109 @@ export function SiteView() {
                 </option>
               ))}
             </select>
-            <label className="flex items-center gap-1.5">
+            <label className="flex items-center gap-2">
               <span className="text-muted">Mission start</span>
               <input type="date" value={toUtcInput(start, false)} onChange={(e) => e.target.value && set({ start: e.target.value, t: null })} />
             </label>
             <button className="btn" onClick={() => set({ start: toUtcInput(alignTime(Date.now(), DAY), false), t: null })}>
               Today
             </button>
-            <Link className="btn" href={`/compare?a=${site?.id === "custom" ? DEFAULT_SITE_ID : siteId}:${toUtcInput(start, false)}`}>
-              Compare…
+            <Link className="btn btn-solid" href={`/compare?a=${site?.id === "custom" ? DEFAULT_SITE_ID : siteId}:${toUtcInput(start, false)}`}>
+              Compare
             </Link>
           </div>
-        </header>
+        </div>
 
-        {site?.meta?.note && (
-          <p className="-mt-1 text-sm text-muted">
-            {site.meta.snapKm && (
-              <span className="mr-1.5 rounded bg-panel2 px-1.5 text-foreground" title="Region-level coordinate moved to the highest DEM point nearby: results describe the best local spot, not the whole region.">
-                crest point (snapped ≤{site.meta.snapKm} km)
-              </span>
+        <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
+          <aside className="order-2 flex flex-col gap-4 lg:order-none">
+            <SiteList selectedId={customLat !== null ? null : siteId} from={windowFrom} settings={settings} onSelect={selectSite} />
+            <CustomForm onSubmit={(lat, lon) => set({ lat, lon, site: null })} />
+          </aside>
+
+          <div className="order-1 flex min-w-0 flex-col gap-4 lg:order-none">
+            {loading || !site || !now ? (
+              <div className="card grid h-72 place-items-center text-muted">Computing terrain horizon in the browser…</div>
+            ) : (
+              <>
+                <Panorama horizon={site.horizon} now={now} sunTrack={sunTrack} earthTrack={earthTrack} expert={expert} marginDeg={settings.marginDeg} />
+
+                {/* scrubber */}
+                <div className="card flex flex-wrap items-center gap-4 p-4">
+                  <button className="btn btn-solid w-24" onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Pause" : "Play"}>
+                    {playing ? "❚❚ Pause" : "▶ Play"}
+                  </button>
+                  <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))} aria-label="Playback speed">
+                    {PLAY_SPEEDS.map((s, i) => (
+                      <option key={s.label} value={i}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="range"
+                    className="min-w-40 flex-1"
+                    min={start}
+                    max={start + TIMELINE_DAYS * DAY}
+                    step={10 * 60_000}
+                    value={clampedT}
+                    onChange={(e) => {
+                      setPlaying(false);
+                      setT(Number(e.target.value));
+                    }}
+                    aria-label="Time"
+                  />
+                  <div className="text-right">
+                    <div className="num text-sm">{fmtUtc(clampedT)}</div>
+                    <div className="text-xs text-muted">{Math.abs(clampedT - loadTime) < 60_000 ? "now" : fmtRelative(clampedT, loadTime).replace("in ", "now + ").replace(" ago", " before now")}</div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Lens horizon={site.horizon} az={now.sunAz} el={now.sunEl} r={now.sunR} kind="sun" fraction={now.sunFrac} />
+                  <Lens horizon={site.horizon} az={now.earthAz} el={now.earthEl} r={now.earthR} kind="earth" clearance={now.earthClear} />
+                </div>
+                <Tip>
+                  The Moon’s axis is tilted only ~1.5° to the Sun, so at the south pole the Sun never climbs high: it circles the whole horizon once a lunar day (29.5 Earth
+                  days), skimming the ridges. A few metres of terrain decide light or shadow, which is why every site here uses a real LOLA horizon.
+                </Tip>
+
+                <MetricCards
+                  now={now}
+                  events={events}
+                  searchDays={Math.max(0, Math.floor((start + SERIES_DAYS * DAY - clampedT) / DAY))}
+                  metrics={metrics}
+                  settings={settings}
+                  onSettings={onSettings}
+                />
+
+                <Timeline
+                  series={series}
+                  start={start}
+                  days={TIMELINE_DAYS}
+                  t={clampedT}
+                  windowFrom={windowFrom}
+                  windowTo={windowTo}
+                  marginDeg={settings.marginDeg}
+                  onSeek={(v) => {
+                    setPlaying(false);
+                    setT(v);
+                  }}
+                />
+
+                <ExpertOnly>
+                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <button className="btn" onClick={exportCsv}>
+                      Export 30-day CSV (10-min steps)
+                    </button>
+                    <CopyLinkButton />
+                    <span className="text-muted">Azimuth: degrees clockwise from lunar north (N 0°, E 90°). Elevations are topocentric, airless, relative to the local sphere horizontal.</span>
+                  </div>
+                </ExpertOnly>
+              </>
             )}
-            {site.meta.note}
-          </p>
-        )}
-
-        {loading || !site || !now ? (
-          <div className="card grid h-72 place-items-center text-muted">Computing terrain horizon in the browser…</div>
-        ) : (
-          <>
-            <Panorama horizon={site.horizon} now={now} sunTrack={sunTrack} earthTrack={earthTrack} expert={expert} marginDeg={settings.marginDeg} />
-
-            {/* scrubber */}
-            <div className="card flex flex-wrap items-center gap-3 p-3">
-              <button className="btn btn-active w-20" onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Pause" : "Play"}>
-                {playing ? "❚❚ Pause" : "▶ Play"}
-              </button>
-              <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))} aria-label="Playback speed">
-                {PLAY_SPEEDS.map((s, i) => (
-                  <option key={s.label} value={i}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="range"
-                className="min-w-40 flex-1"
-                min={start}
-                max={start + TIMELINE_DAYS * DAY}
-                step={10 * 60_000}
-                value={clampedT}
-                onChange={(e) => {
-                  setPlaying(false);
-                  setT(Number(e.target.value));
-                }}
-                aria-label="Time"
-              />
-              <div className="tabular text-right text-sm">
-                <div className="font-semibold">{fmtUtc(clampedT)}</div>
-                <div className="text-xs text-muted">{Math.abs(clampedT - loadTime) < 60_000 ? "now" : fmtRelative(clampedT, loadTime).replace("in ", "now + ").replace(" ago", " before now")}</div>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Lens horizon={site.horizon} az={now.sunAz} el={now.sunEl} r={now.sunR} kind="sun" fraction={now.sunFrac} />
-              <Lens horizon={site.horizon} az={now.earthAz} el={now.earthEl} r={now.earthR} kind="earth" clearance={now.earthClear} />
-            </div>
-            <Tip>
-              The Moon’s axis is tilted only ~1.5° to the Sun, so at the south pole the Sun never climbs high: it circles the whole horizon once a lunar day (29.5 Earth days),
-              skimming the ridges. A few metres of terrain decide light or shadow, which is why every site here uses a real LOLA horizon.
-            </Tip>
-
-            <MetricCards
-              now={now}
-              events={events}
-              searchDays={Math.max(0, Math.floor((start + SERIES_DAYS * DAY - clampedT) / DAY))}
-              metrics={metrics}
-              settings={settings}
-              onSettings={onSettings}
-            />
-
-            <Timeline series={series} start={start} days={TIMELINE_DAYS} t={clampedT} windowFrom={windowFrom} windowTo={windowTo} marginDeg={settings.marginDeg} onSeek={(v) => {
-              setPlaying(false);
-              setT(v);
-            }} />
-
-            <ExpertOnly>
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <button className="btn" onClick={exportCsv}>
-                  Export 30-day CSV (10-min steps)
-                </button>
-                <CopyLinkButton />
-                <span className="text-muted">Azimuth: degrees clockwise from lunar north (N 0°, E 90°). Elevations are topocentric, airless, relative to the local sphere horizontal.</span>
-              </div>
-            </ExpertOnly>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
@@ -271,7 +313,7 @@ function CustomForm({ onSubmit }: { onSubmit: (lat: number, lon: number) => void
   const [lon, setLon] = useState("0");
   return (
     <form
-      className="card flex flex-wrap items-end gap-2 p-3 text-sm"
+      className="card flex flex-wrap items-end gap-2 p-4 text-sm"
       onSubmit={(e) => {
         e.preventDefault();
         const a = Number(lat);
@@ -279,7 +321,7 @@ function CustomForm({ onSubmit }: { onSubmit: (lat: number, lon: number) => void
         if (Number.isFinite(a) && Number.isFinite(b) && Math.abs(a) <= 90) onSubmit(a, b);
       }}
     >
-      <div className="w-full text-xs font-semibold uppercase tracking-wide text-muted">Custom coordinates</div>
+      <div className="eyebrow mb-1 w-full !text-[0.65rem] !tracking-[0.3em] text-muted">Custom coordinates</div>
       <label className="flex flex-col">
         <span className="text-xs text-muted">Lat (°, S negative)</span>
         <input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} className="w-24" />

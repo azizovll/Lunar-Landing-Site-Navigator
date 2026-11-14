@@ -110,39 +110,41 @@ export function Timeline({ series, start, days, t, windowFrom, windowTo, marginD
         <rect x={xOf(windowFrom)} y={0} width={Math.max(0, xOf(windowTo) - xOf(windowFrom))} height={TOP + CH} fill="#ffffff" opacity={0.04} />
         {bands.map((b) => (
           <g key={b.key}>
-            <rect x={0} y={b.y} width={W} height={BAND} fill="#121a2e" />
+            <rect x={0} y={b.y} width={W} height={BAND} fill="#121214" />
             {b.rects.map((r, i) => (
               <rect key={i} x={r.x} y={b.y} width={r.w} height={BAND} fill={b.color} opacity={0.8} />
             ))}
-            <text x={6} y={b.y + BAND - 3} fontSize={11} fill="#05070d" fontWeight={700} style={{ paintOrder: "stroke" }} stroke="#ffffffaa" strokeWidth={2.5}>
-              {b.label}
+            {/* label chip with a solid backing so it stays readable over any band colour */}
+            <rect x={0} y={b.y} width={58} height={BAND} fill="#000000" opacity={0.85} />
+            <text x={6} y={b.y + BAND - 3.5} fontSize={10} fill="#ececee" letterSpacing={1.5}>
+              {b.label.toUpperCase()}
             </text>
           </g>
         ))}
         {/* clearance chart */}
-        <rect x={0} y={TOP} width={W} height={CH} fill="#0a0f1c" />
-        <rect x={0} y={yOf(0)} width={W} height={TOP + CH - yOf(0)} fill="#1c2232" opacity={0.7} />
-        <line x1={0} x2={W} y1={yOf(0)} y2={yOf(0)} stroke="#8592ad" />
+        <rect x={0} y={TOP} width={W} height={CH} fill="#060607" />
+        <rect x={0} y={yOf(0)} width={W} height={TOP + CH - yOf(0)} fill="#141416" opacity={0.9} />
+        <line x1={0} x2={W} y1={yOf(0)} y2={yOf(0)} stroke="#b9b9bf" />
         <line x1={0} x2={W} y1={yOf(marginDeg)} y2={yOf(marginDeg)} stroke="var(--earth)" strokeDasharray="4 4" opacity={0.5} />
-        <text x={W - 4} y={yOf(0) + 12} fontSize={11} fill="#8592ad" textAnchor="end">
+        <text x={W - 4} y={yOf(0) + 12} fontSize={11} fill="#8b8b92" textAnchor="end">
           terrain horizon
         </text>
         <text x={W - 4} y={yOf(marginDeg) - 3} fontSize={11} fill="var(--earth)" textAnchor="end" opacity={0.8}>
           comms margin +{marginDeg}°
         </text>
-        <text x={4} y={TOP + 12} fontSize={11} fill="#5d6b8c">
+        <text x={6} y={TOP + 14} fontSize={11} fill="#6b6b72">
           +{yMax}°
         </text>
-        <text x={4} y={TOP + CH - 4} fontSize={11} fill="#5d6b8c">
+        <text x={6} y={TOP + CH - 6} fontSize={11} fill="#6b6b72">
           {yMin}°
         </text>
         <path d={line((s) => s.earthClear)} fill="none" stroke="var(--earth)" strokeWidth={1.6} />
         <path d={line(sunClear)} fill="none" stroke="var(--sun)" strokeWidth={1.6} />
         {dayTicks.map((d) => (
           <g key={d.x}>
-            <line x1={d.x} x2={d.x} y1={TOP + CH} y2={TOP + CH + (d.label ? 6 : 3)} stroke="#5d6b8c" />
+            <line x1={d.x} x2={d.x} y1={TOP + CH} y2={TOP + CH + (d.label ? 6 : 3)} stroke="#55555c" />
             {d.label && (
-              <text x={Math.min(W - 20, Math.max(20, d.x))} y={H - 4} fontSize={11} fill="#8b97b3" textAnchor="middle">
+              <text x={Math.min(W - 20, Math.max(20, d.x))} y={H - 4} fontSize={11} fill="#8b8b92" textAnchor="middle">
                 {d.label}
               </text>
             )}

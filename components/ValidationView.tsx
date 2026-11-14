@@ -7,6 +7,7 @@ import { angleDiff, parseHorizonsUtc } from "@/lib/horizonsFixture";
 import { SITES, getSite, resolvePreset, fmtLatLon } from "@/lib/sites";
 import { sampleSeries, windowMetrics } from "@/lib/metrics";
 import { ExpertOnly, Tip } from "./ModeProvider";
+import { SectionTitle, StatBox, Step } from "./ui";
 
 interface Cmp {
   site: string;
@@ -48,32 +49,32 @@ export function ValidationView() {
   );
 
   return (
-    <div className="flex flex-col gap-5">
-      <header>
-        <h1 className="text-2xl font-semibold">Validation against JPL Horizons</h1>
-        <p className="text-sm text-muted">
-          Every Sun and Earth position in this app is computed in your browser with astronomy-engine and a lunar body-fixed frame (IAU rotation model, including libration). Here we compare it with
-          NASA JPL Horizons topocentric azimuth/elevation for the same surface points.
-        </p>
-      </header>
+    <div className="flex flex-col gap-8">
+      <SectionTitle
+        as="h1"
+        center
+        eyebrow="Validation"
+        title={<>Checked against<br />JPL Horizons</>}
+        sub="Every Sun and Earth position in this app is computed in your browser with astronomy-engine and a lunar body-fixed frame (IAU rotation model, including libration). Here we compare it with NASA JPL Horizons topocentric azimuth and elevation for the same surface points."
+      />
 
-      <div className="grid gap-3 sm:grid-cols-4">
-        <Stat label="Comparisons" value={`${all.length}`} sub={`${fixture.sites.length} sites × ${all.length / fixture.sites.length / 2} epochs × Sun & Earth`} />
-        <Stat label="Max elevation error" value={`${maxEl.toFixed(4)}°`} sub="target ≤ 0.1°" good={maxEl <= 0.1} />
-        <Stat label="Max azimuth error × cos(el)" value={`${maxAz.toFixed(4)}°`} sub="target ≤ 0.1°" good={maxAz <= 0.1} />
-        <Stat label="RMS error" value={`${(rms * 3600).toFixed(1)}″`} sub={`${rms.toFixed(4)}°, Sun disk is ~1900″`} />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatBox value={`${all.length}`} label="Comparisons" sub={`${fixture.sites.length} sites × ${all.length / fixture.sites.length / 2} epochs × Sun & Earth`} />
+        <StatBox value={`${maxEl.toFixed(4)}°`} label="Max elevation error" sub="target ≤ 0.1°" tone={maxEl <= 0.1 ? "good" : "poor"} />
+        <StatBox value={`${maxAz.toFixed(4)}°`} label="Max azimuth error × cos(el)" sub="target ≤ 0.1°" tone={maxAz <= 0.1 ? "good" : "poor"} />
+        <StatBox value={`${(rms * 3600).toFixed(1)}″`} label="RMS error" sub={`${rms.toFixed(4)}°; the Sun's disk is ~1900″`} />
       </div>
 
-      <section className="card p-4">
-        <h2 className="mb-1 font-semibold">Sanity case: Apollo 11 landing</h2>
+      <section className="card p-6">
+        <h2 className="display mb-3 text-sm tracking-[0.2em]">Sanity case: Apollo 11 landing</h2>
         <p className="text-sm text-muted">1969-07-20 20:17 UTC at Tranquility Base (0.674°N, 23.473°E). The crew landed in the lunar morning with the Sun low in the east (~10°) to get long shadows.</p>
         <p className="tabular mt-2 text-sm">
           Horizons: Sun az {apollo.hAz.toFixed(3)}°, el {apollo.hEl.toFixed(3)}° · This app: az {apollo.az.toFixed(3)}°, el {apollo.el.toFixed(3)}° · difference {Math.abs(apollo.dEl).toFixed(4)}° in elevation
         </p>
       </section>
 
-      <section className="card overflow-x-auto p-4">
-        <h2 className="mb-2 font-semibold">Saved Horizons fixtures (tests/fixtures/horizons.json)</h2>
+      <section className="card overflow-x-auto p-6">
+        <h2 className="display mb-3 text-sm tracking-[0.2em]">Saved Horizons fixtures (tests/fixtures/horizons.json)</h2>
         <table className="tabular w-full min-w-[560px] text-sm">
           <thead className="text-left text-muted">
             <tr>
@@ -144,30 +145,28 @@ export function ValidationView() {
       <LiveCheck />
       <TerrainCheck />
 
-      <section className="card p-4 text-sm leading-relaxed">
-        <h2 className="mb-2 font-semibold">Method</h2>
-        <ol className="list-decimal space-y-1 pl-5">
-          <li>astronomy-engine gives geocentric J2000 vectors Earth→Moon (GeoMoon) and Earth→Sun (GeoVector). Moon→Earth = −GeoMoon; Moon→Sun = GeoSun − GeoMoon (Sun at light-time-retarded epoch).</li>
-          <li>
-            Rotate into the Moon body-fixed frame with the IAU rotation model (RotationAxis): z = pole, node Q = [cos(α+90°), sin(α+90°), 0], x = Q cos W + (z×Q) sin W, y = z×x. The pole and prime
-            meridian include the physical libration terms, which is why Earth wobbles in the lunar sky.
-          </li>
-          <li>Topocentric east/north/up frame at (lat, lon east-positive, height) on a 1737.4 km sphere. Elevation is relative to the local horizontal; azimuth is measured clockwise from lunar north (N 0°, E 90°, S 180°, W 270°), the same convention as Horizons.</li>
-          <li>Angular radius = asin(R / distance), Sun R = 695 700 km, Earth R = 6378.137 km.</li>
-          <li>Terrain horizon: 1440 rays (0.25°) through NASA LOLA polar DEMs (20/40/80/240 m/px, finest available per sample) out to 200 km with exact spherical geometry (lunar curvature) for an observer 2 m above the ground.</li>
-        </ol>
+      <section className="flex flex-col gap-8 pt-6">
+        <SectionTitle center eyebrow="Method" title="How the numbers are made" />
+        <div className="grid gap-x-10 gap-y-6 md:grid-cols-2">
+          <Step n={1} title="Ephemeris">
+            astronomy-engine gives geocentric J2000 vectors Earth→Moon (GeoMoon) and Earth→Sun (GeoVector). Moon→Earth = −GeoMoon; Moon→Sun = GeoSun − GeoMoon, with the Sun at the
+            light-time-retarded epoch.
+          </Step>
+          <Step n={2} title="Lunar body-fixed frame">
+            IAU rotation model (RotationAxis): z = pole, node Q = [cos(α+90°), sin(α+90°), 0], x = Q cos W + (z×Q) sin W, y = z×x. The pole and prime meridian include physical libration,
+            which is why Earth wobbles in the lunar sky.
+          </Step>
+          <Step n={3} title="Local sky">
+            East/north/up frame at (lat, lon east-positive, height) on a 1737.4 km sphere. Azimuth is clockwise from lunar north (N 0°, E 90°, S 180°, W 270°), as in Horizons. Angular
+            radius = asin(R / distance), with Sun R = 695 700 km and Earth R = 6378.137 km.
+          </Step>
+          <Step n={4} title="Terrain horizon">
+            1440 rays (0.25°) through NASA LOLA polar DEMs (20/40/80/240 m/px, finest available per sample) out to 200 km, with exact spherical geometry (lunar curvature), for an observer
+            2 m above the ground.
+          </Step>
+        </div>
         <Tip>A 0.004° error is about 1/130 of the Sun’s diameter: far smaller than anything that matters for power or radio links.</Tip>
       </section>
-    </div>
-  );
-}
-
-function Stat({ label, value, sub, good }: { label: string; value: string; sub?: string; good?: boolean }) {
-  return (
-    <div className="card p-3">
-      <div className="text-xs text-muted">{label}</div>
-      <div className={`tabular text-2xl font-semibold ${good === undefined ? "" : good ? "text-good" : "text-poor"}`}>{value}</div>
-      {sub && <div className="text-xs text-muted">{sub}</div>}
     </div>
   );
 }
@@ -196,8 +195,8 @@ function LiveCheck() {
   };
 
   return (
-    <section className="card p-4">
-      <h2 className="mb-1 font-semibold">Live re-check</h2>
+    <section className="card p-6">
+      <h2 className="display mb-3 text-sm tracking-[0.2em]">Live re-check</h2>
       <p className="mb-3 text-sm text-muted">Ask JPL Horizons right now (through a small server proxy) for any preset site and date, and compare with the in-browser computation.</p>
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <select value={siteId} onChange={(e) => setSiteId(e.target.value)} aria-label="Site">
@@ -208,7 +207,7 @@ function LiveCheck() {
           ))}
         </select>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Start date" />
-        <button className="btn btn-active" onClick={run} disabled={state.status === "loading"}>
+        <button className="btn btn-solid" onClick={run} disabled={state.status === "loading"}>
           {state.status === "loading" ? "Asking Horizons…" : "Compare 5 days"}
         </button>
       </div>
@@ -261,8 +260,8 @@ function TerrainCheck() {
     return () => clearTimeout(id);
   }, []);
   return (
-    <section className="card p-4">
-      <h2 className="mb-1 font-semibold">Terrain check: illumination vs published study</h2>
+    <section className="card p-6">
+      <h2 className="display mb-3 text-sm tracking-[0.2em]">Terrain check: illumination vs published study</h2>
       <p className="mb-3 text-sm text-muted">
         Average illumination (share of the solar disk visible, 2 m above ground) from our horizon masks for 2026, compared with Gläser et al. 2018 (20-year average, LOLA 20 m/px DEM, Table 2).
         The rim and ridge must be lit far more than the crater floor 10 km away.

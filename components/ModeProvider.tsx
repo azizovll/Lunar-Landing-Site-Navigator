@@ -39,8 +39,8 @@ export function Tip({ children }: { children: React.ReactNode }) {
   const { mode } = useMode();
   if (mode !== "explain") return null;
   return (
-    <p className="mt-2 rounded-lg border border-line bg-panel2 px-3 py-2 text-sm text-muted">
-      <span className="mr-1 font-semibold text-foreground">Tip:</span>
+    <p className="border border-l-2 border-line border-l-muted bg-panel/70 px-4 py-3 text-sm leading-relaxed text-muted">
+      <span className="eyebrow mr-2 !text-[0.62rem] !tracking-[0.3em] text-foreground">Tip</span>
       {children}
     </p>
   );

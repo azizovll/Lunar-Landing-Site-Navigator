@@ -11,6 +11,7 @@ import { VerdictBadge } from "./MetricCards";
 import { Dot } from "./SiteList";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { ExpertOnly, Tip } from "./ModeProvider";
+import { SectionTitle } from "./ui";
 
 const KEYS = ["a", "b", "c", "d"] as const;
 const MAX_DELAY = 60;
@@ -121,17 +122,20 @@ export function CompareView() {
     ]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <header>
-        <h1 className="text-2xl font-semibold">Compare scenarios</h1>
-        <p className="text-sm text-muted">Up to four “site + date” columns over a {settings.windowDays}-day mission window. Best value per row is highlighted.</p>
-      </header>
+    <div className="flex flex-col gap-8">
+      <SectionTitle
+        as="h1"
+        center
+        eyebrow="Compare"
+        title={<>What if the launch<br />slips?</>}
+        sub={`Up to four “site + date” scenarios over a ${settings.windowDays}-day mission window. The best value in each row is highlighted; the delay slider shifts every landing date at once.`}
+      />
 
-      <div className="card flex flex-wrap items-center gap-4 p-3">
+      <div className="card flex flex-wrap items-center gap-5 p-5">
         <label className="flex flex-1 items-center gap-3">
-          <span className="whitespace-nowrap text-sm font-semibold">Launch delay</span>
+          <span className="eyebrow whitespace-nowrap !text-[0.65rem] !tracking-[0.3em]">Launch delay</span>
           <input type="range" min={0} max={MAX_DELAY} value={delay} onChange={(e) => set({ delay: Number(e.target.value) || null })} className="flex-1" aria-label="Launch delay in days" />
-          <span className="tabular w-16 text-right text-lg font-semibold text-sun">+{delay} d</span>
+          <span className="num w-20 text-right text-2xl">+{delay} d</span>
         </label>
         <label className="flex items-center gap-2 text-sm">
           Window
@@ -152,7 +156,7 @@ export function CompareView() {
             <tr>
               <th className="w-44"></th>
               {cols.map((c, i) => (
-                <th key={c.key} className="card p-2 text-left align-top font-normal">
+                <th key={c.key} className="card p-3 text-left align-top font-normal">
                   <select
                     value={c.siteId}
                     onChange={(e) =>
@@ -162,7 +166,7 @@ export function CompareView() {
                         ),
                       )
                     }
-                    className="mb-1 w-full font-semibold"
+                    className="mb-1.5 w-full"
                     aria-label={`Site for column ${i + 1}`}
                   >
                     {SITES.map((s) => (
@@ -241,7 +245,7 @@ export function CompareView() {
                       </td>
                     );
                   return (
-                    <td key={i} className={`tabular border-t border-line p-2 ${isBest ? "bg-both/10 font-semibold text-both" : ""}`}>
+                    <td key={i} className={`tabular border-t border-line p-2 ${isBest ? "bg-white/[0.04] text-foreground" : "text-muted"}`}>
                       {r.fmt(x.v)}
                       {delay > 0 && (improved || worse) && (
                         <span className={`ml-1.5 text-xs ${improved ? "text-good" : "text-poor"}`} title={`on time: ${r.fmt(x.v0)}`}>
@@ -308,7 +312,7 @@ function Sweep({ values, max, delay, onPick }: { values: number[]; max: number; 
       role="img"
       aria-label="Combined hours by launch delay"
     >
-      <rect width={w} height={h} fill="#0a0f1c" rx={4} />
+      <rect width={w} height={h} fill="#060607" />
       <path d={`${d} L${w},${h} L0,${h} Z`} fill="var(--both)" opacity={0.15} />
       <path d={d} fill="none" stroke="var(--both)" strokeWidth={1.5} />
       <line x1={x(delay)} x2={x(delay)} y1={0} y2={h} stroke="#fff" />

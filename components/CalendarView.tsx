@@ -8,6 +8,7 @@ import { resolveCustom } from "@/lib/useResolvedSite";
 import { useUrlState } from "@/lib/useUrlState";
 import { toUtcInput } from "@/lib/format";
 import { Tip } from "./ModeProvider";
+import { SectionTitle } from "./ui";
 
 type Day = ReturnType<typeof dailySummary>[number];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -81,15 +82,15 @@ export function CalendarView() {
   }, [days]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Yearly calendar</h1>
+    <div className="flex flex-col gap-8">
+      <header className="flex flex-wrap items-end justify-between gap-6">
+        <div className="flex flex-col gap-3">
+          <SectionTitle as="h1" eyebrow="Calendar" title="A year of light and signal" />
           {custom && (
             <p className="text-sm">
               Custom point {fmtLatLon(custom.lat, custom.lon)}
-              {terrain === "approx" && <span className="ml-1 rounded bg-marginal/15 px-1.5 text-marginal">lower accuracy: approximate horizon (480 m/px)</span>}
-              {terrain === "flat" && <span className="ml-1 rounded bg-panel2 px-1.5">flat horizon (north of 79°S)</span>}
+              {terrain === "approx" && <span className="ml-1 border border-marginal/40 px-1.5 text-marginal">lower accuracy: approximate horizon (480 m/px)</span>}
+              {terrain === "flat" && <span className="ml-1 border border-line px-1.5">flat horizon (north of 79°S)</span>}
             </p>
           )}
           <p className="text-sm text-muted">Daily share of sunlight (solar disk visible over terrain) and of direct-to-Earth comms. Click a day to open the sky view with that mission start.</p>
@@ -120,7 +121,7 @@ export function CalendarView() {
         <div className="card grid h-80 place-items-center text-muted">Computing 365 days…</div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-          <div className="card overflow-x-auto p-3">
+          <div className="card overflow-x-auto p-5">
             <table className="border-separate border-spacing-[2px] text-xs">
               <thead>
                 <tr>
@@ -149,13 +150,13 @@ export function CalendarView() {
                       ))}
                       {m.days.map((d) => {
                         const v = d[row];
-                        const color = row === "lit" ? `rgba(255,194,61,${0.08 + 0.92 * v})` : `rgba(78,168,255,${0.08 + 0.92 * v})`;
+                        const color = row === "lit" ? `rgba(226,189,106,${0.06 + 0.94 * v})` : `rgba(126,174,224,${0.06 + 0.94 * v})`;
                         return (
                           <td key={d.day} className="p-0">
                             <Link
                               href={`/?${siteQuery}&start=${toUtcInput(d.day, false)}`}
                               title={`${toUtcInput(d.day, false)}: light ${(d.lit * 100).toFixed(0)}%, comms ${(d.comms * 100).toFixed(0)}%, both ${(d.both * 100).toFixed(0)}%`}
-                              className="block h-4 w-5 rounded-sm hover:outline hover:outline-1 hover:outline-white"
+                              className="block h-4 w-5 hover:outline hover:outline-1 hover:outline-white"
                               style={{ background: color }}
                               aria-label={`${toUtcInput(d.day, false)} ${row} ${(v * 100).toFixed(0)}%`}
                             />
@@ -169,27 +170,27 @@ export function CalendarView() {
             </table>
             <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted">
               <span>
-                <span className="mr-1 inline-block h-3 w-3 rounded-sm" style={{ background: "rgba(255,194,61,1)" }} />
+                <span className="mr-1.5 inline-block h-3 w-3 align-[-1px]" style={{ background: "rgba(226,189,106,1)" }} />
                 lit all day
               </span>
               <span>
-                <span className="mr-1 inline-block h-3 w-3 rounded-sm" style={{ background: "rgba(78,168,255,1)" }} />
+                <span className="mr-1.5 inline-block h-3 w-3 align-[-1px]" style={{ background: "rgba(126,174,224,1)" }} />
                 Earth in view all day
               </span>
               <span>
-                <span className="mr-1 inline-block h-3 w-3 rounded-sm" style={{ background: "rgba(255,255,255,0.08)" }} />
+                <span className="mr-1.5 inline-block h-3 w-3 align-[-1px]" style={{ background: "rgba(255,255,255,0.06)" }} />
                 none
               </span>
             </div>
           </div>
-          <aside className="card p-3">
-            <h2 className="mb-2 font-semibold">Best {WINDOW}-day mission starts</h2>
+          <aside className="card p-5">
+            <h2 className="display mb-2 text-sm tracking-[0.2em]">Best {WINDOW}-day starts</h2>
             <p className="mb-2 text-xs text-muted">Ranked by hours with light and comms at the same time.</p>
             <ol className="space-y-2">
               {best.map((b) => (
                 <li key={b.day}>
-                  <Link href={`/?${siteQuery}&start=${toUtcInput(b.day, false)}`} className="block rounded-lg border border-line p-2 hover:border-muted">
-                    <div className="font-medium">{toUtcInput(b.day, false)}</div>
+                  <Link href={`/?${siteQuery}&start=${toUtcInput(b.day, false)}`} className="block border border-line p-3 transition-colors hover:border-muted">
+                    <div className="num text-sm">{toUtcInput(b.day, false)}</div>
                     <div className="tabular text-xs text-muted">
                       <span className="text-both">{b.both.toFixed(0)}% both</span> · <span className="text-sun">{b.lit.toFixed(0)}% light</span> · <span className="text-earth">{b.comms.toFixed(0)}% comms</span>
                     </div>
