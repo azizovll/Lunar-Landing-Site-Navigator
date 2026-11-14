@@ -90,6 +90,7 @@ export function ValidationView() {
               <tr key={g.site.id + g.body} className="border-t border-line">
                 <td className="py-1">
                   {getSite(g.site.id)?.name ?? g.site.id} <span className="text-xs text-muted">{fmtLatLon(g.site.lat, g.site.lon)}</span>
+                  {getSite(g.site.id) && Math.abs(getSite(g.site.id)!.lat - g.site.lat) > 1e-3 && <span className="ml-1 text-xs text-muted">(nearby test point)</span>}
                 </td>
                 <td className={g.body === "sun" ? "text-sun" : "text-earth"}>{g.body === "sun" ? "Sun" : "Earth"}</td>
                 <td>{g.n}</td>
