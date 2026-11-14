@@ -53,6 +53,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   const mount = useRef<HTMLDivElement>(null);
   const pins = useRef<Record<string, HTMLButtonElement | null>>({});
   const thumb = useRef<HTMLDivElement>(null);
+  const caret = useRef<HTMLDivElement>(null);
   const hoveredRef = useRef<string | null>(null);
   const api = useRef<{ setTime: (t: number) => void; flyTo: (id: string | null) => void } | null>(null);
   const [failed, setFailed] = useState(false);
@@ -455,8 +456,14 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
             const th = thumb.current.offsetHeight;
             // above the pin when there is room, otherwise below; kept inside the scene horizontally
             const x = Math.min(w - tw - 8, Math.max(8, px - tw / 2));
-            const y = py - 40 - th > 8 ? py - 40 - th : py + 14;
+            const above = py - 44 - th > 8;
+            const y = above ? py - 44 - th : py + 16;
             thumb.current.style.transform = `translate(${x}px, ${y}px)`;
+            if (caret.current) {
+              caret.current.style.left = `${Math.min(tw - 14, Math.max(4, px - x - 5))}px`;
+              caret.current.style.top = above ? `${th - 6}px` : "-6px";
+              caret.current.style.borderWidth = above ? "0 1px 1px 0" : "1px 0 0 1px";
+            }
             thumb.current.style.opacity = onScreen ? "1" : "0";
           }
         }
@@ -533,6 +540,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         <div className="eyebrow mb-2 hidden !text-[0.58rem] !tracking-[0.3em] text-muted lg:block lg:pl-4">Stations</div>
         {SOUTH_SITES.map((s) => {
           const on = s.id === (focus ?? selectedId);
+          const hot = s.id === hovered;
           return (
             <button
               key={s.id}
@@ -543,7 +551,11 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
               onBlur={() => hover(null)}
               aria-current={on}
               className={`shrink-0 whitespace-nowrap border px-3 py-1.5 text-left text-xs transition-colors lg:-ml-px lg:border-0 lg:border-l-2 lg:px-4 lg:py-2 lg:text-sm ${
-                on ? "border-foreground text-foreground lg:border-l-foreground lg:bg-white/[0.03]" : "border-line text-muted hover:text-foreground lg:border-l-transparent"
+                hot
+                  ? "border-sun text-sun lg:border-l-sun lg:bg-white/[0.04]"
+                  : on
+                    ? "border-foreground text-foreground lg:border-l-foreground lg:bg-white/[0.03]"
+                    : "border-line text-muted hover:text-foreground lg:border-l-transparent"
               }`}
             >
               {s.name}
@@ -575,6 +587,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           />
           {SOUTH_SITES.map((s) => {
             const sel = s.id === selectedId;
+            const hot = s.id === hovered;
             return (
               <button
                 key={s.id}
@@ -588,7 +601,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
                 onFocus={() => hover(s.id)}
                 onBlur={() => hover(null)}
                 className="group absolute left-0 top-0 opacity-0 transition-opacity"
-                style={{ willChange: "transform" }}
+                style={{ willChange: "transform", zIndex: hot ? 5 : sel ? 2 : 1 }}
                 aria-label={`Fly to ${s.name}`}
               >
                 <span className="absolute bottom-0 left-0 flex -translate-x-1/2 flex-col items-center">
@@ -600,8 +613,20 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
                   >
                     {s.name}
                   </span>
-                  <svg width={sel ? 22 : 16} height={sel ? 30 : 22} viewBox="0 0 22 30" aria-hidden className="drop-shadow-[0_0_6px_rgba(255,255,255,0.45)]">
-                    <path d="M11 29 C11 29 2 17 2 10.5 A9 9 0 0 1 20 10.5 C20 17 11 29 11 29 Z" fill={sel ? "#ffffff" : "#cfcfd4"} stroke="#000" strokeWidth="1.2" />
+                  <svg
+                    width={sel ? 22 : 16}
+                    height={sel ? 30 : 22}
+                    viewBox="0 0 22 30"
+                    aria-hidden
+                    className={`origin-bottom transition-transform duration-200 ${hot ? "scale-[1.55] drop-shadow-[0_0_10px_rgba(226,189,106,0.9)]" : "drop-shadow-[0_0_6px_rgba(255,255,255,0.45)] group-hover:scale-110"}`}
+                  >
+                    <path
+                      d="M11 29 C11 29 2 17 2 10.5 A9 9 0 0 1 20 10.5 C20 17 11 29 11 29 Z"
+                      fill={hot ? "#e2bd6a" : sel ? "#ffffff" : "#cfcfd4"}
+                      stroke="#000"
+                      strokeWidth="1.2"
+                      style={{ transition: "fill 0.2s" }}
+                    />
                     <circle cx="11" cy="10.5" r="3.4" fill="#000" />
                   </svg>
                 </span>
@@ -614,15 +639,16 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         {hoveredSite && (
           <div
             ref={thumb}
-            className="pointer-events-none absolute left-0 top-0 z-10 w-56 border border-line bg-black/90 opacity-0 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur transition-opacity"
+            className="pointer-events-none absolute left-0 top-0 z-10 w-56 border border-sun/60 bg-black/90 opacity-0 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur transition-opacity"
             role="tooltip"
           >
+            <div ref={caret} className="absolute h-3 w-3 rotate-45 border-sun/60 bg-black" style={{ borderStyle: "solid" }} aria-hidden />
             {hoveredSite.photo?.thumb && (
               // eslint-disable-next-line @next/next/no-img-element -- 10-25 KB local thumbnail
               <img src={hoveredSite.photo.thumb} alt="" className="block aspect-video w-full object-cover" />
             )}
             <div className="flex flex-col gap-1 p-2.5">
-              <div className="display text-[11px] tracking-[0.15em]">{hoveredSite.name}</div>
+              <div className="display text-[11px] tracking-[0.15em] text-sun">{hoveredSite.name}</div>
               <div className="text-[11px] text-muted">{fmtLatLon(hoveredSite.lat, hoveredSite.lon)}</div>
               {hoveredSite.description && <p className="text-[11px] leading-snug text-muted">{hoveredSite.description.split(". ")[0]}.</p>}
               {hoveredSite.photo && <div className="text-[9px] text-faint">Image: {hoveredSite.photo.credit}</div>}
