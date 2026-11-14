@@ -148,7 +148,16 @@ export function SiteView() {
             communication windows, computed in your browser.
           </p>
           <div className="flex flex-wrap gap-3">
-            <a href="#sky" className="btn btn-solid">
+            <button
+              className="btn btn-solid"
+              onClick={() => {
+                document.getElementById("terrain3d")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                window.dispatchEvent(new Event("lsn-tour"));
+              }}
+            >
+              ▶ 30-second tour
+            </button>
+            <a href="#sky" className="btn">
               Open sky view
             </a>
             <Link href="/compare" className="btn">
@@ -184,7 +193,7 @@ export function SiteView() {
             <StatBox value="1440" label="Terrain rays" sub="per site, 200 km" />
           </div>
         </div>
-        <div className="relative z-10 w-full">
+        <div id="terrain3d" className="relative z-10 w-full scroll-mt-24">
           <Terrain3D
             selectedId={customPoint ? null : siteId}
             timeMs={clampedT}

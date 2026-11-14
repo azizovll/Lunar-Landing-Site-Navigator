@@ -23,6 +23,9 @@ A web app that runs entirely in the browser:
   - A 30-day timeline with shaded *light*, *comms* and *both* windows.
 - **Compare:** up to four “site + date” scenarios, with the best value per metric highlighted. A **launch-delay slider (0–60 days)** shows instantly what a slip does, with ▲/▼ arrows against the on-time plan.
 - **Mission rescue** (`/rescue`): enter the planned site, date and launch delay; the tool scores every south-pole site on every day within ±3/7/14 days of the new date and shows the 3 best alternatives with a 0–100 score, a traffic light, a one-line reason and the gain over simply landing late at the planned site.
+- **Lunar day timelapse** (▶ Lunar day in the 3D view): the real Sun circles low over the pole and long shadows sweep across the craters; Earth wobbles and lander panels track the Sun.
+- **Stand on the surface**: puts the camera on the ground at a station, facing Earth's real direction, so you see whether the LOLA horizon hides Earth.
+- **30-second guided tour** (home page): overview → Shackleton rim → a lunar day in seconds → standing where Earth is best visible right now → Mission rescue, with captions. Screen-record it for the demo video.
 - **Battery of a reference lander** (300 W panels, 2 kWh battery, 120 W load; editable in Pro): state of charge over the mission window driven by the real illumination series, lowest charge and hours without power; also a Compare row.
 - **“Why the south pole is tricky”**: three illustrated steps on the home page (low Sun, terrain decides light or dark, Earth wobbles near the horizon).
 - **Report as PDF**: “Save report (PDF)” on the Site and Mission rescue pages prints a light, one-to-two page report with the scenario link.
@@ -175,5 +178,7 @@ The team wrote the specification and chose the method and the data. An AI coding
 **Рельеф.** Используем DEM LOLA 20/40/80/240 м на пиксель. Строим 1440 лучей (шаг 0,25°) на 200 км с учётом кривизны Луны, наблюдатель на высоте 2 м. Ориентацию растра проверили на пяти кратерах. Координаты регионального уровня привязаны к ближайшему гребню (до 2–6 км), это указано у каждой точки.
 
 **Ограничения.** Для своих точек горизонт приблизительный (480 м на пиксель, расхождение с точными масками до 7 п.п. по освещённости и связи). У точек севернее 75°S (Chandrayaan‑3, Apollo) горизонт плоский. Связь оценивается только по геометрии, без расписания DSN.
+
+**Видео.** На главной есть кнопка «▶ 30-second tour»: тур сам проходит облёт полюса, Shackleton, ускоренный лунный день, вид с поверхности на Землю и Mission rescue с субтитрами. Его можно просто записать с экрана.
 
 **Демо (30 с).** Shackleton rim → Compare → двигаем задержку на +14 дней → показываем, как падают часы «свет + связь» и какая точка становится лучше.

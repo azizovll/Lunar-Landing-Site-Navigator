@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { frameVectors, type Vec3 } from "@/lib/astro";
 import { SITES, fmtLatLon, resolvePreset } from "@/lib/sites";
-import { DAY, alignTime, sampleSeries, windowMetrics } from "@/lib/metrics";
+import { DAY, alignTime, sampleAt, sampleSeries, windowMetrics } from "@/lib/metrics";
 
 /**
  * 3D terrain of the lunar south pole (home page hero).
@@ -55,12 +55,24 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   const thumb = useRef<HTMLDivElement>(null);
   const caret = useRef<HTMLDivElement>(null);
   const hoveredRef = useRef<string | null>(null);
-  const api = useRef<{ setTime: (t: number) => void; flyTo: (id: string | null) => void } | null>(null);
+  const api = useRef<{ setTime: (t: number) => void; flyTo: (id: string | null) => void; standAt: (id: string) => void } | null>(null);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
   const [focus, setFocus] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
+  // timelapse / stand-on-surface / guided tour
+  const [playing, setPlaying] = useState(false);
+  const [speedH, setSpeedH] = useState(24); // simulated hours per real second
+  const [sceneT, setSceneT] = useState(timeMs);
+  const sceneTRef = useRef(timeMs);
+  /** page time at which the timelapse/tour took over the scene clock (null = follow the page) */
+  const [playBase, setPlayBase] = useState<number | null>(null);
+  const runningRef = useRef(false);
+  const [standing, setStanding] = useState(false);
+  const [caption, setCaption] = useState<string | null>(null);
+  const [touring, setTouring] = useState(false);
+  const tourId = useRef(0);
 
   useEffect(() => {
     let disposed = false;
@@ -357,10 +369,24 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           l.dish.lookAt(tmpV.x + earthDir[0] * 100, tmpV.y + earthDir[1] * 100, tmpV.z + earthDir[2] * 100);
         }
       };
+      let lastEarth: [number, number, number] = earthDir;
       aimLanders(setTime(timeMs).s, earthDir);
 
       // ---- fly-to
-      let flight: { t0: number; dur: number; fromT: import("three").Vector3; toT: import("three").Vector3; fromR: number; toR: number; fromPhi: number; toPhi: number } | null = null;
+      let flight: {
+        t0: number;
+        dur: number;
+        fromT: import("three").Vector3;
+        toT: import("three").Vector3;
+        fromR: number;
+        toR: number;
+        fromPhi: number;
+        toPhi: number;
+        fromTheta: number;
+        toTheta: number;
+      } | null = null;
+      const landerGroup = landers.map((l) => l.g);
+      const setLandersVisible = (v: boolean) => landerGroup.forEach((g) => (g.visible = v));
       const off3 = new THREE.Vector3();
       const cur = new THREE.Spherical();
       const flyTo = (id: string | null) => {
@@ -376,9 +402,47 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           toR: a ? ZOOM.radius : OVERVIEW.radius,
           fromPhi: cur.phi,
           toPhi: a ? ZOOM.phi : OVERVIEW.phi,
+          fromTheta: cur.theta,
+          toTheta: cur.theta,
         };
+        setLandersVisible(true);
+        controls.enableRotate = true;
         phi0 = flight.toPhi;
         setTiltRange();
+        controls.autoRotate = false;
+        controls.enabled = false;
+      };
+
+      // ---- stand on the surface: eye ~0.5 km above the (2x exaggerated) ground, looking toward Earth
+      const standAt = (id: string) => {
+        const a = anchors.find((x) => x.id === id);
+        if (!a) return;
+        const e = new THREE.Vector3(...lastEarth);
+        const fwd = e.clone().addScaledVector(a.up, -e.dot(a.up)).normalize(); // Earth's azimuth on the local horizon
+        const eye = a.ground.clone().addScaledVector(a.up, 0.5);
+        const target = eye.clone().addScaledVector(fwd, 6).addScaledVector(a.up, 0.25);
+        const offset = eye.clone().sub(target);
+        const goal = new THREE.Spherical().setFromVector3(offset);
+        off3.copy(camera.position).sub(controls.target);
+        cur.setFromVector3(off3);
+        let dTheta = goal.theta - cur.theta;
+        dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta)); // shortest turn
+        flight = {
+          t0: performance.now(),
+          dur: 2200,
+          fromT: controls.target.clone(),
+          toT: target,
+          fromR: cur.radius,
+          toR: goal.radius,
+          fromPhi: cur.phi,
+          toPhi: goal.phi,
+          fromTheta: cur.theta,
+          toTheta: cur.theta + dTheta,
+        };
+        phi0 = goal.phi;
+        setTiltRange();
+        setLandersVisible(false); // the enlarged models would block the view at ground level
+        controls.enableRotate = false; // fixed eye: orbiting a point 6 km away could dip below the hills
         controls.autoRotate = false;
         controls.enabled = false;
       };
@@ -415,6 +479,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           cur.setFromVector3(off3);
           cur.radius = flight.fromR + (flight.toR - flight.fromR) * e;
           cur.phi = flight.fromPhi + (flight.toPhi - flight.fromPhi) * e;
+          cur.theta = flight.fromTheta + (flight.toTheta - flight.fromTheta) * e;
           camera.position.copy(controls.target).add(off3.setFromSpherical(cur));
           camera.lookAt(controls.target);
           if (u >= 1) {
@@ -437,6 +502,11 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         const dist = camera.position.distanceTo(controls.target);
         (scene.fog as import("three").Fog).near = dist * 0.9;
         (scene.fog as import("three").Fog).far = dist * 2.6 + 150;
+        const near = Math.min(1, Math.max(0.01, dist * 0.004));
+        if (Math.abs(near - camera.near) / camera.near > 0.2) {
+          camera.near = near;
+          camera.updateProjectionMatrix();
+        }
         renderer.render(scene, camera);
         // pins
         const w = el.clientWidth;
@@ -473,9 +543,11 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       api.current = {
         setTime: (t) => {
           const { s: sd, e: ed } = setTime(t);
+          lastEarth = ed;
           aimLanders(sd, ed);
         },
         flyTo,
+        standAt,
       };
       setReady(true);
 
@@ -511,25 +583,124 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   }, []);
 
   useEffect(() => {
+    runningRef.current = playing || touring;
+  }, [playing, touring]);
+  useEffect(() => {
+    if (runningRef.current || playBase === timeMs) return; // the timelapse owns the clock
+    sceneTRef.current = timeMs;
     api.current?.setTime(timeMs);
-  }, [timeMs, ready]);
+  }, [timeMs, ready, playBase]);
 
-  if (failed) return <>{fallback}</>;
+  useEffect(() => {
+    if (!playing) return;
+    let raf = 0;
+    let last = performance.now();
+    let lastUi = 0;
+    const step = (now: number) => {
+      sceneTRef.current += ((now - last) / 1000) * speedH * 3_600_000;
+      last = now;
+      api.current?.setTime(sceneTRef.current);
+      if (now - lastUi > 120) {
+        setSceneT(sceneTRef.current);
+        lastUi = now;
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, speedH]);
 
   const focused = SOUTH_SITES.find((s) => s.id === focus);
-  const goTo = (id: string) => {
-    onSelect(id);
-    setFocus(id);
-    api.current?.flyTo(id);
-  };
-  // Clicking a pin flies to the station; the photo appears as a hover thumbnail (tap on touch screens).
-  const pick = (id: string) => goTo(id);
   const hover = (id: string | null) => {
     hoveredRef.current = id;
     setHovered(id);
   };
+  const startClock = () => {
+    sceneTRef.current = playBase === timeMs ? sceneTRef.current : timeMs;
+    setSceneT(sceneTRef.current);
+    setPlayBase(timeMs);
+  };
+  const shownT = playBase === timeMs ? sceneT : timeMs;
+  const goTo = (id: string) => {
+    onSelect(id);
+    setFocus(id);
+    setStanding(false);
+    api.current?.flyTo(id);
+  };
+  const overview = () => {
+    setFocus(null);
+    setStanding(false);
+    api.current?.flyTo(null);
+  };
+  const stand = (id: string) => {
+    onSelect(id);
+    setFocus(id);
+    setStanding(true);
+    hover(null);
+    api.current?.standAt(id);
+  };
+
+  // ---- 30-second guided tour (also handy for recording the demo video)
+  const stopTour = () => {
+    tourId.current++;
+    setTouring(false);
+    setCaption(null);
+    setPlaying(false);
+  };
+  const runTour = async () => {
+    const id = ++tourId.current;
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const alive = () => tourId.current === id;
+    setTouring(true);
+    setPhoto(null);
+    setPlaying(false);
+    overview();
+    setCaption("The lunar south pole, built from NASA LOLA laser-altimeter data and lit by the real Sun.");
+    await wait(4000);
+    if (!alive()) return;
+    goTo("shackleton-rim");
+    hover("shackleton-rim");
+    setCaption("Shackleton rim: a ridge that sees the Sun most of the year, next to a crater floor that never does.");
+    await wait(4500);
+    if (!alive()) return;
+    hover(null);
+    overview();
+    setSpeedH(48);
+    startClock();
+    setPlaying(true);
+    setCaption("A lunar day in seconds: the Sun circles just above the horizon and shadows sweep across the craters.");
+    await wait(7000);
+    if (!alive()) return;
+    setPlaying(false);
+    setSpeedH(24);
+    // stand where Earth is highest above the real terrain horizon right now
+    const best = SOUTH_SITES.map((s) => ({ s, c: sampleAt(resolvePreset(s), sceneTRef.current).earthClear })).sort((a, b) => b.c - a.c)[0];
+    stand(best.s.id);
+    setCaption(
+      best.c > 0
+        ? `Standing on ${best.s.name}: Earth hangs just above the hills, so a radio link home works.`
+        : `Standing on ${best.s.name}: even here Earth is behind the hills right now, so the lander would need a relay.`,
+    );
+    await wait(6000);
+    if (!alive()) return;
+    setCaption("Launch slipped? Mission rescue finds the best new site and date in one click.");
+    await wait(4500);
+    if (!alive()) return;
+    overview();
+    setTouring(false);
+    setCaption(null);
+  };
+  // the hero "Watch the tour" button starts it through a window event
+  useEffect(() => {
+    const onTour = () => runTour();
+    window.addEventListener("lsn-tour", onTour);
+    return () => window.removeEventListener("lsn-tour", onTour);
+  });
+  // Clicking a pin flies to the station; the photo appears as a hover thumbnail (tap on touch screens).
+  const pick = (id: string) => goTo(id);
   const hoveredSite = SOUTH_SITES.find((s) => s.id === hovered);
   // Soft edges on all four sides (intersection of two linear fades).
+  if (failed) return <>{fallback}</>;
   const fade =
     "linear-gradient(to right, transparent 0%, #000 13%, #000 87%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 14%, #000 80%, transparent 100%)";
 
@@ -565,10 +736,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         })}
         {focus && (
           <button
-            onClick={() => {
-              setFocus(null);
-              api.current?.flyTo(null);
-            }}
+            onClick={overview}
             className="shrink-0 border border-line px-3 py-1.5 text-xs text-muted hover:text-foreground lg:mt-3 lg:ml-4 lg:w-fit"
           >
             ← Overview
@@ -663,23 +831,57 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
             </span>
           )}
         </div>
-        {focused && !photo && (
+        {focused && !photo && !touring && (
           <div className="absolute bottom-3 right-4 flex flex-wrap justify-end gap-2 sm:bottom-[6%] sm:right-[6%]">
-            <button className="btn btn-solid !py-1.5 text-xs" onClick={() => setPhoto(focused.id)}>
+            {standing ? (
+              <button className="btn btn-solid !py-1.5 text-xs" onClick={() => goTo(focused.id)}>
+                ↑ Fly up
+              </button>
+            ) : (
+              <button className="btn btn-solid !py-1.5 text-xs" onClick={() => stand(focused.id)} title="Put the camera on the ground, facing Earth">
+                Stand on the surface
+              </button>
+            )}
+            <button className="btn !py-1.5 text-xs" onClick={() => setPhoto(focused.id)}>
               Photo &amp; details
             </button>
             <a href="#sky" className="btn !py-1.5 text-xs">
               Sky view ↓
             </a>
-            <button
-              className="btn !py-1.5 text-xs"
-              onClick={() => {
-                setFocus(null);
-                api.current?.flyTo(null);
-              }}
-            >
+            <button className="btn !py-1.5 text-xs" onClick={overview}>
               ← Overview
             </button>
+          </div>
+        )}
+        <div className="absolute bottom-3 left-4 flex items-center gap-2 sm:bottom-[6%] sm:left-[6%]">
+          <button
+            className={`btn !py-1.5 text-xs ${playing ? "btn-solid" : ""}`}
+            onClick={() => {
+              if (touring) return stopTour();
+              if (!playing) startClock();
+              setPlaying((p) => !p);
+            }}
+            aria-label={playing ? "Pause the lunar day timelapse" : "Play a lunar day timelapse"}
+          >
+            {playing ? "❚❚ Pause" : "▶ Lunar day"}
+          </button>
+          <span className="hidden text-[11px] text-muted sm:inline">
+            {new Date(shownT).toISOString().slice(0, 16).replace("T", " ")} UTC{playing ? ` · ×${speedH} h/s` : ""}
+          </span>
+        </div>
+        {!touring && !focused && (
+          <button className="btn absolute right-4 top-3 !py-1.5 text-xs sm:right-[6%] sm:top-[6%]" onClick={runTour}>
+            ▶ 30-second tour
+          </button>
+        )}
+        {touring && (
+          <button className="btn absolute right-4 top-3 !py-1.5 text-xs sm:right-[6%] sm:top-[6%]" onClick={stopTour}>
+            Skip tour ✕
+          </button>
+        )}
+        {caption && (
+          <div className="pointer-events-none absolute inset-x-4 bottom-14 flex justify-center sm:bottom-[16%]" aria-live="polite">
+            <p className="max-w-2xl border border-line bg-black/80 px-4 py-2.5 text-center text-sm leading-relaxed text-foreground backdrop-blur sm:text-base">{caption}</p>
           </div>
         )}
         {photo && (
@@ -696,7 +898,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       </div>
       <figcaption className="text-center text-xs text-muted">
         NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time. Lander models are ~300× real size: panels face the real Sun, dishes point at the real
-        Earth (shown 2.5× larger). Drag to rotate; hover a pin or a name in the list for a photo, click to fly in.
+        Earth (shown 2.5× larger). Drag to rotate; hover a pin or a name for a photo, click to fly in; “Stand on the surface” puts you on the ground facing Earth; ▶ Lunar day plays the Sun and shadows.
       </figcaption>
     </figure>
   );

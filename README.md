@@ -13,6 +13,7 @@ It shows the Sun and Earth over the **real terrain horizon** of lunar south-pole
 | **Site** (home) | Clickable south-polar map with site list; 360° panoramic sky with terrain profile, Sun and Earth disks and their tracks; 1:1 close-ups; time scrubber with playback; Power / Comms / Combined cards with countdowns; 30-day light/comms timeline |
 | **Mission rescue** | Launch slipped by N days? Scores every south-pole site on every day around the new date (0–100 with a traffic light and a one-line reason) and shows the 3 best alternatives against the delayed plan |
 | **Battery** (on Site) | Reference lander (300 W panels, 2 kWh, 120 W load) charged by the real sunlight series: lowest charge and hours without power |
+| **3D extras** | ▶ Lunar day timelapse (real Sun and shadows), “Stand on the surface” facing Earth, and a 30-second guided tour with captions |
 | **Compare** | Up to 4 “site + date” scenarios, best value per row highlighted, launch-delay slider (0–60 days) with better/worse arrows |
 | **Calendar** | 12-month heatmap of daily light and comms; best 14-day mission starts; click a day to open it |
 | **Validation** | Our Sun/Earth positions vs saved JPL Horizons answers, a live Horizons re-check, and illumination compared with a published LOLA study |
