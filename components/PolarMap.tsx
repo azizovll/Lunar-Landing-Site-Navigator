@@ -14,7 +14,7 @@ interface Props {
   custom: { lat: number; lon: number } | null;
   onSelect: (id: string) => void;
   onCustom: (lat: number, lon: number) => void;
-  /** "planet": large hero globe with glow; "card": compact framed map */
+  /** "planet": large round map with glow (fallback without WebGL); "card": compact framed map */
   variant?: "planet" | "card";
 }
 

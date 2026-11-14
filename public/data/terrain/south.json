@@ -1,0 +1,16 @@
+{
+ "n": 513,
+ "halfM": 330000.0,
+ "scaleM": 1289.0625,
+ "minH": -7185.603027343755,
+ "maxH": 6993.424438476532,
+ "missing": 264,
+ "dems": [
+  "LDEM_875S_20M",
+  "LDEM_85S_40M",
+  "LDEM_80S_80M",
+  "LDEM_75S_240M"
+ ],
+ "units": "int16 LE metres above 1737.4 km sphere, row-major (line, sample)",
+ "earth": "NASA Blue Marble (land, ocean, ice), public domain, via Wikimedia Commons"
+}

@@ -12,7 +12,7 @@ import { Timeline } from "./Timeline";
 import { MetricCards, VerdictBadge } from "./MetricCards";
 import { commsVerdict, overallVerdict, powerVerdict } from "@/lib/metrics";
 import { PolarMap } from "./PolarMap";
-import { Moon3D } from "./Moon3D";
+import { Terrain3D } from "./Terrain3D";
 import { Dot, SiteList } from "./SiteList";
 import { ExpertOnly, Tip, useMode } from "./ModeProvider";
 import { CopyLinkButton } from "./CopyLinkButton";
@@ -125,7 +125,8 @@ export function SiteView() {
   return (
     <div className="flex flex-col gap-16 sm:gap-24">
       {/* ---------- hero ---------- */}
-      <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_1fr]">
+      <section className="flex flex-col gap-8">
+        <div className="grid items-end gap-8 lg:grid-cols-[1.25fr_1fr]">
         <div className="flex flex-col gap-7">
           <Eyebrow>Lunar south pole</Eyebrow>
           <h1 className="display text-4xl sm:text-6xl">Find light and signal on the Moon</h1>
@@ -160,14 +161,15 @@ export function SiteView() {
               </>
             )}
           </p>
-          <div className="grid grid-cols-3 gap-3 pt-2">
+        </div>
+          <div className="grid grid-cols-3 gap-3">
             <StatBox value="0.004°" label="Max error" sub="vs JPL Horizons" />
             <StatBox value={SITES.length} label="Sites" sub="with sources" />
             <StatBox value="1440" label="Terrain rays" sub="per site, 200 km" />
           </div>
         </div>
-        <div className="mx-auto w-full max-w-[560px]">
-          <Moon3D
+        <div className="w-full">
+          <Terrain3D
             selectedId={customPoint ? null : siteId}
             timeMs={clampedT}
             onSelect={selectSite}

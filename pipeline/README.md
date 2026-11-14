@@ -43,6 +43,10 @@ works for all of them (80 m DEM, ring mean minus centre height):
 
 `verify_orientation()` re-checks Shackleton on every run and aborts if it fails.
 
+## 3D terrain (home page)
+
+`python -I pipeline/build_terrain3d.py <earth image>` writes `public/data/terrain/south.bin` (513×513 int16 heights, same projection, ±330 km) and a 512×256 Earth texture.
+
 ## Horizon mask
 
 1440 azimuths (0.25°, finer than the 0.53° solar disk), rays to 200 km, step 10 m near the observer growing to 200 m, observer 2 m

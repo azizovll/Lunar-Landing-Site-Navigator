@@ -25,7 +25,7 @@ A web app that runs entirely in the browser:
 - **Calendar:** a 12-month heatmap of daily light and comms, plus the best 14-day mission starts.
 - **Validation:** a live comparison with NASA JPL Horizons, and a terrain check against a published illumination study.
 - **Simple / Pro mode:** Simple (default) turns the numbers into plain language for the public: a one-sentence verdict, tiles rated in words, “Sun right now / Earth right now” sentences and a day-by-day strip. Pro shows every number, azimuths, CSV export and shareable URLs for planners.
-- **3D Moon on the home page:** an interactive globe (NASA LROC mosaic, LOLA polar relief) lit by the real Sun direction at the selected time, with clickable landing-site markers.
+- **3D terrain on the home page:** an interactive **3D view of the south-polar terrain** (three.js): NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time with long shadows, Earth in the sky at its real direction (phase from the same Sun), and pins for every site; clicking a pin flies the camera there. Edges fade into the background; tilt springs back after a drag.
 - **Custom points:** click the polar map or type coordinates, on the Site, Compare and Calendar screens. An approximate terrain horizon is computed in a Web Worker in about a second.
 - **Separate verdicts:** each site shows a Power verdict and a Comms verdict next to the overall one, because near the pole a perfectly lit site can still have poor direct-to-Earth comms.
 
@@ -39,7 +39,7 @@ Demo story (30 s): *“We plan Shackleton rim and Connecting Ridge for 1 Decembe
 | **Tailwind CSS 4** | Fast, consistent dark theme and responsive layout down to phone width. |
 | **astronomy-engine** (MIT) | Small, well-tested ephemeris library that runs in the browser: Sun, Moon and the IAU lunar rotation model. It gives sub-arcminute accuracy with no server. |
 | **SVG** | Panorama, timeline, map and heatmap. Crisp at any size, easy to make accessible, and accuracy matters more here than 3D effects. |
-| **three.js** | The 3D Moon on the home page. Loaded lazily after first paint, so it does not slow the first screen; falls back to the 2D polar map without WebGL. |
+| **three.js** | The 3D south-pole terrain on the home page (LOLA heightfield, real-Sun shadows). Loaded lazily after first paint, so it does not slow the first screen; falls back to the 2D polar map without WebGL. |
 | **Web Worker** | Computes horizons for custom points without freezing the UI. |
 | **Python + numpy** | Offline terrain pipeline: reads 115 MB LOLA rasters with memory mapping and ray-marches horizons. |
 | **Vitest** | Automated tests: Horizons fixtures, metrics and terrain acceptance criteria. |
@@ -52,7 +52,7 @@ Demo story (30 s): *“We plan Shackleton rim and Connecting Ridge for 1 Decembe
 - **JPL Horizons API**: reference Sun and Earth az/el from lunar surface points (saved fixtures and live re-check).
 - **NASA NTRS: Gläser et al.**, *Illumination conditions at the lunar poles* (20170007365): site coordinates and published illumination for validation.
 - **NASA SVS Artemis III candidate regions**, **LROC** site pages, and the **IAU/USGS Gazetteer**: site locations.
-- **NASA SVS CGI Moon Kit** (LROC WAC colour mosaic with polar fill): albedo texture of the 3D Moon. Its south-polar cap is lit with an object-space normal map computed from LOLA DEMs (relief ×3 for visibility).
+- **NASA Blue Marble** (land, ocean, ice; public domain, via Wikimedia Commons): texture of the small Earth in the 3D view. The 3D terrain itself is a 513×513 LOLA heightfield (~1.3 km grid, ±330 km around the pole).
 
 ## 5. The math
 
@@ -159,7 +159,7 @@ The team wrote the specification and chose the method and the data. An AI coding
 
 ## Краткое резюме для команды (RU)
 
-**Что сделали.** Веб‑приложение Lunar Site Navigator: панорама неба с реальным горизонтом по рельефу LOLA, Солнце и Земля в истинном угловом размере, таймлайн на 30 дней (свет, связь, оба окна), карточки Power, Comms и Combined с обратным отсчётом. Также есть сравнение до 4 сценариев с ползунком задержки запуска 0–60 дней, годовой календарь, страница проверки режимы Simple (простой язык для всех, включён по умолчанию) и Pro (все цифры для специалистов), а на главной вращающаяся 3D‑луна, освещённая настоящим Солнцем на выбранный момент. Всё считается в браузере, базы данных нет.
+**Что сделали.** Веб‑приложение Lunar Site Navigator: панорама неба с реальным горизонтом по рельефу LOLA, Солнце и Земля в истинном угловом размере, таймлайн на 30 дней (свет, связь, оба окна), карточки Power, Comms и Combined с обратным отсчётом. Также есть сравнение до 4 сценариев с ползунком задержки запуска 0–60 дней, годовой календарь, страница проверки режимы Simple (простой язык для всех, включён по умолчанию) и Pro (все цифры для специалистов), а на главной 3D‑рельеф южного полюса по данным LOLA с настоящими тенями от Солнца на выбранный момент, Землёй в небе и метками станций (клик приближает камеру). Всё считается в браузере, базы данных нет.
 
 **Точность.**
 - Сверка с JPL Horizons: 130 сравнений, максимум 0,004°, RMS 5,6″ (цель была 0,1°).

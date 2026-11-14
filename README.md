@@ -20,7 +20,7 @@ It shows the Sun and Earth over the **real terrain horizon** of lunar south-pole
 - **Simple** (default) is for everyone: a one-sentence verdict, four tiles rated in words (“all 14 days”, “4 days 16 hours”), what the Sun and Earth are doing right now in plain language, a day-by-day strip and a short “New to the Moon?” explainer. Compare shows a quick answer (“most sunlight: …”) and plain wording.
 - **Pro** is for planners: every number, azimuths and elevations, power index, comms margin, 30-day clearance chart, CSV export and share links.
 
-The home page opens with an **interactive 3D Moon** (three.js): NASA LROC mosaic, south-polar relief from LOLA, lit by the real Sun direction at the selected time, with clickable landing-site markers.
+The home page opens with an interactive **3D view of the south-polar terrain** (three.js): NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time with long shadows, Earth in the sky at its real direction (phase from the same Sun), and pins for every site; clicking a pin flies the camera there.
 
 ## Accuracy
 
