@@ -49,6 +49,8 @@ interface Props {
 }
 
 const SOUTH_SITES = SITES.filter((s) => s.lat <= -80);
+/** one decimal, never "-0.0°" */
+const deg = (v: number) => `${(Math.abs(v) < 0.05 ? 0 : v).toFixed(1)}°`;
 /** Hardware already on the surface inside the 3D area (Odysseus is shown as a station already). */
 const HARDWARE = NEIGHBORS.filter((n) => n.kind !== "planned" && (n.lat ?? 0) <= -80 && n.id !== "im1-odysseus-hw");
 
@@ -70,6 +72,8 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   } | null>(null);
   const scaleBar = useRef<HTMLDivElement>(null);
   const scaleLabel = useRef<HTMLSpanElement>(null);
+  const sunTip = useRef<HTMLSpanElement>(null);
+  const earthTip = useRef<HTMLSpanElement>(null);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
   const [focus, setFocus] = useState<string | null>(null);
@@ -501,7 +505,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         const hit = new THREE.Mesh(gHit, mBlock);
         line.visible = hit.visible = false;
         scene.add(line, hit);
-        return { line, hit };
+        return { line, hit, tip: new THREE.Vector3(), start: new THREE.Vector3(), tipOn: false };
       };
       const sunRay = mkRay();
       const earthRay = mkRay();
@@ -526,12 +530,19 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       const placeRay = (ray: ReturnType<typeof mkRay>, d: [number, number, number], ok: boolean, okMat: import("three").MeshBasicMaterial) => {
         if (!rayState) {
           ray.line.visible = ray.hit.visible = false;
+          ray.tipOn = false;
           return;
         }
         rayStart.copy(rayState.a.ground).addScaledVector(rayState.a.up, 0.6);
         rayDir.set(d[0], d[1], d[2]).normalize();
         const hitK = ok ? null : terrainHit(rayStart, rayDir, RAY_KM);
-        const len = hitK ?? RAY_KM;
+        // blocked but no hill in the 3D mesh (below the horizon, or a ridge finer than the 1.3 km grid):
+        // keep it short so a long red line does not seem to reach the sky
+        const len = hitK ?? (ok ? RAY_KM : 9);
+        // label near the station (the gold/blue rays run off-screen), or where the ray is stopped
+        ray.tip.copy(rayStart).addScaledVector(rayDir, ok ? 11 : len);
+        ray.start.copy(rayStart);
+        ray.tipOn = true;
         ray.line.material = ok ? okMat : mBlock;
         ray.line.position.copy(rayStart);
         ray.line.quaternion.setFromUnitVectors(yAxis, rayDir);
@@ -697,6 +708,35 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           camera.updateProjectionMatrix();
         }
         renderer.render(scene, camera);
+        // labels at the ray tips
+        for (const [ray, tipEl] of [
+          [sunRay, sunTip.current],
+          [earthRay, earthTip.current],
+        ] as const) {
+          if (!tipEl) continue;
+          if (!ray.tipOn) {
+            tipEl.style.opacity = "0";
+            continue;
+          }
+          const W = el.clientWidth;
+          const H = el.clientHeight;
+          tmp.copy(ray.start).project(camera);
+          const sx = ((tmp.x + 1) / 2) * W;
+          const sy = ((1 - tmp.y) / 2) * H;
+          tmp.copy(ray.tip).project(camera);
+          let tx = ((tmp.x + 1) / 2) * W;
+          let ty = ((1 - tmp.y) / 2) * H;
+          // push the label along the ray on screen, clear of the station's own pin and name
+          const dx = tx - sx;
+          const dy = ty - sy;
+          const len = Math.hypot(dx, dy) || 1;
+          const want = Math.max(len, 70) + 18;
+          tx = sx + (dx / len) * want;
+          ty = sy + (dy / len) * want;
+          const on = tmp.z < 1 && tx > 30 && tx < W - 30 && ty > 20 && ty < H - 20;
+          tipEl.style.opacity = on ? "1" : "0";
+          tipEl.style.transform = `translate(${tx}px, ${ty}px)`;
+        }
         // scale bar for the distance of the point we look at
         if (scaleBar.current && scaleLabel.current) {
           const pxPerKm = el.clientHeight / (2 * dist * Math.tan((camera.fov * D2R) / 2));
@@ -1025,6 +1065,25 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
               </span>
             </span>
           ))}
+          {[
+            { ref: sunTip, ok: sunOk, okColor: "var(--sun)", label: sunOk ? "☀ Sun" : live && live.sunEl > 0 ? "☀ blocked by hills" : "☀ below horizon" },
+            { ref: earthTip, ok: earthOk, okColor: "var(--earth)", label: earthOk ? "⊕ Earth" : live && live.earthEl > 0 ? "⊕ blocked by hills" : "⊕ below horizon" },
+          ].map((t) => (
+            <span
+              key={t.label.slice(0, 1)}
+              ref={t.ref}
+              className="pointer-events-none absolute left-0 top-0 opacity-0 transition-opacity"
+              style={{ willChange: "transform" }}
+              aria-hidden
+            >
+              <span
+                className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap border bg-black/80 px-1.5 py-0.5 text-[11px]"
+                style={{ color: t.ok ? t.okColor : "var(--poor)", borderColor: t.ok ? t.okColor : "var(--poor)" }}
+              >
+                {t.label}
+              </span>
+            </span>
+          ))}
           {SOUTH_SITES.map((s) => {
             const sel = s.id === selectedId;
             const hot = s.id === hovered;
@@ -1104,10 +1163,16 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           {live && !standing && (
             <div className="mt-1 flex flex-col gap-0.5 border-l-2 border-line bg-black/55 px-2.5 py-1.5 text-xs backdrop-blur-sm" aria-live="polite">
               <span style={{ color: sunOk ? "var(--sun)" : "var(--poor)" }}>
-                ☀ {sunOk ? "Sun above the hills: panels charging" : live.sunEl > 0 ? `Sun hidden by hills (${live.sunHz.toFixed(1)}° high)` : "Sun below the horizon"}
+                ☀ {sunOk ? "Sun above the hills: panels charging" : live.sunEl > 0 ? "Sun hidden by hills" : "Sun below the horizon"}
+                <span className="num ml-1.5 text-muted">
+                  {deg(live.sunEl)} · hills {deg(live.sunHz)}
+                </span>
               </span>
               <span style={{ color: earthOk ? "var(--earth)" : "var(--poor)" }}>
-                ⊕ {earthOk ? "Earth in view: radio link works" : live.earthEl > 0 ? `Earth hidden by hills (${live.earthHz.toFixed(1)}° high)` : "Earth below the horizon"}
+                ⊕ {earthOk ? "Earth in view: radio link works" : live.earthEl > 0 ? "Earth hidden by hills" : "Earth below the horizon"}
+                <span className="num ml-1.5 text-muted">
+                  {deg(live.earthEl)} · hills {deg(live.earthHz)}
+                </span>
               </span>
               <span className="text-muted">
                 Score <b className="num" style={{ color: LIGHT_COLOR[light(scores[focused!.id] ?? 0)] }}>{scores[focused!.id]}</b> for the next 14 days
