@@ -13,8 +13,8 @@
   --border: #242428;
   --border-strong: #3a3a40;
   --foreground: #ececee;
-  --muted: #8b8b92;
-  --faint: #55555c;
+  --muted: #a8a8b0; /* 8.4:1 on panels */
+  --faint: #7c7c85; /* 4.8:1, WCAG AA */
   --sun: #e2bd6a;
   --sun-soft: #e2bd6a33;
   --earth: #7eaee0;
@@ -62,8 +62,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-outfit), system-ui, sans-serif;
-  font-weight: 300;
-  letter-spacing: 0.01em;
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: 0.005em;
 }
 
 /* Soft top glow, like a planet limb behind the page. Negative z-index keeps it under all content
@@ -100,15 +101,17 @@ th {
 .eyebrow {
   font-family: var(--font-orbitron), sans-serif;
   text-transform: uppercase;
-  letter-spacing: 0.55em;
-  font-size: 0.72rem;
+  letter-spacing: 0.4em;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--foreground);
 }
+/* Numbers use the text face (unslashed zero, tabular figures): the display face's slashed zero
+   made "0.004" read like "Ø.ØØ4". Orbitron stays for headings and labels. */
 .num {
-  font-family: var(--font-orbitron), sans-serif;
-  font-weight: 400;
-  letter-spacing: 0.02em;
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 .tabular {

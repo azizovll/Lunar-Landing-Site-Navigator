@@ -91,7 +91,7 @@ export function SimpleSummary({ siteName, now, events, metrics, windowDays, marg
           <span className="text-xs text-muted">Brighter = more of that day. Click a day to jump there.</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="border-separate border-spacing-[3px] text-[11px]">
+          <table className="border-separate border-spacing-[3px] text-xs">
             <tbody>
               {(["sun", "earth"] as const).map((row) => (
                 <tr key={row}>
@@ -160,7 +160,7 @@ function Tile({ icon, color, title, value, rating, note }: { icon: string; color
           </span>
           {title}
         </span>
-        <span className="border px-1.5 text-[10px] uppercase tracking-[0.12em]" style={{ color: RATING_COLOR[rating], borderColor: RATING_COLOR[rating] }}>
+        <span className="border px-1.5 text-[11px] uppercase tracking-[0.12em]" style={{ color: RATING_COLOR[rating], borderColor: RATING_COLOR[rating] }}>
           {RATING_WORD[rating]}
         </span>
       </div>

@@ -747,7 +747,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
               }`}
             >
               {s.name}
-              <span className="ml-2 hidden text-[11px] text-faint lg:inline">{Math.abs(s.lat).toFixed(1)}°S</span>
+              <span className="ml-2 hidden text-xs text-faint lg:inline">{Math.abs(s.lat).toFixed(1)}°S</span>
             </button>
           );
         })}
@@ -785,7 +785,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
                 style={{ width: 9, height: 9, background: n.kind === "impact" ? "var(--poor)" : "#a8a8ae" }}
                 aria-hidden
               />
-              <span className="pointer-events-none absolute left-2 top-[-8px] hidden whitespace-nowrap border border-line bg-black/85 px-1.5 py-0.5 text-[10px] text-muted group-hover:block">
+              <span className="pointer-events-none absolute left-2 top-[-8px] hidden whitespace-nowrap border border-line bg-black/85 px-1.5 py-0.5 text-[11px] text-muted group-hover:block">
                 {n.name} · {n.date.slice(0, 4)}
               </span>
             </span>
@@ -811,7 +811,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
               >
                 <span className="absolute bottom-0 left-0 flex -translate-x-1/2 flex-col items-center">
                   <span
-                    className={`whitespace-nowrap border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.15em] backdrop-blur ${
+                    className={`whitespace-nowrap border px-1.5 py-0.5 text-[11px] uppercase tracking-[0.15em] backdrop-blur ${
                       sel && hovered !== s.id ? "border-foreground bg-black/80 text-foreground" : "hidden"
                     }`}
                     style={{ fontFamily: "var(--font-orbitron)" }}
@@ -853,10 +853,10 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
               <img src={hoveredSite.photo.thumb} alt="" className="block aspect-video w-full object-cover" />
             )}
             <div className="flex flex-col gap-1 p-2.5">
-              <div className="display text-[11px] tracking-[0.15em] text-sun">{hoveredSite.name}</div>
-              <div className="text-[11px] text-muted">{fmtLatLon(hoveredSite.lat, hoveredSite.lon)}</div>
-              {hoveredSite.description && <p className="text-[11px] leading-snug text-muted">{hoveredSite.description.split(". ")[0]}.</p>}
-              {hoveredSite.photo && <div className="text-[9px] text-faint">Image: {hoveredSite.photo.credit}</div>}
+              <div className="display text-xs tracking-[0.15em] text-sun">{hoveredSite.name}</div>
+              <div className="text-xs text-muted">{fmtLatLon(hoveredSite.lat, hoveredSite.lon)}</div>
+              {hoveredSite.description && <p className="text-xs leading-snug text-muted">{hoveredSite.description.split(". ")[0]}.</p>}
+              {hoveredSite.photo && <div className="text-[11px] text-faint">Image: {hoveredSite.photo.credit}</div>}
             </div>
           </div>
         )}
@@ -902,7 +902,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           >
             {playing ? "❚❚ Pause" : "▶ Lunar day"}
           </button>
-          <span className="hidden text-[11px] text-muted sm:inline">
+          <span className="hidden text-xs text-muted sm:inline">
             {new Date(shownT).toISOString().slice(0, 16).replace("T", " ")} UTC{playing ? ` · ×${speedH} h/s` : ""}
           </span>
         </div>
@@ -981,7 +981,7 @@ function StationCard({ id, onPick, onClose }: { id: string; onPick: (id: string)
           ) : (
             <div className="grid h-full place-items-center text-sm text-muted">No photo available</div>
           )}
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-3 text-[11px] leading-snug text-muted">
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-3 text-xs leading-snug text-muted">
             {site.photo?.caption}{" "}
             {site.photo && (
               <a href={site.photo.link} target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-foreground">
@@ -1006,11 +1006,11 @@ function StationCard({ id, onPick, onClose }: { id: string; onPick: (id: string)
           {site.description && <p className="text-sm leading-relaxed text-muted">{site.description}</p>}
           <div className="grid grid-cols-2 gap-2">
             <div className="frame p-3">
-              <div className="text-[11px] text-muted">☀ Sunlight, next 14 days</div>
+              <div className="text-xs text-muted">☀ Sunlight, next 14 days</div>
               <div className="num mt-1 text-lg">{Math.round(m.illuminationPct)}%</div>
             </div>
             <div className="frame p-3">
-              <div className="text-[11px] text-muted">⊕ Earth in view</div>
+              <div className="text-xs text-muted">⊕ Earth in view</div>
               <div className="num mt-1 text-lg">{Math.round(m.commsPct)}%</div>
             </div>
           </div>
@@ -1023,13 +1023,13 @@ function StationCard({ id, onPick, onClose }: { id: string; onPick: (id: string)
             </button>
           </div>
           <div>
-            <div className="mb-2 text-[11px] text-muted">All stations</div>
+            <div className="mb-2 text-xs text-muted">All stations</div>
             <div className="flex flex-wrap gap-1.5">
               {SOUTH_SITES.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => onPick(s.id)}
-                  className={`border px-2 py-1 text-[11px] transition-colors ${s.id === id ? "border-foreground text-foreground" : "border-line text-muted hover:border-muted hover:text-foreground"}`}
+                  className={`border px-2 py-1 text-xs transition-colors ${s.id === id ? "border-foreground text-foreground" : "border-line text-muted hover:border-muted hover:text-foreground"}`}
                   aria-current={s.id === id}
                 >
                   {s.name}

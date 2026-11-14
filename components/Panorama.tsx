@@ -111,7 +111,7 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
         {elTicks.map((e) => (
           <g key={e}>
             <line x1={0} x2={W} y1={yOf(e)} y2={yOf(e)} stroke={e === 0 ? "#3a3a40" : "#1c1c20"} strokeDasharray={e === 0 ? "" : "2 4"} />
-            <text x={6} y={yOf(e) - 4} fontSize={11} fill="#6b6b72">
+            <text x={6} y={yOf(e) - 4} fontSize={14} fill="#8e8e96">
               {e}°
             </text>
           </g>
@@ -149,7 +149,7 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
         {ticks.map((t) => (
           <g key={t.x}>
             <line x1={t.x} x2={t.x} y1={H} y2={H + 5} stroke="#55555c" />
-            <text x={Math.min(W - 14, Math.max(14, t.x))} y={H + 18} fontSize={11} fill="#8b8b92" textAnchor="middle" letterSpacing={1.5}>
+            <text x={Math.min(W - 14, Math.max(14, t.x))} y={H + 18} fontSize={14} fill="#a8a8b0" textAnchor="middle" letterSpacing={1.5}>
               {t.label}
             </text>
           </g>
@@ -205,7 +205,7 @@ export function Lens({ horizon, az, el, r, kind, fraction, clearance }: { horizo
           <path d={terrain} fill="#141416" stroke="#b9b9bf" />
         </g>
         <circle cx={w / 2} cy={h / 2} r={r * pd} fill="none" stroke={color} strokeDasharray="2 2" opacity={0.7} />
-        <text x={12} y={22} fontSize={12} fill="#8b8b92" letterSpacing={2}>
+        <text x={12} y={22} fontSize={14} fill="#a8a8b0" letterSpacing={2}>
           1:1 close-up, {spanAz * 2}° wide
         </text>
       </svg>

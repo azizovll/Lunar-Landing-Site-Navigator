@@ -144,7 +144,7 @@ export function CalendarView() {
                           {m.label}
                         </th>
                       ) : null}
-                      <td className={`pr-1 text-[10px] ${row === "lit" ? "text-sun" : "text-earth"}`}>{row === "lit" ? "light" : "comms"}</td>
+                      <td className={`pr-1 text-[11px] ${row === "lit" ? "text-sun" : "text-earth"}`}>{row === "lit" ? "light" : "comms"}</td>
                       {Array.from({ length: offset }, (_, i) => (
                         <td key={`pad${i}`} />
                       ))}

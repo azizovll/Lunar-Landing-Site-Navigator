@@ -4,7 +4,7 @@ import { useMemo, useRef } from "react";
 import { DAY, HOUR as HOUR_MS, hasComms, isLit, type Sample } from "@/lib/metrics";
 
 const W = 1200;
-const BAND = 14;
+const BAND = 19;
 const TOP = 3 * (BAND + 3) + 6;
 const CH = 170;
 const H = TOP + CH + 22;
@@ -115,8 +115,8 @@ export function Timeline({ series, start, days, t, windowFrom, windowTo, marginD
               <rect key={i} x={r.x} y={b.y} width={r.w} height={BAND} fill={b.color} opacity={0.8} />
             ))}
             {/* label chip with a solid backing so it stays readable over any band colour */}
-            <rect x={0} y={b.y} width={58} height={BAND} fill="#000000" opacity={0.85} />
-            <text x={6} y={b.y + BAND - 3.5} fontSize={10} fill="#ececee" letterSpacing={1.5}>
+            <rect x={0} y={b.y} width={74} height={BAND} fill="#000000" opacity={0.85} />
+            <text x={7} y={b.y + BAND - 5} fontSize={13} fill="#ececee" letterSpacing={1.5}>
               {b.label.toUpperCase()}
             </text>
           </g>
@@ -126,16 +126,16 @@ export function Timeline({ series, start, days, t, windowFrom, windowTo, marginD
         <rect x={0} y={yOf(0)} width={W} height={TOP + CH - yOf(0)} fill="#141416" opacity={0.9} />
         <line x1={0} x2={W} y1={yOf(0)} y2={yOf(0)} stroke="#b9b9bf" />
         <line x1={0} x2={W} y1={yOf(marginDeg)} y2={yOf(marginDeg)} stroke="var(--earth)" strokeDasharray="4 4" opacity={0.5} />
-        <text x={W - 4} y={yOf(0) + 12} fontSize={11} fill="#8b8b92" textAnchor="end">
+        <text x={W - 4} y={yOf(0) + 12} fontSize={14} fill="#a8a8b0" textAnchor="end">
           terrain horizon
         </text>
-        <text x={W - 4} y={yOf(marginDeg) - 3} fontSize={11} fill="var(--earth)" textAnchor="end" opacity={0.8}>
+        <text x={W - 4} y={yOf(marginDeg) - 3} fontSize={14} fill="var(--earth)" textAnchor="end" opacity={0.8}>
           comms margin +{marginDeg}°
         </text>
-        <text x={6} y={TOP + 14} fontSize={11} fill="#6b6b72">
+        <text x={6} y={TOP + 14} fontSize={14} fill="#8e8e96">
           +{yMax}°
         </text>
-        <text x={6} y={TOP + CH - 6} fontSize={11} fill="#6b6b72">
+        <text x={6} y={TOP + CH - 6} fontSize={14} fill="#8e8e96">
           {yMin}°
         </text>
         <path d={line((s) => s.earthClear)} fill="none" stroke="var(--earth)" strokeWidth={1.6} />
@@ -144,7 +144,7 @@ export function Timeline({ series, start, days, t, windowFrom, windowTo, marginD
           <g key={d.x}>
             <line x1={d.x} x2={d.x} y1={TOP + CH} y2={TOP + CH + (d.label ? 6 : 3)} stroke="#55555c" />
             {d.label && (
-              <text x={Math.min(W - 20, Math.max(20, d.x))} y={H - 4} fontSize={11} fill="#8b8b92" textAnchor="middle">
+              <text x={Math.min(W - 20, Math.max(20, d.x))} y={H - 4} fontSize={14} fill="#a8a8b0" textAnchor="middle">
                 {d.label}
               </text>
             )}

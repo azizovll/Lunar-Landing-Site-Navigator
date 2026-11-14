@@ -204,8 +204,8 @@ export function CompareView() {
                       onChange={(ll) => writeCols(cols.map((x, j) => (j === i ? { ...x, custom: ll } : x)))}
                     />
                   )}
-                  {c.custom && sites[i]?.terrain === "approx" && <div className="mb-1 text-[11px] text-marginal">approximate horizon (480 m/px)</div>}
-                  {c.custom && sites[i]?.terrain === "flat" && <div className="mb-1 text-[11px] text-muted">flat horizon (north of 79°S)</div>}
+                  {c.custom && sites[i]?.terrain === "approx" && <div className="mb-1 text-xs text-marginal">approximate horizon (480 m/px)</div>}
+                  {c.custom && sites[i]?.terrain === "flat" && <div className="mb-1 text-xs text-muted">flat horizon (north of 79°S)</div>}
                   <input
                     type="date"
                     value={toUtcInput(c.start, false)}

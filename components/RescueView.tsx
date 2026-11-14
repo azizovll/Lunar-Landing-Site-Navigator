@@ -323,17 +323,17 @@ function NeighborTags({ nb, compact = false }: { nb: SiteNeighbors; compact?: bo
   return (
     <div className={`flex flex-wrap gap-1.5 ${compact ? "" : "text-xs"}`}>
       {nb.inKeepOut.map((h) => (
-        <span key={h.id} className="border border-poor/60 px-1.5 py-0.5 text-[11px] text-poor" title={h.note}>
+        <span key={h.id} className="border border-poor/60 px-1.5 py-0.5 text-xs text-poor" title={h.note}>
           ⚠ {h.name.split(" (")[0]} {fmtKm(h.km)} away
         </span>
       ))}
       {nb.planned.length > 0 && (
-        <span className="border border-marginal/50 px-1.5 py-0.5 text-[11px] text-marginal" title={nb.planned.map((p) => `${p.name}: ${p.date}`).join("; ")}>
+        <span className="border border-marginal/50 px-1.5 py-0.5 text-xs text-marginal" title={nb.planned.map((p) => `${p.name}: ${p.date}`).join("; ")}>
           Also targeted by {nb.planned.map((p) => p.name.split(" (")[0]).join(", ")}
         </span>
       )}
       {!nb.inKeepOut.length && !nb.planned.length && (
-        <span className="text-[11px] text-muted">{near ? `Nearest hardware ${fmtKm(near.km)}` : "No known neighbours"}</span>
+        <span className="text-xs text-muted">{near ? `Nearest hardware ${fmtKm(near.km)}` : "No known neighbours"}</span>
       )}
     </div>
   );

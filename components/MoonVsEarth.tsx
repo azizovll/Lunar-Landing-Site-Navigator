@@ -20,7 +20,7 @@ export function MoonVsEarth() {
     <section className="flex flex-col gap-10" aria-labelledby="moon-vs-earth">
       <SectionTitle center eyebrow="Not like home" title={<span id="moon-vs-earth">Moon vs Earth</span>} />
       <div className="card overflow-hidden">
-        <div className="grid grid-cols-[1fr_1fr] border-b border-line text-[11px] uppercase tracking-[0.2em] text-muted sm:grid-cols-[1.1fr_1.2fr_1fr_1.6fr]">
+        <div className="grid grid-cols-[1fr_1fr] border-b border-line text-xs uppercase tracking-[0.2em] text-muted sm:grid-cols-[1.1fr_1.2fr_1fr_1.6fr]">
           <div className="hidden p-4 sm:block" />
           <div className="p-4 text-sun">On the Moon</div>
           <div className="p-4">On Earth</div>

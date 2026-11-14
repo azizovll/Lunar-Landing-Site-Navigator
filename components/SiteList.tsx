@@ -76,7 +76,7 @@ export function SiteList({ selectedId, from, settings, onSelect }: Props) {
 
 function Bar({ value, color, label }: { value: number; color: string; label: string }) {
   return (
-    <div className="flex items-center gap-1.5 text-[11px] text-muted">
+    <div className="flex items-center gap-1.5 text-xs text-muted">
       <div className="h-[3px] flex-1 overflow-hidden bg-panel3">
         <div className="h-full" style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: color }} />
       </div>
@@ -92,7 +92,7 @@ const VCOLOR: Record<Verdict, string> = { Good: "var(--good)", Marginal: "var(--
 /** Compact per-aspect verdict: power and comms are shown separately so a well-lit site is not hidden behind its comms verdict. */
 export function Dot({ v, label, color }: { v: Verdict; label: string; color: string }) {
   return (
-    <span className="inline-flex items-center gap-1 border px-1.5 text-[10px] uppercase tracking-[0.1em]" style={{ borderColor: VCOLOR[v], color: VCOLOR[v] }} title={`${label}: ${v}`}>
+    <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap border px-1.5 text-[11px] uppercase tracking-[0.1em]" style={{ borderColor: VCOLOR[v], color: VCOLOR[v] }} title={`${label}: ${v}`}>
       <span style={{ color }}>{label === "Power" ? "☀" : "⊕"}</span>
       {VERDICT_LABEL[v]}
     </span>

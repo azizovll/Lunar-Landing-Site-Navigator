@@ -55,19 +55,19 @@ export function BatteryPanel({ series, from, to, settings, t, simple }: Props) {
       <div className="grid gap-4 md:grid-cols-[auto_1fr]">
         <div className="flex gap-6 md:flex-col md:gap-3">
           <div>
-            <div className="text-[11px] text-muted">At the cursor</div>
+            <div className="text-xs text-muted">At the cursor</div>
             <div className="num text-3xl" style={{ color: color(now?.v ?? 1) }}>
               {nowPct}%
             </div>
           </div>
           <div>
-            <div className="text-[11px] text-muted">Lowest in {days} days</div>
+            <div className="text-xs text-muted">Lowest in {days} days</div>
             <div className="num text-xl" style={{ color: color(r.minSoc) }}>
               {minPct}%
             </div>
           </div>
           <div>
-            <div className="text-[11px] text-muted">Without power</div>
+            <div className="text-xs text-muted">Without power</div>
             <div className="num text-xl" style={{ color: r.deadHours ? "var(--poor)" : "var(--good)" }}>
               {r.deadHours ? fmtDays(r.deadHours) : "never"}
             </div>
@@ -90,7 +90,7 @@ export function BatteryPanel({ series, from, to, settings, t, simple }: Props) {
             <path d={path.line} fill="none" stroke="#ececee" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
             <line x1={cx} x2={cx} y1={0} y2={H} stroke="#fff" strokeWidth={1} vectorEffect="non-scaling-stroke" />
           </svg>
-          <div className="flex justify-between text-[11px] text-muted">
+          <div className="flex justify-between text-xs text-muted">
             <span>{fmtUtc(from, false)}</span>
             <span>dashed lines: 50% and 20%</span>
             <span>{fmtUtc(to, false)}</span>

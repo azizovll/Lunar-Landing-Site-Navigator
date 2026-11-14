@@ -9,7 +9,7 @@ export function VerdictBadge({ v, small }: { v: Verdict; small?: boolean }) {
   const color = v === "Good" ? "var(--good)" : v === "Marginal" ? "var(--marginal)" : "var(--poor)";
   return (
     <span
-      className={`inline-flex items-center gap-1.5 border font-normal uppercase tracking-[0.12em] ${small ? "px-1.5 py-0 text-[10px]" : "px-2 py-0.5 text-[11px]"}`}
+      className={`inline-flex items-center gap-1.5 border font-normal uppercase tracking-[0.12em] ${small ? "px-1.5 py-0 text-[11px]" : "px-2 py-0.5 text-xs"}`}
       style={{ color, borderColor: color }}
     >
       <span aria-hidden>{v === "Good" ? "●" : v === "Marginal" ? "◐" : "○"}</span>
@@ -24,7 +24,7 @@ export function ScoreBadge({ m, small }: { m: WindowMetrics; small?: boolean }) 
   const color = LIGHT_COLOR[light(sc)];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 border uppercase tracking-[0.12em] ${small ? "px-1.5 py-0 text-[10px]" : "px-2 py-0.5 text-[11px]"}`}
+      className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border uppercase tracking-[0.12em] ${small ? "px-1.5 py-0 text-[11px]" : "px-2 py-0.5 text-xs"}`}
       style={{ color, borderColor: color }}
       title={`Overall score 0–100. ${why(m)}`}
     >
@@ -80,14 +80,14 @@ export function MetricCards({ now, events, searchDays, metrics, settings, onSett
       {/* POWER */}
       <section className="card flex flex-col gap-1 p-5" style={{ borderTop: "1px solid var(--sun)" }}>
         <header className="mb-2 flex items-center justify-between">
-          <h3 className="display text-xs tracking-[0.3em] text-sun">Power</h3>
+          <h3 className="display text-xs tracking-[0.18em] text-sun">Power</h3>
           <VerdictBadge v={pv} />
         </header>
         <div className="mb-3 flex items-end justify-between gap-3">
           <div className="num text-xl leading-snug">{lit ? `${(now.sunFrac * 100).toFixed(0)}% of Sun visible` : "Sun hidden"}</div>
           <div className="text-right" title="Solar elevation above the local horizontal plane (no atmosphere, no refraction)">
             <div className="num text-3xl leading-none text-sun">{now.sunEl.toFixed(1)}°</div>
-            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-muted">Sun elevation</div>
+            <div className="mt-1 text-[11px] uppercase tracking-[0.15em] text-muted">Sun elevation</div>
           </div>
         </div>
         <Row label="Sun elevation" value={`${now.sunEl.toFixed(2)}°`} sub={expert ? `az ${now.sunAz.toFixed(2)}° · terrain ${now.sunHz.toFixed(2)}°` : `toward ${compass(now.sunAz)}`} />
@@ -116,7 +116,7 @@ export function MetricCards({ now, events, searchDays, metrics, settings, onSett
       {/* COMMS */}
       <section className="card flex flex-col gap-1 p-5" style={{ borderTop: "1px solid var(--earth)" }}>
         <header className="mb-2 flex items-center justify-between">
-          <h3 className="display text-xs tracking-[0.3em] text-earth">Comms · direct to Earth</h3>
+          <h3 className="display text-xs tracking-[0.18em] text-earth">Comms to Earth</h3>
           <VerdictBadge v={cv} />
         </header>
         <div className="num mb-3 text-xl leading-snug">{comms ? "Earth in view" : now.earthClear > 0 ? "Earth too low" : "Earth hidden"}</div>
@@ -149,7 +149,7 @@ export function MetricCards({ now, events, searchDays, metrics, settings, onSett
       {/* COMBINED */}
       <section className="card flex flex-col gap-1 p-5" style={{ borderTop: "1px solid var(--both)" }}>
         <header className="mb-2 flex items-center justify-between">
-          <h3 className="display text-xs tracking-[0.3em] text-both">Combined window</h3>
+          <h3 className="display text-xs tracking-[0.18em] text-both">Light + comms</h3>
           <ScoreBadge m={metrics} />
         </header>
         <div className="num mb-3 text-xl leading-snug">{fmtHours(metrics.combinedH)} of light + comms</div>

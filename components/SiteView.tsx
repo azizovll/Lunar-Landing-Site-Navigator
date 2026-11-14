@@ -206,11 +206,6 @@ export function SiteView() {
         </div>
       </section>
 
-      <div className="no-print flex flex-col gap-16 sm:gap-24">
-        <PoleExplainer />
-        <MoonVsEarth />
-      </div>
-
       {/* ---------- sky view ---------- */}
       <section id="sky" className="flex scroll-mt-24 flex-col gap-6">
         <PrintHeader title={`Site report: ${site?.name ?? "custom point"}`} />
@@ -393,6 +388,11 @@ export function SiteView() {
           </div>
         </div>
       </section>
+
+      <div className="no-print flex flex-col gap-16 sm:gap-24">
+        <PoleExplainer />
+        <MoonVsEarth />
+      </div>
     </div>
   );
 }

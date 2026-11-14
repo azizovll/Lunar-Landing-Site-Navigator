@@ -49,7 +49,7 @@ export function NeighborsPanel({ siteId, lat, lon, simple }: Props) {
 
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <div className="mb-2 text-[11px] text-muted">On the surface within 50 km</div>
+          <div className="mb-2 text-xs text-muted">On the surface within 50 km</div>
           {n.hardware.length === 0 ? (
             <p className="text-sm text-muted">Nothing known.</p>
           ) : (
@@ -59,7 +59,7 @@ export function NeighborsPanel({ siteId, lat, lon, simple }: Props) {
                   <div className="min-w-0">
                     <div>
                       {h.name}{" "}
-                      <span className="ml-1 border border-line px-1 text-[10px] uppercase tracking-[0.1em] text-muted">{KIND_LABEL[h.kind]}</span>
+                      <span className="ml-1 border border-line px-1 text-[11px] uppercase tracking-[0.1em] text-muted">{KIND_LABEL[h.kind]}</span>
                     </div>
                     <div className="mt-0.5 text-xs text-muted">
                       {h.date} · {h.note}{" "}
@@ -77,7 +77,7 @@ export function NeighborsPanel({ siteId, lat, lon, simple }: Props) {
           )}
         </div>
         <div>
-          <div className="mb-2 text-[11px] text-muted">Planned missions targeting this area</div>
+          <div className="mb-2 text-xs text-muted">Planned missions targeting this area</div>
           {n.planned.length === 0 ? (
             <p className="text-sm text-muted">{siteId ? "None announced." : "Not tracked for custom points."}</p>
           ) : (
