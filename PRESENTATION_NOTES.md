@@ -34,7 +34,9 @@ A web app that computes everything in the browser from NASA data.
 **For everyone**
 - **3D south-pole terrain.**
   - Built from LOLA and lit by the real Sun with long shadows.
-  - ☀ Light map: share of the next lunar month in sunlight for every patch of ground (computed in the browser, checked against the exact site numbers).
+  - ☀ Light map and ⊕ Signal map: share of the next lunar month in sunlight / with Earth in view for every patch of ground (computed in the browser, checked against the exact site numbers). The signal map shows how scarce a direct link is near the pole.
+  - Click the ground to test any point; ✦ marks the brightest spots at least 6 km from known sites (approximate, click to check with the exact horizon).
+  - The 30-second tour now walks through the lines of sight and both maps: record it for the video.
   - Lines of sight from the selected station to the Sun (gold) and Earth (blue), red where a hill blocks them, plus a live status line. Best demo shot: play the lunar day and watch the ray flip from gold to red.
   - Pins coloured by score; scale bar; “heights ×2 · landers ×300” stated on screen.
   - A lunar-day timelapse and a “stand on the surface” view facing Earth.
@@ -178,7 +180,7 @@ The team defined the problem, wrote the specification, chose the methods and dat
 - **Точность посадки.** В 250 м от гребня Shackleton балл падает с 71 до 1, а плато Mons Mouton держит 90–100. Это объясняет, почему малые изменения решают всё.
 - **Соседи.** Уже лежащее оборудование (зонд Chandrayaan‑1 в 5 км от Connecting Ridge, LCROSS, IM‑1, IM‑2) и планы других миссий (Chang’e‑7, Blue Moon MK1, Griffin‑1, Artemis), зона безопасности 2 км, ссылка на реестр Lunar Ledger.
 - **Точность расчёта.** Против JPL Horizons максимум 0,004° на 130 сравнениях. Освещённость за год: 85,4% против 88,0% и 84,3% против 82,1% опубликованных. 42 автотеста.
-- **Для всех.** Режим Simple, 3D‑рельеф полюса с настоящими тенями, карта освещённости на месяц, лучи к Солнцу и Земле (красные, если мешает гора), таймлапс лунного дня, вид с поверхности на Землю, тур на 30 секунд, «Moon vs Earth».
+- **Для всех.** Режим Simple, 3D‑рельеф полюса с настоящими тенями, карта освещённости и карта связи на месяц, клик по рельефу для любой точки, кандидаты ✦, лучи к Солнцу и Земле (красные, если мешает гора), таймлапс лунного дня, вид с поверхности на Землю, тур на 30 секунд, «Moon vs Earth».
 
 **Видео.** Нажать «▶ 30-second tour» на главной и записать экран. По желанию добавить 5 секунд страницы Rescue (+30 дней).
 
