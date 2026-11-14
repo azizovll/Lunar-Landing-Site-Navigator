@@ -2,11 +2,14 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { DAY, DEFAULT_SETTINGS, alignTime, overallVerdict, sampleAt, sampleSeries, windowMetrics, type Settings, type WindowMetrics } from "@/lib/metrics";
+import { DAY, DEFAULT_SETTINGS, alignTime, commsVerdict, overallVerdict, powerVerdict, sampleAt, sampleSeries, windowMetrics, type Settings, type WindowMetrics } from "@/lib/metrics";
 import { downloadCsv, fmtHours, parseUtc, toUtcInput } from "@/lib/format";
-import { SITES, getSite, resolvePreset } from "@/lib/sites";
+import { SITES, fmtLatLon, getSite, resolvePreset, type ResolvedSite } from "@/lib/sites";
 import { useUrlState } from "@/lib/useUrlState";
+import { parseLatLon, useCustomSites } from "@/lib/useResolvedSite";
 import { VerdictBadge } from "./MetricCards";
+import { Dot } from "./SiteList";
+import { CopyLinkButton } from "./CopyLinkButton";
 import { ExpertOnly, Tip } from "./ModeProvider";
 
 const KEYS = ["a", "b", "c", "d"] as const;
@@ -15,9 +18,14 @@ const DEFAULT_COLS = ["shackleton-rim", "connecting-ridge", "malapert-massif", "
 
 interface Col {
   key: string;
+  /** preset id, or "custom" with `custom` coordinates */
   siteId: string;
+  custom?: { lat: number; lon: number };
   start: number;
 }
+
+/** URL form of a column: "presetId:YYYY-MM-DD" or "@lat,lon:YYYY-MM-DD" for a custom point. */
+const colToParam = (c: Col) => `${c.custom ? `@${c.custom.lat},${c.custom.lon}` : c.siteId}:${toUtcInput(c.start, false)}`;
 
 interface RowDef {
   label: string;
@@ -42,26 +50,34 @@ export function CompareView() {
   const { params, set } = useUrlState();
   const [today] = useState(() => alignTime(Date.now(), DAY));
   const delay = Math.max(0, Math.min(MAX_DELAY, Number(params.get("delay") ?? 0)));
-  const settings: Settings = {
-    ...DEFAULT_SETTINGS,
-    marginDeg: Number(params.get("margin") ?? 2),
-    windowDays: Number(params.get("window") ?? 14),
-    panel: params.get("panel") === "horizontal" ? "horizontal" : "tracking",
-  };
+  const marginDeg = Number(params.get("margin") ?? 2);
+  const windowDays = Number(params.get("window") ?? 14);
+  const panel: Settings["panel"] = params.get("panel") === "horizontal" ? "horizontal" : "tracking";
+  const settings: Settings = useMemo(() => ({ ...DEFAULT_SETTINGS, marginDeg, windowDays, panel }), [marginDeg, windowDays, panel]);
 
   const anyParam = KEYS.some((k) => params.get(k));
   const cols: Col[] = KEYS.map((k, i): Col | null => {
     const raw = params.get(k);
     if (!raw) return anyParam ? null : { key: k, siteId: DEFAULT_COLS[i], start: today };
     const [id, date] = raw.split(":");
-    return getSite(id) ? { key: k, siteId: id, start: parseUtc(date) ?? today } : null;
+    const start = parseUtc(date) ?? today;
+    if (id.startsWith("@")) {
+      const ll = parseLatLon(id.slice(1));
+      return ll ? { key: k, siteId: "custom", custom: ll, start } : null;
+    }
+    return getSite(id) ? { key: k, siteId: id, start } : null;
   }).filter((c): c is Col => c !== null);
 
-  const colKey = cols.map((c) => `${c.siteId}@${c.start}`).join("|");
+  const customPts = cols.flatMap((c) => (c.custom ? [c.custom] : []));
+  const lookupCustom = useCustomSites(customPts);
+  const sites: (ResolvedSite | undefined)[] = cols.map((c) => (c.custom ? lookupCustom(c.custom.lat, c.custom.lon) : resolvePreset(getSite(c.siteId)!)));
+
+  const colKey = cols.map((c, i) => `${colToParam(c)}${sites[i] ? "" : "?"}`).join("|");
   const computed = useMemo(
     () =>
-      cols.map((c) => {
-        const site = resolvePreset(getSite(c.siteId)!);
+      cols.map((c, i) => {
+        const site = sites[i];
+        if (!site) return null;
         const series = sampleSeries(site, c.start, c.start + (MAX_DELAY + settings.windowDays) * DAY, 20 * 60_000);
         const sweep = Array.from({ length: MAX_DELAY + 1 }, (_, d) => {
           const from = c.start + d * DAY;
@@ -70,17 +86,18 @@ export function CompareView() {
         return { site, series, sweep };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [colKey, settings.windowDays, settings.marginDeg, settings.panel],
+    [colKey, settings],
   );
 
   const writeCols = (next: Col[]) => {
     const patch: Record<string, string | null> = {};
-    KEYS.forEach((k, i) => (patch[k] = next[i] ? `${next[i].siteId}:${toUtcInput(next[i].start, false)}` : null));
+    KEYS.forEach((k, i) => (patch[k] = next[i] ? colToParam(next[i]) : null));
     set(patch);
   };
 
   const rows = ROWS.map((r) => {
     const vals = computed.map((c, i) => {
+      if (!c) return { v: NaN, v0: NaN };
       const m = c.sweep[delay];
       const s = sampleAt(c.site, alignTime(cols[i].start + delay * DAY));
       const v = r.get(m, { sunClear: s.sunEl - s.sunHz, earthClear: s.earthClear });
@@ -89,15 +106,18 @@ export function CompareView() {
       const v0 = r.get(m0, { sunClear: s0.sunEl - s0.sunHz, earthClear: s0.earthClear });
       return { v, v0 };
     });
-    const best = r.better === "high" ? Math.max(...vals.map((x) => x.v)) : Math.min(...vals.map((x) => x.v));
-    return { r, vals, best };
+    const ready = vals.map((x) => x.v).filter((v) => !Number.isNaN(v));
+    const best = r.better === "high" ? Math.max(...ready) : Math.min(...ready);
+    // No highlight when every column has the same value: nothing is "best".
+    const allEqual = ready.every((v) => Math.abs(v - ready[0]) < 1e-9);
+    return { r, vals, best: allEqual ? NaN : best };
   });
 
   const exportCsv = () =>
     downloadCsv(`compare-delay${delay}d.csv`, [
-      ["metric", ...cols.map((c) => `${c.siteId} ${toUtcInput(c.start + delay * DAY, false)}`)],
-      ...rows.map(({ r, vals }) => [r.label, ...vals.map((x) => r.fmt(x.v))]),
-      ["verdict", ...computed.map((c) => overallVerdict(c.sweep[delay]))],
+      ["metric", ...cols.map((c) => `${c.custom ? fmtLatLon(c.custom.lat, c.custom.lon) : c.siteId} ${toUtcInput(c.start + delay * DAY, false)}`)],
+      ...rows.map(({ r, vals }) => [r.label, ...vals.map((x) => (Number.isNaN(x.v) ? "" : r.fmt(x.v)))]),
+      ["verdict", ...computed.map((c) => (c ? overallVerdict(c.sweep[delay]) : ""))],
     ]);
 
   return (
@@ -135,7 +155,13 @@ export function CompareView() {
                 <th key={c.key} className="card p-2 text-left align-top font-normal">
                   <select
                     value={c.siteId}
-                    onChange={(e) => writeCols(cols.map((x, j) => (j === i ? { ...x, siteId: e.target.value } : x)))}
+                    onChange={(e) =>
+                      writeCols(
+                        cols.map((x, j) =>
+                          j === i ? (e.target.value === "custom" ? { ...x, siteId: "custom", custom: x.custom ?? { lat: -89, lon: 0 } } : { ...x, siteId: e.target.value, custom: undefined }) : x,
+                        ),
+                      )
+                    }
                     className="mb-1 w-full font-semibold"
                     aria-label={`Site for column ${i + 1}`}
                   >
@@ -144,7 +170,17 @@ export function CompareView() {
                         {s.name}
                       </option>
                     ))}
+                    <option value="custom">Custom point…</option>
                   </select>
+                  {c.custom && (
+                    <CustomInputs
+                      key={`${c.custom.lat},${c.custom.lon}`}
+                      value={c.custom}
+                      onChange={(ll) => writeCols(cols.map((x, j) => (j === i ? { ...x, custom: ll } : x)))}
+                    />
+                  )}
+                  {c.custom && sites[i]?.terrain === "approx" && <div className="mb-1 text-[11px] text-marginal">approximate horizon (480 m/px)</div>}
+                  {c.custom && sites[i]?.terrain === "flat" && <div className="mb-1 text-[11px] text-muted">flat horizon (north of 79°S)</div>}
                   <input
                     type="date"
                     value={toUtcInput(c.start, false)}
@@ -173,12 +209,22 @@ export function CompareView() {
           </thead>
           <tbody>
             <tr>
-              <td className="py-2 pr-2 text-muted">Verdict</td>
-              {computed.map((c, i) => (
+              <td className="py-2 pr-2 text-muted">Verdict<div className="text-xs">overall · power · comms</div></td>
+              {computed.map((c, i) =>
+                !c ? (
+                  <td key={i} className="p-2 text-xs text-muted">
+                    computing terrain…
+                  </td>
+                ) : (
                 <td key={i} className="p-2">
-                  <VerdictBadge v={overallVerdict(c.sweep[delay])} />
+                  <div className="flex flex-wrap items-center gap-1">
+                    <VerdictBadge v={overallVerdict(c.sweep[delay])} small />
+                    <Dot v={powerVerdict(c.sweep[delay])} label="Power" color="var(--sun)" />
+                    <Dot v={commsVerdict(c.sweep[delay])} label="Comms" color="var(--earth)" />
+                  </div>
                 </td>
-              ))}
+                ),
+              )}
             </tr>
             {rows.map(({ r, vals, best }) => (
               <tr key={r.label}>
@@ -188,6 +234,12 @@ export function CompareView() {
                   const diff = x.v - x.v0;
                   const improved = r.better === "high" ? diff > 1e-6 : diff < -1e-6;
                   const worse = r.better === "high" ? diff < -1e-6 : diff > 1e-6;
+                  if (Number.isNaN(x.v))
+                    return (
+                      <td key={i} className="border-t border-line p-2 text-muted">
+                        …
+                      </td>
+                    );
                   return (
                     <td key={i} className={`tabular border-t border-line p-2 ${isBest ? "bg-both/10 font-semibold text-both" : ""}`}>
                       {r.fmt(x.v)}
@@ -209,7 +261,7 @@ export function CompareView() {
               </td>
               {computed.map((c, i) => (
                 <td key={i} className="border-t border-line p-2">
-                  <Sweep values={c.sweep.map((m) => m.combinedH)} max={settings.windowDays * 24} delay={delay} onPick={(d) => set({ delay: d || null })} />
+                  {c && <Sweep values={c.sweep.map((m) => m.combinedH)} max={settings.windowDays * 24} delay={delay} onPick={(d) => set({ delay: d || null })} />}
                 </td>
               ))}
             </tr>
@@ -217,7 +269,7 @@ export function CompareView() {
               <td></td>
               {cols.map((c, i) => (
                 <td key={i} className="p-2 text-xs">
-                  <Link className="underline decoration-dotted hover:text-foreground text-muted" href={`/?site=${c.siteId}&start=${toUtcInput(c.start + delay * DAY, false)}`}>
+                  <Link className="underline decoration-dotted hover:text-foreground text-muted" href={`/?${c.custom ? `lat=${c.custom.lat}&lon=${c.custom.lon}` : `site=${c.siteId}`}&start=${toUtcInput(c.start + delay * DAY, false)}`}>
                     Open sky view →
                   </Link>
                 </td>
@@ -231,9 +283,7 @@ export function CompareView() {
           <button className="btn" onClick={exportCsv}>
             Export table as CSV
           </button>
-          <button className="btn" onClick={() => navigator.clipboard?.writeText(window.location.href)}>
-            Copy shareable link
-          </button>
+          <CopyLinkButton />
         </div>
       </ExpertOnly>
     </div>
@@ -263,5 +313,22 @@ function Sweep({ values, max, delay, onPick }: { values: number[]; max: number; 
       <path d={d} fill="none" stroke="var(--both)" strokeWidth={1.5} />
       <line x1={x(delay)} x2={x(delay)} y1={0} y2={h} stroke="#fff" />
     </svg>
+  );
+}
+
+/** Lat/lon inputs for a custom column; commits on Enter or when focus leaves. */
+function CustomInputs({ value, onChange }: { value: { lat: number; lon: number }; onChange: (v: { lat: number; lon: number }) => void }) {
+  const [lat, setLat] = useState(String(value.lat));
+  const [lon, setLon] = useState(String(value.lon));
+  const commit = () => {
+    const a = Number(lat);
+    const b = Number(lon);
+    if (Number.isFinite(a) && Number.isFinite(b) && Math.abs(a) <= 90 && (a !== value.lat || b !== value.lon)) onChange({ lat: a, lon: b });
+  };
+  return (
+    <div className="mb-1 flex gap-1" onBlur={commit} onKeyDown={(e) => e.key === "Enter" && commit()}>
+      <input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} className="w-1/2" aria-label="Latitude (south negative)" title="Latitude, south negative" />
+      <input type="number" step="any" value={lon} onChange={(e) => setLon(e.target.value)} className="w-1/2" aria-label="Longitude (east positive)" title="Longitude, east positive" />
+    </div>
   );
 }

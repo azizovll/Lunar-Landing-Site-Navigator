@@ -23,7 +23,7 @@ describe("terrain horizon masks (acceptance)", () => {
   it("has LOLA masks for at least 8 south-polar sites", () => {
     const withMask = south.filter((s) => resolvePreset(s).terrain === "lola");
     expect(withMask.length).toBeGreaterThanOrEqual(8);
-    for (const s of withMask) expect(resolvePreset(s).horizon!.el.length).toBe(720);
+    for (const s of withMask) expect(resolvePreset(s).horizon!.el.length).toBe(1440);
   });
 
   it("Shackleton rim and Connecting Ridge are lit far more than the Shackleton floor", () => {

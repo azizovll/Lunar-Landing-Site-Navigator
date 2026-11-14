@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef } from "react";
-import { DAY, hasComms, isLit, type Sample } from "@/lib/metrics";
+import { DAY, HOUR as HOUR_MS, hasComms, isLit, type Sample } from "@/lib/metrics";
 
 const W = 1200;
 const BAND = 14;
@@ -82,14 +82,30 @@ export function Timeline({ series, start, days, t, windowFrom, windowTo, marginD
       <svg
         ref={ref}
         viewBox={`0 0 ${W} ${H}`}
-        className="block w-full min-w-[680px] cursor-crosshair select-none"
+        className="block w-full min-w-[680px] cursor-crosshair select-none outline-none focus-visible:ring-2 focus-visible:ring-sun"
         onPointerDown={(e) => {
           (e.target as Element).setPointerCapture?.(e.pointerId);
           seek(e.clientX);
         }}
         onPointerMove={(e) => e.buttons === 1 && seek(e.clientX)}
-        role="img"
-        aria-label="30-day timeline of light and communication windows"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          const step = e.shiftKey ? DAY : HOUR_MS;
+          let next: number | null = null;
+          if (e.key === "ArrowRight") next = t + step;
+          else if (e.key === "ArrowLeft") next = t - step;
+          else if (e.key === "Home") next = start;
+          else if (e.key === "End") next = end;
+          if (next === null) return;
+          e.preventDefault();
+          onSeek(Math.min(end, Math.max(start, next)));
+        }}
+        role="slider"
+        aria-label="Time cursor on the 30-day timeline of light and communication windows (arrow keys: 1 hour, Shift+arrow: 1 day)"
+        aria-valuemin={start}
+        aria-valuemax={end}
+        aria-valuenow={Math.round(t)}
+        aria-valuetext={new Date(t).toISOString().slice(0, 16).replace("T", " ") + " UTC"}
       >
         <rect x={xOf(windowFrom)} y={0} width={Math.max(0, xOf(windowTo) - xOf(windowFrom))} height={TOP + CH} fill="#ffffff" opacity={0.04} />
         {bands.map((b) => (
@@ -144,7 +160,7 @@ export function Timeline({ series, start, days, t, windowFrom, windowTo, marginD
           <span className="text-earth">━</span> Earth centre over terrain
         </span>
         <span>Light = any part of the solar disk visible · Comms = Earth ≥ horizon + margin · lighter band = mission window</span>
-        <span>Click or drag to move the time cursor.</span>
+        <span>Click or drag to move the time cursor (or focus it and use the arrow keys).</span>
       </div>
     </div>
   );

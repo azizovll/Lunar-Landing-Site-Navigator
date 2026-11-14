@@ -4,7 +4,7 @@ Usage:  python -I pipeline/build_horizons.py
 Inputs: LOLA polar DEMs in pipeline/cache (see pipeline/README.md)
 Output: public/data/horizons/<id>.json, public/data/dem/south_480m.bin(+.json), public/data/polar-map.png
 
-Horizon mask: for 720 azimuths (0.5 deg step, clockwise from north) march along the
+Horizon mask: for 1440 azimuths (0.25 deg step, clockwise from north) march along the
 great circle out to MAX_DIST and keep the maximum elevation angle of the terrain seen
 from an observer 2 m above the local surface. Lunar curvature is exact (sphere geometry):
 for a terrain point at radius r_t and central angle theta from an observer at radius r_o,
@@ -28,7 +28,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "public", "data")
 MAX_DIST = 200_000.0
 OBSERVER_H = 2.0
-N_AZ = 720
+N_AZ = 1440  # 0.25 deg: finer than the 0.53 deg solar disk, so narrow peaks are not skipped
 
 
 def ray_distances() -> np.ndarray:
@@ -115,7 +115,8 @@ def browser_dem(dems: list[Dem]) -> None:
     src = next((d for d in dems if d.name == "LDEM_75S_240M"), None) or next(d for d in dems if d.name == "LDEM_80S_80M")
     factor = max(1, int(round(480.0 / src.scale)))
     scale = src.scale * factor
-    bound = max(-79.0, src.max_lat)  # crop at 79S, or at the source's own edge if smaller
+    # Crop at 79S, or at the source's own coverage edge if that is further south (80S for the 80 m DEM).
+    bound = min(-79.0, src.max_lat)
     half_m = 2 * R_M * math.tan(math.pi / 4 + math.radians(bound) / 2)
     half_px = min(int(half_m / scale), int(src.offset // factor) - 1)
     n = 2 * half_px + 1

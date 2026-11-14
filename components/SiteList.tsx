@@ -2,8 +2,7 @@
 
 import { useMemo } from "react";
 import { SITES, fmtLatLon, resolvePreset } from "@/lib/sites";
-import { overallVerdict, sampleSeries, windowMetrics, type Settings } from "@/lib/metrics";
-import { VerdictBadge } from "./MetricCards";
+import { commsVerdict, powerVerdict, sampleSeries, windowMetrics, type Settings, type Verdict } from "@/lib/metrics";
 
 const GROUPS = [
   { kind: "south-pole", label: "South-pole candidates" },
@@ -21,12 +20,12 @@ interface Props {
 export function SiteList({ selectedId, from, settings, onSelect }: Props) {
   const summary = useMemo(() => {
     const to = from + settings.windowDays * 86_400_000;
-    const out: Record<string, { ill: number; comms: number; v: ReturnType<typeof overallVerdict> }> = {};
+    const out: Record<string, { ill: number; comms: number; pv: Verdict; cv: Verdict }> = {};
     for (const s of SITES) {
       const site = resolvePreset(s);
       const series = sampleSeries(site, from, to, 30 * 60_000);
       const m = windowMetrics(series, from, to, settings);
-      out[s.id] = { ill: m.illuminationPct, comms: m.commsPct, v: overallVerdict(m) };
+      out[s.id] = { ill: m.illuminationPct, comms: m.commsPct, pv: powerVerdict(m), cv: commsVerdict(m) };
     }
     return out;
   }, [from, settings]);
@@ -49,7 +48,12 @@ export function SiteList({ selectedId, from, settings, onSelect }: Props) {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium">{s.name}</span>
-                      {m && <VerdictBadge v={m.v} small />}
+                      {m && (
+                        <span className="flex gap-1">
+                          <Dot v={m.pv} label="Power" color="var(--sun)" />
+                          <Dot v={m.cv} label="Comms" color="var(--earth)" />
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-muted">{fmtLatLon(s.lat, s.lon)}</div>
                     {m && (
@@ -79,5 +83,17 @@ function Bar({ value, color, label }: { value: number; color: string; label: str
         {value.toFixed(0)}% {label}
       </span>
     </div>
+  );
+}
+
+const VCOLOR: Record<Verdict, string> = { Good: "var(--good)", Marginal: "var(--marginal)", Poor: "var(--poor)" };
+
+/** Compact per-aspect verdict: power and comms are shown separately so a well-lit site is not hidden behind its comms verdict. */
+export function Dot({ v, label, color }: { v: Verdict; label: string; color: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border px-1.5 text-[11px] font-semibold" style={{ borderColor: VCOLOR[v], color: VCOLOR[v] }} title={`${label}: ${v}`}>
+      <span style={{ color }}>{label === "Power" ? "☀" : "⊕"}</span>
+      {v}
+    </span>
   );
 }

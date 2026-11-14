@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { DAY, dailySummary } from "@/lib/metrics";
-import { DEFAULT_SITE_ID, SITES, getSite, resolvePreset } from "@/lib/sites";
+import { DEFAULT_SITE_ID, SITES, fmtLatLon, getSite, resolvePreset } from "@/lib/sites";
+import { resolveCustom } from "@/lib/useResolvedSite";
 import { useUrlState } from "@/lib/useUrlState";
 import { toUtcInput } from "@/lib/format";
 import { Tip } from "./ModeProvider";
@@ -17,18 +18,26 @@ export function CalendarView() {
   const { params, set } = useUrlState();
   const siteId = getSite(params.get("site")) ? params.get("site")! : DEFAULT_SITE_ID;
   const margin = Number(params.get("margin") ?? 2);
+  const cLat = params.get("lat");
+  const cLon = params.get("lon");
+  const custom = cLat !== null && cLon !== null && Number.isFinite(Number(cLat)) && Number.isFinite(Number(cLon)) ? { lat: Number(cLat), lon: Number(cLon) } : null;
+  const [terrain, setTerrain] = useState<string>("");
   const [startMonth] = useState(() => {
     const d = new Date();
     return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
   });
   const [data, setData] = useState<{ key: string; days: Day[] } | null>(null);
-  const key = `${siteId}|${margin}|${startMonth}`;
+  const key = `${custom ? `${custom.lat},${custom.lon}` : siteId}|${margin}|${startMonth}`;
+  // Links into the Site screen for a given day keep the custom point when one is selected.
+  const siteQuery = custom ? `lat=${custom.lat}&lon=${custom.lon}` : `site=${siteId}`;
 
   useEffect(() => {
     let alive = true;
     // yield first so the page paints before the year-long computation (~0.5 s)
-    const id = setTimeout(() => {
-      const site = resolvePreset(getSite(siteId)!);
+    const id = setTimeout(async () => {
+      const site = custom ? await resolveCustom(custom.lat, custom.lon) : resolvePreset(getSite(siteId)!);
+      if (!alive) return;
+      setTerrain(site.terrain);
       const end = new Date(startMonth);
       end.setUTCMonth(end.getUTCMonth() + 12);
       const days = dailySummary(site, startMonth, Math.round((end.getTime() - startMonth) / DAY) + WINDOW, margin);
@@ -38,7 +47,9 @@ export function CalendarView() {
       alive = false;
       clearTimeout(id);
     };
-  }, [key, siteId, margin, startMonth]);
+    // `key` already encodes site/custom point, margin and start month
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 
   const days = data?.key === key ? data.days : null;
 
@@ -74,16 +85,29 @@ export function CalendarView() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Yearly calendar</h1>
+          {custom && (
+            <p className="text-sm">
+              Custom point {fmtLatLon(custom.lat, custom.lon)}
+              {terrain === "approx" && <span className="ml-1 rounded bg-marginal/15 px-1.5 text-marginal">lower accuracy: approximate horizon (480 m/px)</span>}
+              {terrain === "flat" && <span className="ml-1 rounded bg-panel2 px-1.5">flat horizon (north of 79°S)</span>}
+            </p>
+          )}
           <p className="text-sm text-muted">Daily share of sunlight (solar disk visible over terrain) and of direct-to-Earth comms. Click a day to open the sky view with that mission start.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <select value={siteId} onChange={(e) => set({ site: e.target.value })} aria-label="Site">
+          <select
+            value={custom ? "custom" : siteId}
+            onChange={(e) => (e.target.value === "custom" ? set({ lat: -89, lon: 0 }) : set({ site: e.target.value, lat: null, lon: null }))}
+            aria-label="Site"
+          >
             {SITES.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
             ))}
+            <option value="custom">Custom point…</option>
           </select>
+          {custom && <CalendarCustomInputs key={`${custom.lat},${custom.lon}`} value={custom} onChange={(ll) => set({ lat: ll.lat, lon: ll.lon })} />}
           <label className="flex items-center gap-1">
             <span className="text-muted">margin</span>
             <input type="number" min={0} max={10} step={0.5} value={margin} onChange={(e) => set({ margin: e.target.value })} className="w-16" />°
@@ -129,7 +153,7 @@ export function CalendarView() {
                         return (
                           <td key={d.day} className="p-0">
                             <Link
-                              href={`/?site=${siteId}&start=${toUtcInput(d.day, false)}`}
+                              href={`/?${siteQuery}&start=${toUtcInput(d.day, false)}`}
                               title={`${toUtcInput(d.day, false)}: light ${(d.lit * 100).toFixed(0)}%, comms ${(d.comms * 100).toFixed(0)}%, both ${(d.both * 100).toFixed(0)}%`}
                               className="block h-4 w-5 rounded-sm hover:outline hover:outline-1 hover:outline-white"
                               style={{ background: color }}
@@ -164,7 +188,7 @@ export function CalendarView() {
             <ol className="space-y-2">
               {best.map((b) => (
                 <li key={b.day}>
-                  <Link href={`/?site=${siteId}&start=${toUtcInput(b.day, false)}`} className="block rounded-lg border border-line p-2 hover:border-muted">
+                  <Link href={`/?${siteQuery}&start=${toUtcInput(b.day, false)}`} className="block rounded-lg border border-line p-2 hover:border-muted">
                     <div className="font-medium">{toUtcInput(b.day, false)}</div>
                     <div className="tabular text-xs text-muted">
                       <span className="text-both">{b.both.toFixed(0)}% both</span> · <span className="text-sun">{b.lit.toFixed(0)}% light</span> · <span className="text-earth">{b.comms.toFixed(0)}% comms</span>
@@ -177,5 +201,21 @@ export function CalendarView() {
         </div>
       )}
     </div>
+  );
+}
+
+function CalendarCustomInputs({ value, onChange }: { value: { lat: number; lon: number }; onChange: (v: { lat: number; lon: number }) => void }) {
+  const [lat, setLat] = useState(String(value.lat));
+  const [lon, setLon] = useState(String(value.lon));
+  const commit = () => {
+    const a = Number(lat);
+    const b = Number(lon);
+    if (Number.isFinite(a) && Number.isFinite(b) && Math.abs(a) <= 90 && (a !== value.lat || b !== value.lon)) onChange({ lat: a, lon: b });
+  };
+  return (
+    <span className="flex items-center gap-1" onBlur={commit} onKeyDown={(e) => e.key === "Enter" && commit()}>
+      <input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} className="w-20" aria-label="Latitude (south negative)" title="Latitude, south negative" />
+      <input type="number" step="any" value={lon} onChange={(e) => setLon(e.target.value)} className="w-20" aria-label="Longitude (east positive)" title="Longitude, east positive" />
+    </span>
   );
 }

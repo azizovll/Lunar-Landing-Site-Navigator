@@ -54,9 +54,9 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
 
   const { terrainPath, skyPath } = useMemo(() => {
     const pts: string[] = [];
-    for (let i = 0; i <= 720; i++) {
-      const az = center - 180 + i * 0.5;
-      pts.push(`${(i * 0.5 * (W / 360)).toFixed(1)},${(H - (horizonEl(horizon, az) - elMin) * (H / (elMax - elMin))).toFixed(1)}`);
+    for (let i = 0; i <= 1440; i++) {
+      const az = center - 180 + i * 0.25;
+      pts.push(`${(i * 0.25 * (W / 360)).toFixed(1)},${(H - (horizonEl(horizon, az) - elMin) * (H / (elMax - elMin))).toFixed(1)}`);
     }
     const line = pts.join(" L");
     return { terrainPath: `M0,${H} L${line} L${W},${H} Z`, skyPath: `M0,0 L${line} L${W},0 Z` };
@@ -164,7 +164,12 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
           <span className="text-earth">●</span> Earth track 30 days (libration wobble)
         </span>
         <span>Grey: terrain horizon{horizon ? "" : " (flat: no DEM here)"}</span>
-        <span>Vertical scale ×{exaggeration.toFixed(1)}; disk sizes true on the vertical axis</span>
+        <span>
+          Vertical scale ×{exaggeration.toFixed(1)};{" "}
+          {now.sunR * pyd < 3 || now.earthR * pyd < 4
+            ? "disks enlarged to stay visible at this scale (true sizes in the 1:1 close-ups)"
+            : "disk sizes true on the vertical axis"}
+        </span>
       </figcaption>
     </figure>
   );

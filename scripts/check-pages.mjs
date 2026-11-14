@@ -6,7 +6,21 @@ import { existsSync, mkdirSync } from "node:fs";
 const base = process.argv[2] ?? "http://localhost:3000";
 const out = process.argv[3] ?? "screenshots";
 const paths = process.argv.slice(4).length ? process.argv.slice(4) : ["/", "/compare", "/calendar", "/validation", "/about"];
-const exe = ["C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe", "C:/Program Files/Google/Chrome/Application/chrome.exe"].find(existsSync);
+// Any Chromium-based browser works: set BROWSER_PATH, or one of the usual install paths is used.
+const exe = [
+  process.env.BROWSER_PATH,
+  "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+  "/usr/bin/google-chrome",
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
+].find((p) => p && existsSync(p));
+if (!exe) {
+  console.error("No Chromium-based browser found. Set BROWSER_PATH=/path/to/chrome.");
+  process.exit(2);
+}
 mkdirSync(out, { recursive: true });
 const browser = await puppeteer.launch({ executablePath: exe, headless: true });
 let failures = 0;

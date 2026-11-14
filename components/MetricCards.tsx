@@ -29,11 +29,11 @@ function Row({ label, value, sub }: { label: React.ReactNode; value: React.React
   );
 }
 
-function EventRow({ label, at, now }: { label: string; at: number | null; now: number }) {
+function EventRow({ label, at, now, searchDays }: { label: string; at: number | null; now: number; searchDays: number }) {
   return (
     <Row
       label={label}
-      value={at === null ? <span className="text-muted">not within 45 days</span> : fmtRelative(at, now)}
+      value={at === null ? <span className="text-muted">not within {searchDays} days</span> : fmtRelative(at, now)}
       sub={at === null ? undefined : fmtUtc(at)}
     />
   );
@@ -42,12 +42,14 @@ function EventRow({ label, at, now }: { label: string; at: number | null; now: n
 interface Props {
   now: Sample;
   events: Events;
+  /** how far ahead (days) the event search reaches from the cursor */
+  searchDays: number;
   metrics: WindowMetrics;
   settings: Settings;
   onSettings: (s: Partial<Settings>) => void;
 }
 
-export function MetricCards({ now, events, metrics, settings, onSettings }: Props) {
+export function MetricCards({ now, events, searchDays, metrics, settings, onSettings }: Props) {
   const { mode } = useMode();
   const expert = mode === "expert";
   const lit = now.sunFrac > 0;
@@ -69,7 +71,7 @@ export function MetricCards({ now, events, metrics, settings, onSettings }: Prop
           {lit ? `${(now.sunFrac * 100).toFixed(0)}% of Sun visible` : "Sun hidden"}
         </div>
         <Row label="Sun elevation" value={`${now.sunEl.toFixed(2)}°`} sub={expert ? `az ${now.sunAz.toFixed(2)}° · terrain ${now.sunHz.toFixed(2)}°` : `toward ${compass(now.sunAz)}`} />
-        {lit ? <EventRow label="Sunset over terrain" at={events.sunset} now={now.t} /> : <EventRow label="Sunrise over terrain" at={events.sunrise} now={now.t} />}
+        {lit ? <EventRow label="Sunset over terrain" at={events.sunset} now={now.t} searchDays={searchDays} /> : <EventRow label="Sunrise over terrain" at={events.sunrise} now={now.t} searchDays={searchDays} />}
         <Row label={`Illumination (${wDays} d)`} value={`${metrics.illuminationPct.toFixed(1)}%`} />
         <Row label="Longest night" value={fmtHours(metrics.longestNightH)} />
         <Row
@@ -103,7 +105,7 @@ export function MetricCards({ now, events, metrics, settings, onSettings }: Prop
           value={`${now.earthClear >= 0 ? "+" : ""}${now.earthClear.toFixed(2)}°`}
           sub={expert ? `el ${now.earthEl.toFixed(2)}° · az ${now.earthAz.toFixed(2)}° · terrain ${now.earthHz.toFixed(2)}°` : `toward ${compass(now.earthAz)}`}
         />
-        {comms ? <EventRow label="Earthset (loss of link)" at={events.earthset} now={now.t} /> : <EventRow label="Earthrise (link back)" at={events.earthrise} now={now.t} />}
+        {comms ? <EventRow label="Earthset (loss of link)" at={events.earthset} now={now.t} searchDays={searchDays} /> : <EventRow label="Earthrise (link back)" at={events.earthrise} now={now.t} searchDays={searchDays} />}
         <Row label={`Comms available (${wDays} d)`} value={`${metrics.commsPct.toFixed(1)}%`} />
         <Row label="Longest blackout" value={fmtHours(metrics.longestBlackoutH)} />
         <Row

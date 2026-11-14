@@ -10,10 +10,11 @@ import { useResolvedSite } from "@/lib/useResolvedSite";
 import { Lens, Panorama } from "./Panorama";
 import { Timeline } from "./Timeline";
 import { MetricCards, VerdictBadge } from "./MetricCards";
-import { overallVerdict } from "@/lib/metrics";
+import { commsVerdict, overallVerdict, powerVerdict } from "@/lib/metrics";
 import { PolarMap } from "./PolarMap";
-import { SiteList } from "./SiteList";
+import { Dot, SiteList } from "./SiteList";
 import { ExpertOnly, Tip, useMode } from "./ModeProvider";
+import { CopyLinkButton } from "./CopyLinkButton";
 
 const TIMELINE_DAYS = 30;
 const SERIES_DAYS = 45; // extra 15 days so countdowns near the end of the timeline still resolve
@@ -38,11 +39,12 @@ export function SiteView() {
   // "now" is fixed once per page load so the page renders deterministically.
   const [loadTime] = useState(() => alignTime(Date.now(), 60_000));
   const start = parseUtc(params.get("start")) ?? alignTime(loadTime, DAY);
-  const settings: Settings = {
-    marginDeg: Number(params.get("margin") ?? DEFAULT_SETTINGS.marginDeg),
-    panel: params.get("panel") === "horizontal" ? "horizontal" : "tracking",
-    windowDays: Number(params.get("window") ?? DEFAULT_SETTINGS.windowDays),
-  };
+  // Memoised on the primitive values: a fresh object on every render (e.g. each playback frame)
+  // would make the site list recompute 13 sites per frame.
+  const marginDeg = Number(params.get("margin") ?? DEFAULT_SETTINGS.marginDeg);
+  const panel: Settings["panel"] = params.get("panel") === "horizontal" ? "horizontal" : "tracking";
+  const windowDays = Number(params.get("window") ?? DEFAULT_SETTINGS.windowDays);
+  const settings: Settings = useMemo(() => ({ marginDeg, panel, windowDays }), [marginDeg, panel, windowDays]);
   const urlT = parseUtc(params.get("t"));
   const [t, setT] = useState<number>(() => urlT ?? Math.min(Math.max(loadTime, start), start + TIMELINE_DAYS * DAY));
   const [playing, setPlaying] = useState(false);
@@ -54,7 +56,7 @@ export function SiteView() {
   const series = useMemo(() => (site ? sampleSeries(site, start, start + SERIES_DAYS * DAY) : []), [site, start]);
   const windowFrom = start;
   const windowTo = start + settings.windowDays * DAY;
-  const metrics = useMemo(() => windowMetrics(series, windowFrom, windowTo, settings), [series, windowFrom, windowTo, settings.marginDeg, settings.panel]); // eslint-disable-line react-hooks/exhaustive-deps
+  const metrics = useMemo(() => windowMetrics(series, windowFrom, windowTo, settings), [series, windowFrom, windowTo, settings]);
   const now = useMemo(() => (site ? sampleAt(site, Math.round(clampedT)) : null), [site, clampedT]);
   // Events only need minute resolution (hourly while playing): avoids recomputation on every animation frame.
   const eventStep = playing ? HOUR : 60_000;
@@ -128,13 +130,21 @@ export function SiteView() {
           <div>
             <h1 className="text-xl font-semibold sm:text-2xl">
               {site?.name ?? "Custom point"}{" "}
-              {site && <VerdictBadge v={overallVerdict(metrics)} />}
+              {site && (
+                <span className="inline-flex flex-wrap items-center gap-1 align-middle">
+                  <VerdictBadge v={overallVerdict(metrics)} />
+                  <Dot v={powerVerdict(metrics)} label="Power" color="var(--sun)" />
+                  <Dot v={commsVerdict(metrics)} label="Comms" color="var(--earth)" />
+                </span>
+              )}
             </h1>
             <p className="text-sm text-muted">
               {site ? fmtLatLon(site.lat, site.lon) : ""}
               {site?.terrain === "lola" && ` · terrain ${Math.round(site.heightM ?? 0)} m · horizon from ${site.dem}`}
               {site?.terrain === "approx" && (
-                <span className="ml-1 rounded bg-marginal/15 px-1.5 text-marginal">lower accuracy: approximate horizon from 480 m/px DEM</span>
+                <span className="ml-1 rounded bg-marginal/15 px-1.5 text-marginal" title="Tested on 4 preset sites: horizon RMS error 0.6–0.8°, up to 3°; annual illumination and comms within about ±6 percentage points.">
+                  lower accuracy: approximate horizon from 480 m/px DEM (illumination/comms ±~6 pp)
+                </span>
               )}
               {site?.terrain === "flat" && <span className="ml-1 rounded bg-panel2 px-1.5">flat horizon (outside the polar DEM)</span>}
               {site?.meta && (
@@ -169,7 +179,16 @@ export function SiteView() {
           </div>
         </header>
 
-        {site?.meta?.note && <p className="-mt-1 text-sm text-muted">{site.meta.note}</p>}
+        {site?.meta?.note && (
+          <p className="-mt-1 text-sm text-muted">
+            {site.meta.snapKm && (
+              <span className="mr-1.5 rounded bg-panel2 px-1.5 text-foreground" title="Region-level coordinate moved to the highest DEM point nearby: results describe the best local spot, not the whole region.">
+                crest point (snapped ≤{site.meta.snapKm} km)
+              </span>
+            )}
+            {site.meta.note}
+          </p>
+        )}
 
         {loading || !site || !now ? (
           <div className="card grid h-72 place-items-center text-muted">Computing terrain horizon in the browser…</div>
@@ -217,7 +236,14 @@ export function SiteView() {
               skimming the ridges. A few metres of terrain decide light or shadow, which is why every site here uses a real LOLA horizon.
             </Tip>
 
-            <MetricCards now={now} events={events} metrics={metrics} settings={settings} onSettings={onSettings} />
+            <MetricCards
+              now={now}
+              events={events}
+              searchDays={Math.max(0, Math.floor((start + SERIES_DAYS * DAY - clampedT) / DAY))}
+              metrics={metrics}
+              settings={settings}
+              onSettings={onSettings}
+            />
 
             <Timeline series={series} start={start} days={TIMELINE_DAYS} t={clampedT} windowFrom={windowFrom} windowTo={windowTo} marginDeg={settings.marginDeg} onSeek={(v) => {
               setPlaying(false);
@@ -229,14 +255,7 @@ export function SiteView() {
                 <button className="btn" onClick={exportCsv}>
                   Export 30-day CSV (10-min steps)
                 </button>
-                <button
-                  className="btn"
-                  onClick={() => {
-                    navigator.clipboard?.writeText(window.location.href);
-                  }}
-                >
-                  Copy shareable link
-                </button>
+                <CopyLinkButton />
                 <span className="text-muted">Azimuth: degrees clockwise from lunar north (N 0°, E 90°). Elevations are topocentric, airless, relative to the local sphere horizontal.</span>
               </div>
             </ExpertOnly>

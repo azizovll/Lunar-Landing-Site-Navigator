@@ -11,6 +11,9 @@ export interface SiteMeta {
   note: string;
   source: string;
   sourceLabel: string;
+  /** set when a region-level coordinate was snapped to the local DEM crest */
+  snapKm?: number;
+  snappedFrom?: [number, number];
 }
 
 interface HorizonEntry {
