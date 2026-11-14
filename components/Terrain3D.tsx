@@ -67,7 +67,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
     flyTo: (id: string | null) => void;
     standAt: (id: string) => void;
     setRays: (id: string | null, sunOk: boolean, earthOk: boolean) => void;
-    computeLight: (from: number) => Promise<boolean>;
+    computeLight: (from: number) => Promise<"ok" | "stale" | "failed">;
     setHeat: (on: boolean) => void;
   } | null>(null);
   const scaleBar = useRef<HTMLDivElement>(null);
@@ -94,6 +94,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   // sunlight map: share of the next lunar month in sunlight, computed in workers
   const [heat, setHeat] = useState(false);
   const [lightFrom, setLightFrom] = useState<number | null>(null);
+  const [lightFailed, setLightFailed] = useState(false);
 
   useEffect(() => {
     let disposed = false;
@@ -449,23 +450,33 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       const computeLight = async (from: number) => {
         const id = ++lightReq;
         const W = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
-        while (pool.length < W) pool.push(new Worker(new URL("../lib/lightmap.worker.ts", import.meta.url)));
+        try {
+          while (pool.length < W) pool.push(new Worker(new URL("../lib/lightmap.worker.ts", import.meta.url)));
+        } catch {
+          return "failed" as const;
+        }
         const chunk = Math.ceil(N / W / 2) * 2;
         const parts = await Promise.all(
           pool.slice(0, W).map(
             (w, q) =>
               new Promise<{ lit: Float32Array; rowFrom: number; rowTo: number } | null>((resolve) => {
-                const onMsg = (e: MessageEvent) => {
-                  if (e.data.id !== id) return;
+                const done = (v: { lit: Float32Array; rowFrom: number; rowTo: number } | null) => {
+                  clearTimeout(timer);
                   w.removeEventListener("message", onMsg);
-                  resolve(e.data.ok ? e.data : null);
+                  w.removeEventListener("error", onErr);
+                  resolve(v);
                 };
+                const onMsg = (e: MessageEvent) => e.data.id === id && done(e.data.ok ? e.data : null);
+                const onErr = () => done(null);
+                const timer = setTimeout(() => done(null), 60_000); // a very slow device: give up, keep the normal view
                 w.addEventListener("message", onMsg);
+                w.addEventListener("error", onErr);
                 w.postMessage({ id, from, to: from + 29.5 * DAY, stepMs: 6 * 3_600_000, rowFrom: q * chunk, rowTo: Math.min(N, (q + 1) * chunk) });
               }),
           ),
         );
-        if (disposed || id !== lightReq || parts.some((x) => !x)) return false;
+        if (disposed || id !== lightReq) return "stale" as const;
+        if (parts.some((x) => !x)) return "failed" as const;
         const lit = new Float32Array(N * N).fill(-1);
         for (const part of parts) lit.set(part!.lit.subarray(part!.rowFrom * N, part!.rowTo * N), part!.rowFrom * N);
         normalCol = new Float32Array(M * M * 3);
@@ -484,7 +495,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
             heatCol.set([c.r, c.g, c.b], v * 3);
           }
         applyColours();
-        return true;
+        return "ok" as const;
       };
       const setHeatView = (on: boolean) => {
         heatOn = on;
@@ -893,7 +904,11 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
     if (!ready) return;
     let alive = true;
     const id = setTimeout(() => {
-      api.current?.computeLight(lightDay).then((ok) => alive && ok && setLightFrom(lightDay));
+      api.current?.computeLight(lightDay).then((r) => {
+        if (!alive) return;
+        if (r === "ok") setLightFrom(lightDay);
+        if (r === "failed") setLightFailed(true);
+      });
     }, 600);
     return () => {
       alive = false;
@@ -1244,15 +1259,17 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           >
             {playing ? "❚❚ Pause" : "▶ Lunar day"}
           </button>
-          <button
-            className={`btn !py-1.5 text-xs ${heat ? "btn-solid" : ""}`}
-            onClick={() => setHeat((h) => !h)}
-            disabled={lightFrom === null}
-            aria-pressed={heat}
-            title="Colour the ground by how much of the next lunar month it spends in sunlight"
-          >
-            {lightFrom === null ? "Light map…" : "☀ Light map"}
-          </button>
+          {!lightFailed && (
+            <button
+              className={`btn !py-1.5 text-xs ${heat ? "btn-solid" : ""}`}
+              onClick={() => setHeat((h) => !h)}
+              disabled={lightFrom === null}
+              aria-pressed={heat}
+              title="Colour the ground by how much of the next lunar month it spends in sunlight"
+            >
+              {lightFrom === null ? "Light map…" : "☀ Light map"}
+            </button>
+          )}
           <span className="hidden text-xs text-muted sm:inline">
             {new Date(shownT).toISOString().slice(0, 16).replace("T", " ")} UTC{playing ? ` · ×${speedH} h/s` : ""}
           </span>
@@ -1285,8 +1302,32 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       </div>
       </div>
       <figcaption className="text-center text-xs text-muted">
-        NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time. Lander models are ~300× real size: panels face the real Sun, dishes point at the real
-        Earth (shown 2.5× larger). Drag to rotate; hover a pin or a name for a photo, click to fly in; “Stand on the surface” puts you on the ground facing Earth; ▶ Lunar day plays the Sun and shadows. A selected station shows its line of sight to the Sun (gold) and Earth (blue), red where hills block it. ☀ Light map colours the ground by its share of sunlight over the next lunar month (ground that stays dark all month is also shaded darker in the normal view). ◆ Hardware already on the surface (red: impact sites).
+        <details className="group mx-auto max-w-3xl">
+          <summary className="cursor-pointer list-none underline-offset-4 hover:text-foreground [&::-webkit-details-marker]:hidden">
+            NASA LOLA relief, lit by the real Sun at the selected time · <span className="underline">How to read this view</span>{" "}
+            <span className="inline-block transition-transform group-open:rotate-180">▾</span>
+          </summary>
+          <ul className="mt-3 grid gap-1.5 text-left leading-relaxed sm:grid-cols-2">
+            <li>
+              <b className="text-foreground">Scale.</b> Heights are exaggerated ×2 on the true lunar curvature; lander models are ~300× real size and Earth is drawn 2.5× larger.
+            </li>
+            <li>
+              <b className="text-foreground">Pins.</b> Colour = score for a 14-day mission from today (green 70+, amber 40–69, red under 40). Faded pins are behind hills.
+            </li>
+            <li>
+              <b className="text-foreground">Lines of sight.</b> A selected station shows its path to the Sun (gold) and Earth (blue), red where hills block it or the body is below the horizon.
+            </li>
+            <li>
+              <b className="text-foreground">Maps.</b> ☀ Light map: share of the next lunar month in sunlight. Ground dark all month is also shaded darker in the normal view. Approximate (1.3 km grid).
+            </li>
+            <li>
+              <b className="text-foreground">Controls.</b> Drag to rotate; hover a pin or name for a photo, click to fly in; “Stand on the surface” faces Earth; ▶ Lunar day plays the Sun and shadows.
+            </li>
+            <li>
+              <b className="text-foreground">◆ Hardware</b> already on the surface (red: impact sites).
+            </li>
+          </ul>
+        </details>
       </figcaption>
     </figure>
   );
