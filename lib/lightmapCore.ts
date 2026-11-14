@@ -22,13 +22,16 @@ export interface LightGrid {
 export interface LightOptions {
   azimuths?: number;
   innerKm?: number;
+  /** the body must clear the horizon by this much (deg); 0 for the Sun, the comms margin for Earth */
+  marginDeg?: number;
   /** compute only grid lines [rowFrom, rowTo) (to split the work across workers); must be even */
   rowFrom?: number;
   rowTo?: number;
 }
 
 /**
- * @param sun Moon-fixed unit vectors to the Sun (x to lon 0, z to the north pole), 3 per sample
+ * @param sun Moon-fixed unit vectors to the Sun or Earth (x to lon 0, z to the north pole), 3 per sample.
+ *   Earth works too: at 384 000 km its parallax across the 660 km map is under 0.05°.
  * @returns lit fraction 0..1 per grid point (n×n, row-major; −1 outside the usable disc or not computed)
  */
 export function computeLightMap(grid: LightGrid, sun: Float64Array, opts: LightOptions = {}): Float32Array {
@@ -37,6 +40,7 @@ export function computeLightMap(grid: LightGrid, sun: Float64Array, opts: LightO
   const inner = (opts.innerKm ?? 190) * 1000;
   const rowFrom = opts.rowFrom ?? 0;
   const rowTo = opts.rowTo ?? n;
+  const margin = (opts.marginDeg ?? 0) * D2R;
   const off = (n - 1) / 2;
   const out = new Float32Array(n * n).fill(-1);
   const T = sun.length / 3;
@@ -84,7 +88,7 @@ export function computeLightMap(grid: LightGrid, sun: Float64Array, opts: LightO
         const t = (data[ii * n + jj] - h0 - DR[q]) / D[q];
         if (t > best) best = t;
       }
-      tanHz[k] = best;
+      tanHz[k] = margin ? Math.tan(Math.atan(best) + margin) : best;
     }
     const sl = Math.sin(lon), cl = Math.cos(lon);
     const cla = Math.cos(lat), sla = Math.sin(lat);

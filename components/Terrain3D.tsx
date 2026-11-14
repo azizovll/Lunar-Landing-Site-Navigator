@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { frameVectors, type Vec3 } from "@/lib/astro";
 import { SITES, fmtLatLon, resolvePreset } from "@/lib/sites";
-import { DAY, HOUR, alignTime, sampleAt, sampleSeries, windowMetrics } from "@/lib/metrics";
+import { DAY, DEFAULT_SETTINGS, HOUR, alignTime, sampleAt, sampleSeries, windowMetrics } from "@/lib/metrics";
+import { lightAt } from "@/lib/lightmapCore";
 import { LIGHT_COLOR, light, score } from "@/lib/score";
 import { NEIGHBORS } from "@/lib/neighbors";
 
@@ -49,6 +50,12 @@ interface Props {
 }
 
 const SOUTH_SITES = SITES.filter((s) => s.lat <= -80);
+type MapBody = "sun" | "earth";
+/** colour ramps of the two maps (also drawn in the legends) */
+const MAP_RAMP: Record<MapBody, string[]> = {
+  sun: ["#0b0c1e", "#2b1d5c", "#7d2f6e", "#c9542e", "#eea53a", "#fff2c4"],
+  earth: ["#0b0c1e", "#10284d", "#1b5c96", "#3f97d1", "#9bd3f2", "#e6f6ff"],
+};
 /** one decimal, never "-0.0°" */
 const deg = (v: number) => `${(Math.abs(v) < 0.05 ? 0 : v).toFixed(1)}°`;
 /** Hardware already on the surface inside the 3D area (Odysseus is shown as a station already). */
@@ -67,8 +74,9 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
     flyTo: (id: string | null) => void;
     standAt: (id: string) => void;
     setRays: (id: string | null, sunOk: boolean, earthOk: boolean) => void;
-    computeLight: (from: number) => Promise<"ok" | "stale" | "failed">;
-    setHeat: (on: boolean) => void;
+    computeLight: (from: number, body: MapBody) => Promise<"ok" | "stale" | "failed">;
+    setMap: (mode: MapBody | null) => void;
+    mapAt: (lat: number, lon: number) => { sun: number | null; earth: number | null };
   } | null>(null);
   const scaleBar = useRef<HTMLDivElement>(null);
   const scaleLabel = useRef<HTMLSpanElement>(null);
@@ -91,9 +99,10 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   const [caption, setCaption] = useState<string | null>(null);
   const [touring, setTouring] = useState(false);
   const tourId = useRef(0);
-  // sunlight map: share of the next lunar month in sunlight, computed in workers
-  const [heat, setHeat] = useState(false);
+  // maps: share of the next lunar month in sunlight / with Earth in view, computed in workers
+  const [mapMode, setMapMode] = useState<MapBody | null>(null);
   const [lightFrom, setLightFrom] = useState<number | null>(null);
+  const [earthFrom, setEarthFrom] = useState<number | null>(null);
   const [lightFailed, setLightFailed] = useState(false);
 
   useEffect(() => {
@@ -429,26 +438,28 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       const shade = new Float32Array(M * M);
       const L = new THREE.Vector3(0.35, 1, 0.25).normalize();
       for (let v = 0; v < M * M; v++) shade[v] = 0.45 + 0.55 * Math.max(0, nrm.getX(v) * L.x + nrm.getY(v) * L.y + nrm.getZ(v) * L.z);
-      const RAMP = ["#0b0c1e", "#2b1d5c", "#7d2f6e", "#c9542e", "#eea53a", "#fff2c4"].map((h) => new THREE.Color(h));
-      const ramp = (f: number, outC: import("three").Color) => {
-        const x = Math.min(1, Math.max(0, f)) * (RAMP.length - 1);
-        const k = Math.min(RAMP.length - 2, Math.floor(x));
-        return outC.copy(RAMP[k]).lerp(RAMP[k + 1], x - k);
+      const RAMPS = { sun: MAP_RAMP.sun.map((h) => new THREE.Color(h)), earth: MAP_RAMP.earth.map((h) => new THREE.Color(h)) };
+      const ramp = (body: MapBody, f: number, outC: import("three").Color) => {
+        const R = RAMPS[body];
+        const x = Math.min(1, Math.max(0, f)) * (R.length - 1);
+        const k = Math.min(R.length - 2, Math.floor(x));
+        return outC.copy(R[k]).lerp(R[k + 1], x - k);
       };
       const heatMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+      const lits: Partial<Record<MapBody, Float32Array>> = {};
+      const heatCols: Partial<Record<MapBody, Float32Array>> = {};
       let normalCol: Float32Array | null = null;
-      let heatCol: Float32Array | null = null;
-      let heatOn = false;
+      let mapMode: MapBody | null = null;
       const applyColours = () => {
-        const src = heatOn && heatCol ? heatCol : normalCol ?? fadeCol;
-        col.set(src);
+        const heat = mapMode ? heatCols[mapMode] : undefined;
+        col.set(heat ?? normalCol ?? fadeCol);
         colAttr.needsUpdate = true;
-        ground.material = heatOn && heatCol ? heatMat : mat;
+        ground.material = heat ? heatMat : mat;
       };
       const pool: Worker[] = [];
-      let lightReq = 0;
-      const computeLight = async (from: number) => {
-        const id = ++lightReq;
+      const lightReq: Record<MapBody, number> = { sun: 0, earth: 0 };
+      const computeLight = async (from: number, body: MapBody) => {
+        const id = ++lightReq[body];
         const W = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
         try {
           while (pool.length < W) pool.push(new Worker(new URL("../lib/lightmap.worker.ts", import.meta.url)));
@@ -466,41 +477,61 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
                   w.removeEventListener("error", onErr);
                   resolve(v);
                 };
-                const onMsg = (e: MessageEvent) => e.data.id === id && done(e.data.ok ? e.data : null);
+                const onMsg = (e: MessageEvent) => e.data.id === id && e.data.body === body && done(e.data.ok ? e.data : null);
                 const onErr = () => done(null);
                 const timer = setTimeout(() => done(null), 60_000); // a very slow device: give up, keep the normal view
                 w.addEventListener("message", onMsg);
                 w.addEventListener("error", onErr);
-                w.postMessage({ id, from, to: from + 29.5 * DAY, stepMs: 6 * 3_600_000, rowFrom: q * chunk, rowTo: Math.min(N, (q + 1) * chunk) });
+                w.postMessage({
+                  id,
+                  body,
+                  // Earth must clear the hills by the comms margin, as in the site metrics
+                  marginDeg: body === "earth" ? DEFAULT_SETTINGS.marginDeg : 0,
+                  from,
+                  to: from + 29.5 * DAY,
+                  stepMs: 6 * 3_600_000,
+                  rowFrom: q * chunk,
+                  rowTo: Math.min(N, (q + 1) * chunk),
+                });
               }),
           ),
         );
-        if (disposed || id !== lightReq) return "stale" as const;
+        if (disposed || id !== lightReq[body]) return "stale" as const;
         if (parts.some((x) => !x)) return "failed" as const;
         const lit = new Float32Array(N * N).fill(-1);
         for (const part of parts) lit.set(part!.lit.subarray(part!.rowFrom * N, part!.rowTo * N), part!.rowFrom * N);
-        normalCol = new Float32Array(M * M * 3);
-        heatCol = new Float32Array(M * M * 3);
+        lits[body] = lit;
+        const heat = new Float32Array(M * M * 3);
+        const norm = body === "sun" ? new Float32Array(M * M * 3) : null;
         const c = new THREE.Color();
         for (let a = 0; a < M; a++)
           for (let b = 0; b < M; b++) {
             const v = a * M + b;
             const f = lit[a * stride * N + b * stride];
             const fade = fadeCol[v * 3];
-            // in shadow all month: only faint earthshine and light scattered off sunlit walls reach it
-            const dark = f < 0 ? 1 : 0.3 + 0.7 * Math.min(1, f / 0.04);
-            normalCol[v * 3] = normalCol[v * 3 + 1] = normalCol[v * 3 + 2] = fade * dark;
+            if (norm) {
+              // in shadow all month: only faint earthshine and light scattered off sunlit walls reach it
+              const dark = f < 0 ? 1 : 0.3 + 0.7 * Math.min(1, f / 0.04);
+              norm[v * 3] = norm[v * 3 + 1] = norm[v * 3 + 2] = fade * dark;
+            }
             if (f < 0) c.setRGB(0, 0, 0);
-            else ramp(f, c).multiplyScalar(shade[v] * fade);
-            heatCol.set([c.r, c.g, c.b], v * 3);
+            else ramp(body, f, c).multiplyScalar(shade[v] * fade);
+            heat.set([c.r, c.g, c.b], v * 3);
           }
+        heatCols[body] = heat;
+        if (norm) normalCol = norm;
         applyColours();
         return "ok" as const;
       };
-      const setHeatView = (on: boolean) => {
-        heatOn = on;
+      const setMap = (mode: MapBody | null) => {
+        mapMode = mode;
         applyColours();
       };
+      const lightGrid = { data: heights, n: N, scaleM: scale };
+      const mapAt = (lat: number, lon: number) => ({
+        sun: lits.sun ? lightAt(lits.sun, lightGrid, lat, lon) : null,
+        earth: lits.earth ? lightAt(lits.earth, lightGrid, lat, lon) : null,
+      });
 
       // ---- lines of sight from the focused station to the Sun and to Earth.
       // Colour comes from the exact horizon calculation (the same numbers as the sky view); the 3D
@@ -809,7 +840,8 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         standAt,
         setRays,
         computeLight,
-        setHeat: setHeatView,
+        setMap,
+        mapAt,
       };
       setReady(true);
 
@@ -904,7 +936,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
     if (!ready) return;
     let alive = true;
     const id = setTimeout(() => {
-      api.current?.computeLight(lightDay).then((r) => {
+      api.current?.computeLight(lightDay, "sun").then((r) => {
         if (!alive) return;
         if (r === "ok") setLightFrom(lightDay);
         if (r === "failed") setLightFailed(true);
@@ -915,9 +947,23 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       clearTimeout(id);
     };
   }, [ready, lightDay]);
+  // the Earth map is computed only once someone asks for it (and again if the day changes)
+  const wantEarth = mapMode === "earth" || earthFrom !== null;
   useEffect(() => {
-    api.current?.setHeat(heat);
-  }, [heat, lightFrom]);
+    if (!ready || !wantEarth || earthFrom === lightDay) return;
+    let alive = true;
+    api.current?.computeLight(lightDay, "earth").then((r) => {
+      if (!alive) return;
+      if (r === "ok") setEarthFrom(lightDay);
+      if (r === "failed") setLightFailed(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [ready, wantEarth, earthFrom, lightDay]);
+  useEffect(() => {
+    api.current?.setMap(mapMode);
+  }, [mapMode, lightFrom, earthFrom]);
   useEffect(() => {
     api.current?.setRays(rayId, sunOk, earthOk);
   }, [rayId, sunOk, earthOk, ready]);
@@ -1194,14 +1240,15 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
               </span>
             </div>
           )}
-          {heat && lightFrom !== null && (
+          {mapMode && (mapMode === "sun" ? lightFrom : earthFrom) !== null && (
             <span className="flex flex-col gap-1 bg-black/55 px-2.5 py-1.5 text-[11px] text-muted backdrop-blur-sm">
               <span>
-                Time in sunlight, {new Date(lightFrom).toISOString().slice(0, 10)} + 29.5 days
+                {mapMode === "sun" ? "Time in sunlight" : `Time with Earth ${DEFAULT_SETTINGS.marginDeg}° above the hills (direct radio link)`},{" "}
+                {new Date((mapMode === "sun" ? lightFrom : earthFrom)!).toISOString().slice(0, 10)} + 29.5 days
               </span>
               <span className="flex items-center gap-2">
                 0%
-                <span className="block h-2 w-32" style={{ background: "linear-gradient(to right,#0b0c1e,#2b1d5c,#7d2f6e,#c9542e,#eea53a,#fff2c4)" }} />
+                <span className="block h-2 w-32" style={{ background: `linear-gradient(to right,${MAP_RAMP[mapMode].join(",")})` }} />
                 100%
               </span>
               <span className="text-faint">approximate: 1.3 km grid; site numbers use 20 m horizons</span>
@@ -1247,7 +1294,8 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
             </button>
           </div>
         )}
-        <div className="absolute bottom-3 left-4 flex items-center gap-2 sm:bottom-[6%] sm:left-[6%]">
+        <div className="absolute bottom-3 left-4 flex flex-col-reverse items-start gap-1.5 sm:bottom-[6%] sm:left-[6%]">
+          <div className="flex items-center gap-2">
           <button
             className={`btn !py-1.5 text-xs ${playing ? "btn-solid" : ""}`}
             onClick={() => {
@@ -1260,17 +1308,29 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
             {playing ? "❚❚ Pause" : "▶ Lunar day"}
           </button>
           {!lightFailed && (
-            <button
-              className={`btn !py-1.5 text-xs ${heat ? "btn-solid" : ""}`}
-              onClick={() => setHeat((h) => !h)}
-              disabled={lightFrom === null}
-              aria-pressed={heat}
-              title="Colour the ground by how much of the next lunar month it spends in sunlight"
-            >
-              {lightFrom === null ? "Light map…" : "☀ Light map"}
-            </button>
+            <>
+              <button
+                className={`btn !py-1.5 text-xs ${mapMode === "sun" ? "btn-solid" : ""}`}
+                onClick={() => setMapMode((m) => (m === "sun" ? null : "sun"))}
+                disabled={lightFrom === null}
+                aria-pressed={mapMode === "sun"}
+                title="Colour the ground by how much of the next lunar month it spends in sunlight"
+              >
+                {lightFrom === null ? "Light map…" : "☀ Light map"}
+              </button>
+              <button
+                className={`btn !py-1.5 text-xs ${mapMode === "earth" ? "btn-solid" : ""}`}
+                onClick={() => setMapMode((m) => (m === "earth" ? null : "earth"))}
+                disabled={lightFrom === null}
+                aria-pressed={mapMode === "earth"}
+                title="Colour the ground by how much of the next lunar month Earth is in view for a direct radio link"
+              >
+                {mapMode === "earth" && earthFrom === null ? "Signal map…" : "⊕ Signal map"}
+              </button>
+            </>
           )}
-          <span className="hidden text-xs text-muted sm:inline">
+          </div>
+          <span className="hidden bg-black/50 px-1 text-xs text-muted sm:inline">
             {new Date(shownT).toISOString().slice(0, 16).replace("T", " ")} UTC{playing ? ` · ×${speedH} h/s` : ""}
           </span>
         </div>
@@ -1318,7 +1378,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
               <b className="text-foreground">Lines of sight.</b> A selected station shows its path to the Sun (gold) and Earth (blue), red where hills block it or the body is below the horizon.
             </li>
             <li>
-              <b className="text-foreground">Maps.</b> ☀ Light map: share of the next lunar month in sunlight. Ground dark all month is also shaded darker in the normal view. Approximate (1.3 km grid).
+              <b className="text-foreground">Maps.</b> ☀ Light map: share of the next lunar month in sunlight; ⊕ Signal map: share with Earth in view for a direct link. Ground dark all month is also shaded darker in the normal view. Approximate (1.3 km grid).
             </li>
             <li>
               <b className="text-foreground">Controls.</b> Drag to rotate; hover a pin or name for a photo, click to fly in; “Stand on the surface” faces Earth; ▶ Lunar day plays the Sun and shadows.
