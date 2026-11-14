@@ -216,6 +216,26 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       sunSprite.scale.set(160, 160, 1);
       scene.add(sunSprite);
 
+      // Faint star field (decorative): random directions on a far sphere, a few brighter stars.
+      const STARS = 1600;
+      const starPos = new Float32Array(STARS * 3);
+      const starCol = new Float32Array(STARS * 3);
+      let seed = 12345;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      for (let q = 0; q < STARS; q++) {
+        const u = rnd() * 2 - 1;
+        const th = rnd() * Math.PI * 2;
+        const r = Math.sqrt(1 - u * u);
+        starPos.set([r * Math.cos(th) * 2600, u * 2600, r * Math.sin(th) * 2600], q * 3);
+        const b = 0.25 + Math.pow(rnd(), 6) * 0.75;
+        starCol.set([b, b, b * (0.92 + rnd() * 0.08)], q * 3);
+      }
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
+      starGeo.setAttribute("color", new THREE.BufferAttribute(starCol, 3));
+      const starMat = new THREE.PointsMaterial({ size: 1.6, sizeAttenuation: false, vertexColors: true, fog: false, transparent: true, opacity: 0.85, depthWrite: false });
+      scene.add(new THREE.Points(starGeo, starMat));
+
       const setTime = (t: number) => {
         const fv = frameVectors(new Date(t));
         const s = dir(fv.sun);
@@ -462,6 +482,8 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         earth.geometry.dispose();
         (earth.material as import("three").Material).dispose();
         earthTex.dispose();
+        starGeo.dispose();
+        starMat.dispose();
         normalTex.dispose();
         regolithTex.dispose();
         [metal, dark, cell].forEach((m) => m.dispose());
@@ -506,6 +528,41 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
 
   return (
     <figure className="flex flex-col gap-3">
+      <div className="grid gap-3 lg:grid-cols-[220px_1fr] lg:items-center">
+      <nav aria-label="Landing sites in the 3D view" className="flex gap-1.5 overflow-x-auto pb-1 lg:flex-col lg:gap-0 lg:overflow-visible lg:border-l lg:border-line lg:pb-0">
+        <div className="eyebrow mb-2 hidden !text-[0.58rem] !tracking-[0.3em] text-muted lg:block lg:pl-4">Stations</div>
+        {SOUTH_SITES.map((s) => {
+          const on = s.id === (focus ?? selectedId);
+          return (
+            <button
+              key={s.id}
+              onClick={() => pick(s.id)}
+              onPointerEnter={(e) => e.pointerType === "mouse" && hover(s.id)}
+              onPointerLeave={(e) => e.pointerType === "mouse" && hover(null)}
+              onFocus={() => hover(s.id)}
+              onBlur={() => hover(null)}
+              aria-current={on}
+              className={`shrink-0 whitespace-nowrap border px-3 py-1.5 text-left text-xs transition-colors lg:-ml-px lg:border-0 lg:border-l-2 lg:px-4 lg:py-2 lg:text-sm ${
+                on ? "border-foreground text-foreground lg:border-l-foreground lg:bg-white/[0.03]" : "border-line text-muted hover:text-foreground lg:border-l-transparent"
+              }`}
+            >
+              {s.name}
+              <span className="ml-2 hidden text-[11px] text-faint lg:inline">{Math.abs(s.lat).toFixed(1)}°S</span>
+            </button>
+          );
+        })}
+        {focus && (
+          <button
+            onClick={() => {
+              setFocus(null);
+              api.current?.flyTo(null);
+            }}
+            className="shrink-0 border border-line px-3 py-1.5 text-xs text-muted hover:text-foreground lg:mt-3 lg:ml-4 lg:w-fit"
+          >
+            ← Overview
+          </button>
+        )}
+      </nav>
       <div ref={wrap} className="relative aspect-[4/5] w-full sm:aspect-[16/8]">
         <div className="absolute inset-0 overflow-hidden" style={{ maskImage: fade, WebkitMaskImage: fade, maskComposite: "intersect", WebkitMaskComposite: "source-in" }}>
           {!ready && <div className="absolute inset-0 animate-pulse bg-[radial-gradient(ellipse_at_50%_70%,#1c1c20,#000_70%)]" aria-hidden />}
@@ -610,9 +667,10 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           />
         )}
       </div>
+      </div>
       <figcaption className="text-center text-xs text-muted">
         NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time. Lander models are ~300× real size: panels face the real Sun, dishes point at the real
-        Earth (shown 2.5× larger). Drag to rotate; hover a pin for a photo, click it to fly in.
+        Earth (shown 2.5× larger). Drag to rotate; hover a pin or a name in the list for a photo, click to fly in.
       </figcaption>
     </figure>
   );
