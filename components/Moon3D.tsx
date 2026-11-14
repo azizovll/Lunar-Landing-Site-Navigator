@@ -70,14 +70,29 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50);
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
       controls.enablePan = false;
-      controls.minDistance = 2.4;
-      controls.maxDistance = 8;
-      controls.rotateSpeed = 0.6;
+      controls.enableZoom = false; // keeps the page scrollable over the globe
+      controls.rotateSpeed = 0.55;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       controls.autoRotate = !reduceMotion;
-      controls.autoRotateSpeed = 0.35;
-      controls.addEventListener("start", () => (controls.autoRotate = false));
+      controls.autoRotateSpeed = 0.3;
+      // View of the south-polar side: the camera orbits around the Moon's spin axis (three.js Y),
+      // looking up at the pole from below at a fixed tilt. Users can spin freely around the pole,
+      // tilt a little, and the tilt springs back when they let go.
+      const PHI0 = 2.62; // polar angle from +Y (north): ~150°, i.e. looking up at the pole from 30° off the axis
+      const TILT = 0.22; // allowed tilt either way (~13°)
+      controls.minPolarAngle = PHI0 - TILT;
+      controls.maxPolarAngle = PHI0 + TILT;
+      let dragging = false;
+      controls.addEventListener("start", () => {
+        dragging = true;
+        controls.autoRotate = false;
+      });
+      controls.addEventListener("end", () => {
+        dragging = false;
+        if (!reduceMotion) setTimeout(() => !dragging && (controls.autoRotate = true), 4000);
+      });
 
       // ---- geometry: lat/lon grid with equirectangular uv (+ polar-stereographic uv1 for the cap)
       const grid = (latMin: number, latMax: number, nLat: number, nLon: number, radius: number, stereo: boolean) => {
@@ -138,7 +153,7 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       // ---- light: real Sun direction; faint fill so the night side is not pure black (Earthshine-like)
       const sun = new THREE.DirectionalLight(0xffffff, 3.2);
       scene.add(sun);
-      scene.add(new THREE.AmbientLight(0xffffff, 0.05));
+      scene.add(new THREE.AmbientLight(0xffffff, 0.09));
       const setSun = (t: number) => {
         const s = frameVectors(new Date(t)).sun;
         const n = Math.hypot(s[0], s[1], s[2]);
@@ -149,7 +164,7 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
 
       // ---- site markers
       const markers: { id: string; mesh: import("three").Mesh; normal: import("three").Vector3 }[] = [];
-      const markGeo = new THREE.SphereGeometry(0.009, 12, 8);
+      const markGeo = new THREE.SphereGeometry(0.0075, 12, 8);
       for (const s of SITES.filter((x) => x.lat <= -80)) {
         const p = toThree(bodyUnit(s.lat, s.lon));
         const mat = new THREE.MeshBasicMaterial({ color: 0xd8d8dc });
@@ -159,15 +174,15 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         moon.add(mesh);
         markers.push({ id: s.id, mesh, normal: new THREE.Vector3(...p) });
       }
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.02, 0.026, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 }));
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.014, 0.018, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 }));
       moon.add(ring);
       let selected: string | null = null;
       const setSelected = (id: string | null) => {
         selected = id;
         for (const m of markers) {
           const on = m.id === id;
-          (m.mesh.material as import("three").MeshBasicMaterial).color.set(on ? 0xffffff : 0xa8a8ae);
-          m.mesh.scale.setScalar(on ? 1.6 : 1);
+          (m.mesh.material as import("three").MeshBasicMaterial).color.set(on ? 0xffffff : 0xe2e2e6);
+          m.mesh.scale.setScalar(on ? 1.5 : 1);
           if (on) {
             ring.position.copy(m.mesh.position);
             ring.lookAt(m.normal.clone().multiplyScalar(2));
@@ -179,11 +194,15 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       // ---- camera: look at the south pole from the sunlit side
       const sunV = setSun(timeMs);
       const sunLon = Math.atan2(-sunV[2], sunV[0]) / D2R;
-      const cam = toThree(bodyUnit(-62, sunLon - 35));
-      camera.position.set(cam[0] * 4.9, cam[1] * 4.9, cam[2] * 4.9);
-      controls.target.set(0, 0, 0);
+      const target = new THREE.Vector3(0, -0.86, 0); // on the spin axis, just inside the south pole
+      const horiz = toThree(bodyUnit(0, sunLon - 35));
+      const sph = new THREE.Spherical(1.6, PHI0, Math.atan2(horiz[0], horiz[2]));
+      camera.position.copy(target).add(new THREE.Vector3().setFromSpherical(sph));
+      controls.target.copy(target);
       camera.up.set(0, 1, 0);
       controls.update();
+      const offset = new THREE.Vector3();
+      const cur = new THREE.Spherical();
 
       // ---- picking (click without drag)
       const ray = new THREE.Raycaster();
@@ -229,6 +248,16 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         raf = requestAnimationFrame(loop);
         if (!visible) return;
         controls.update();
+        if (!dragging) {
+          offset.copy(camera.position).sub(controls.target);
+          cur.setFromVector3(offset);
+          if (Math.abs(cur.phi - PHI0) > 1e-4) {
+            cur.phi += (PHI0 - cur.phi) * 0.06;
+            offset.setFromSpherical(cur);
+            camera.position.copy(controls.target).add(offset);
+            camera.lookAt(controls.target);
+          }
+        }
         renderer.render(scene, camera);
         const lab = label.current;
         const m = markers.find((x) => x.id === selected);
@@ -237,7 +266,11 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           const facing = tmp.clone().sub(camera.position).dot(m.normal) < 0;
           tmp.project(camera);
           lab.style.opacity = facing ? "1" : "0";
-          lab.style.transform = `translate(${((tmp.x + 1) / 2) * el.clientWidth + 16}px, ${((1 - tmp.y) / 2) * el.clientHeight - 8}px)`;
+          const px = ((tmp.x + 1) / 2) * el.clientWidth;
+          const py = ((1 - tmp.y) / 2) * el.clientHeight;
+          // put the label on the left of the marker when it would overflow the right edge
+          const lx = px + 16 + lab.offsetWidth > el.clientWidth ? px - 16 - lab.offsetWidth : px + 16;
+          lab.style.transform = `translate(${Math.max(0, lx)}px, ${py - 10}px)`;
         } else if (lab) lab.style.opacity = "0";
       };
       loop();
@@ -285,13 +318,13 @@ export function Moon3D({ selectedId, timeMs, onSelect, fallback }: Props) {
     <figure className="flex flex-col items-center gap-4">
       <div className="relative aspect-square w-full">
         {!ready && <div className="planet absolute inset-[6%] animate-pulse bg-[radial-gradient(circle_at_35%_30%,#3a3a3e,#0b0b0c_70%)]" aria-hidden />}
-        <div ref={mount} className="absolute inset-0 cursor-grab active:cursor-grabbing" role="img" aria-label="3D Moon lit by the Sun at the selected time; south-pole landing sites marked. Drag to rotate, click a marker to select a site." />
+        <div ref={mount} className="absolute inset-0 cursor-grab active:cursor-grabbing" role="img" aria-label="3D view of the Moon's south-pole side, lit by the Sun at the selected time, with landing sites marked. Drag to spin around the pole; click a marker to select a site." />
         <div ref={label} className="pointer-events-none absolute left-0 top-0 whitespace-nowrap border border-line bg-black/80 px-2 py-1 text-[11px] uppercase tracking-[0.2em] opacity-0 transition-opacity" style={{ fontFamily: "var(--font-orbitron)" }}>
           {sel?.name}
         </div>
       </div>
       <figcaption className="max-w-md text-center text-xs text-muted">
-        Lit by the real Sun at the selected time. NASA LROC mosaic; south-pole relief from LOLA (×3). Drag to rotate, click a marker to pick a site.
+        South-pole side, lit by the real Sun at the selected time. NASA LROC mosaic; relief from LOLA (×3). Drag to spin around the pole, click a marker to pick a site.
       </figcaption>
     </figure>
   );
