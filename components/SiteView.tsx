@@ -12,9 +12,11 @@ import { Timeline } from "./Timeline";
 import { MetricCards, VerdictBadge } from "./MetricCards";
 import { commsVerdict, overallVerdict, powerVerdict } from "@/lib/metrics";
 import { PolarMap } from "./PolarMap";
+import { Moon3D } from "./Moon3D";
 import { Dot, SiteList } from "./SiteList";
 import { ExpertOnly, Tip, useMode } from "./ModeProvider";
 import { CopyLinkButton } from "./CopyLinkButton";
+import { SimpleSummary } from "./SimpleSummary";
 import { Eyebrow, StatBox } from "./ui";
 
 const TIMELINE_DAYS = 30;
@@ -27,8 +29,8 @@ const PLAY_SPEEDS = [
 
 export function SiteView() {
   const { params, set } = useUrlState();
-  const { mode } = useMode();
-  const expert = mode === "expert";
+  const { mode, setMode } = useMode();
+  const expert = mode === "pro";
 
   const siteId = params.get("site") ?? DEFAULT_SITE_ID;
   const cLat = params.get("lat");
@@ -139,6 +141,25 @@ export function SiteView() {
               Compare sites
             </Link>
           </div>
+          <p className="text-xs text-muted">
+            {mode === "simple" ? (
+              <>
+                <b className="text-foreground">Simple mode</b>: plain-language answers. Planner or scientist?{" "}
+                <button className="underline underline-offset-4 hover:text-foreground" onClick={() => setMode("pro")}>
+                  Switch to Pro
+                </button>{" "}
+                for every number.
+              </>
+            ) : (
+              <>
+                <b className="text-foreground">Pro mode</b>: exact angles, azimuths, CSV export.{" "}
+                <button className="underline underline-offset-4 hover:text-foreground" onClick={() => setMode("simple")}>
+                  Switch to Simple
+                </button>{" "}
+                for a plain-language view.
+              </>
+            )}
+          </p>
           <div className="grid grid-cols-3 gap-3 pt-2">
             <StatBox value="0.004°" label="Max error" sub="vs JPL Horizons" />
             <StatBox value={SITES.length} label="Sites" sub="with sources" />
@@ -146,7 +167,12 @@ export function SiteView() {
           </div>
         </div>
         <div className="mx-auto w-full max-w-[560px]">
-          <PolarMap variant="planet" selectedId={siteId} custom={customPoint} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />
+          <Moon3D
+            selectedId={customPoint ? null : siteId}
+            timeMs={clampedT}
+            onSelect={selectSite}
+            fallback={<PolarMap variant="planet" selectedId={siteId} custom={customPoint} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />}
+          />
         </div>
       </section>
 
@@ -216,6 +242,7 @@ export function SiteView() {
 
         <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
           <aside className="order-2 flex flex-col gap-4 lg:order-none">
+            <PolarMap selectedId={siteId} custom={customPoint} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />
             <SiteList selectedId={customLat !== null ? null : siteId} from={windowFrom} settings={settings} onSelect={selectSite} />
             <CustomForm onSubmit={(lat, lon) => set({ lat, lon, site: null })} />
           </aside>
@@ -258,6 +285,25 @@ export function SiteView() {
                   </div>
                 </div>
 
+                {mode === "simple" ? (
+                  <SimpleSummary
+                    siteName={site.name}
+                    now={now}
+                    events={events}
+                    metrics={metrics}
+                    windowDays={settings.windowDays}
+                    marginDeg={settings.marginDeg}
+                    series={series}
+                    start={start}
+                    days={TIMELINE_DAYS}
+                    t={clampedT}
+                    onSeek={(v) => {
+                      setPlaying(false);
+                      setT(v);
+                    }}
+                  />
+                ) : (
+                  <>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Lens horizon={site.horizon} az={now.sunAz} el={now.sunEl} r={now.sunR} kind="sun" fraction={now.sunFrac} />
                   <Lens horizon={site.horizon} az={now.earthAz} el={now.earthEl} r={now.earthR} kind="earth" clearance={now.earthClear} />
@@ -299,6 +345,8 @@ export function SiteView() {
                     <span className="text-muted">Azimuth: degrees clockwise from lunar north (N 0°, E 90°). Elevations are topocentric, airless, relative to the local sphere horizontal.</span>
                   </div>
                 </ExpertOnly>
+                  </>
+                )}
               </>
             )}
           </div>

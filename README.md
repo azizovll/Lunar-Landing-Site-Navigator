@@ -16,7 +16,11 @@ It shows the Sun and Earth over the **real terrain horizon** of lunar south-pole
 | **Validation** | Our Sun/Earth positions vs saved JPL Horizons answers, a live Horizons re-check, and illumination compared with a published LOLA study |
 | **About** | Method, metric definitions, data sources, use of AI |
 
-**Explain / Expert** toggle: Explain adds plain-language tips. Expert shows exact azimuths and elevations, CSV export and a share-link button.
+**Simple / Pro** toggle (top right):
+- **Simple** (default) is for everyone: a one-sentence verdict, four tiles rated in words (“all 14 days”, “4 days 16 hours”), what the Sun and Earth are doing right now in plain language, a day-by-day strip and a short “New to the Moon?” explainer. Compare shows a quick answer (“most sunlight: …”) and plain wording.
+- **Pro** is for planners: every number, azimuths and elevations, power index, comms margin, 30-day clearance chart, CSV export and share links.
+
+The home page opens with an **interactive 3D Moon** (three.js): NASA LROC mosaic, south-polar relief from LOLA, lit by the real Sun direction at the selected time, with clickable landing-site markers.
 
 ## Accuracy
 

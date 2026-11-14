@@ -50,15 +50,21 @@ export function Nav() {
           })}
         </nav>
         <div className="ml-auto flex items-center gap-3 lg:ml-0">
-          <div className="flex border border-line text-xs" role="group" aria-label="Display mode">
-            {(["explain", "expert"] as const).map((m) => (
+          <div className="flex border border-line text-xs" role="group" aria-label="Interface mode: Simple or Pro">
+            {(
+              [
+                { m: "simple", label: "Simple", hint: "Plain-language view for everyone" },
+                { m: "pro", label: "Pro", hint: "All numbers, azimuths, CSV export" },
+              ] as const
+            ).map(({ m, label, hint }) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className={`px-3 py-1.5 capitalize transition-colors ${mode === m ? "bg-panel3 text-foreground" : "text-muted hover:text-foreground"}`}
+                title={hint}
+                className={`px-3 py-1.5 transition-colors ${mode === m ? "bg-panel3 text-foreground" : "text-muted hover:text-foreground"}`}
                 aria-pressed={mode === m}
               >
-                {m}
+                {label}
               </button>
             ))}
           </div>

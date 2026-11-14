@@ -50,10 +50,10 @@ export default function AboutPage() {
         <SectionTitle center eyebrow="Our users" title="Built for three audiences" />
         <div className="grid gap-4 md:grid-cols-3">
           <Panel title="Mission planners">
-            Compare backup sites and dates, see what a launch delay does (<Link className="text-foreground underline underline-offset-4" href="/compare">Compare</Link>), export CSV and share a link to an exact scenario in Expert mode.
+            Compare backup sites and dates, see what a launch delay does (<Link className="text-foreground underline underline-offset-4" href="/compare">Compare</Link>), export CSV and share a link to an exact scenario in Pro mode.
           </Panel>
-          <Panel title="Educators">Animate a lunar day and show why the pole is special. Explain mode adds plain-language tips to every screen.</Panel>
-          <Panel title="Everyone">Look at the sky from the Moon’s surface: the Sun skimming the ridges and Earth hanging low over the horizon.</Panel>
+          <Panel title="Educators">Animate a lunar day and show why the pole is special. Simple mode explains every number in plain language.</Panel>
+          <Panel title="Everyone">Spin the 3D Moon, then look at the sky from its surface: the Sun skimming the ridges and Earth hanging low over the horizon. Simple mode is on by default.</Panel>
         </div>
       </section>
 
@@ -120,6 +120,10 @@ export default function AboutPage() {
           <Panel title="Ephemerides">
             <A href="https://ssd.jpl.nasa.gov/horizons/">NASA JPL Horizons</A> for validation (saved fixtures and a live re-check), and{" "}
             <A href="https://github.com/cosinekitty/astronomy">astronomy-engine</A> (MIT licence) for the in-browser computation.
+          </Panel>
+          <Panel title="3D Moon">
+            <A href="https://svs.gsfc.nasa.gov/4720">NASA SVS CGI Moon Kit</A> (LROC colour mosaic with polar fill) for the globe; the south-polar relief is a normal map computed from LOLA
+            (×3 for visibility), lit by the real Sun direction at the selected time.
           </Panel>
           <Panel title="Published illumination">
             <A href="https://ntrs.nasa.gov/citations/20170007365">Gläser et al., illumination conditions at the lunar poles (NASA NTRS)</A>: site coordinates and reference values for the terrain

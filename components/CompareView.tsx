@@ -10,7 +10,8 @@ import { parseLatLon, useCustomSites } from "@/lib/useResolvedSite";
 import { VerdictBadge } from "./MetricCards";
 import { Dot } from "./SiteList";
 import { CopyLinkButton } from "./CopyLinkButton";
-import { ExpertOnly, Tip } from "./ModeProvider";
+import { ExpertOnly, Tip, useMode } from "./ModeProvider";
+import { plainDuration, plainShare } from "@/lib/plain";
 import { SectionTitle } from "./ui";
 
 const KEYS = ["a", "b", "c", "d"] as const;
@@ -33,22 +34,24 @@ interface RowDef {
   get: (m: WindowMetrics, extra: { sunClear: number; earthClear: number }) => number;
   fmt: (v: number) => string;
   better: "high" | "low";
-  tip?: string;
+  /** Simple mode: friendlier label and wording; rows without it are Pro-only */
+  simple?: { label: string; fmt: (v: number, windowDays: number) => string };
 }
 
 const ROWS: RowDef[] = [
-  { label: "Illumination", get: (m) => m.illuminationPct, fmt: (v) => `${v.toFixed(1)}%`, better: "high" },
-  { label: "Longest night", get: (m) => m.longestNightH, fmt: fmtHours, better: "low" },
+  { label: "Illumination", get: (m) => m.illuminationPct, fmt: (v) => `${v.toFixed(1)}%`, better: "high", simple: { label: "☀ Sunlight", fmt: plainShare } },
+  { label: "Longest night", get: (m) => m.longestNightH, fmt: fmtHours, better: "low", simple: { label: "Longest darkness", fmt: (v) => plainDuration(v) } },
   { label: "Power index", get: (m) => m.powerIndex * 100, fmt: (v) => `${v.toFixed(1)}%`, better: "high" },
-  { label: "Comms available", get: (m) => m.commsPct, fmt: (v) => `${v.toFixed(1)}%`, better: "high" },
-  { label: "Longest blackout", get: (m) => m.longestBlackoutH, fmt: fmtHours, better: "low" },
-  { label: "Light + comms", get: (m) => m.combinedH, fmt: fmtHours, better: "high" },
+  { label: "Comms available", get: (m) => m.commsPct, fmt: (v) => `${v.toFixed(1)}%`, better: "high", simple: { label: "⊕ Earth in view", fmt: plainShare } },
+  { label: "Longest blackout", get: (m) => m.longestBlackoutH, fmt: fmtHours, better: "low", simple: { label: "Longest silence", fmt: (v) => plainDuration(v) } },
+  { label: "Light + comms", get: (m) => m.combinedH, fmt: fmtHours, better: "high", simple: { label: "Sun and Earth together", fmt: (v) => plainDuration(v) } },
   { label: "Sun over terrain at landing", get: (_m, e) => e.sunClear, fmt: (v) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}°`, better: "high" },
   { label: "Earth over terrain at landing", get: (_m, e) => e.earthClear, fmt: (v) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}°`, better: "high" },
 ];
 
 export function CompareView() {
   const { params, set } = useUrlState();
+  const { mode } = useMode();
   const [today] = useState(() => alignTime(Date.now(), DAY));
   const delay = Math.max(0, Math.min(MAX_DELAY, Number(params.get("delay") ?? 0)));
   const marginDeg = Number(params.get("margin") ?? 2);
@@ -96,7 +99,8 @@ export function CompareView() {
     set(patch);
   };
 
-  const rows = ROWS.map((r) => {
+  const simple = mode === "simple";
+  const rows = ROWS.filter((r) => !simple || r.simple).map((r) => {
     const vals = computed.map((c, i) => {
       if (!c) return { v: NaN, v0: NaN };
       const m = c.sweep[delay];
@@ -148,6 +152,7 @@ export function CompareView() {
           </select>
         </label>
       </div>
+      {simple && <QuickAnswer names={cols.map((c, i) => sites[i]?.name ?? (c.custom ? "Custom point" : c.siteId))} metrics={computed.map((c) => c?.sweep[delay] ?? null)} delay={delay} />}
       <Tip>Drag the delay slider: if the launch slips by N days, every scenario’s landing date shifts by N days. Arrows show whether each number got better (▲) or worse (▼) than the on-time plan.</Tip>
 
       <div className="overflow-x-auto">
@@ -232,7 +237,7 @@ export function CompareView() {
             </tr>
             {rows.map(({ r, vals, best }) => (
               <tr key={r.label}>
-                <td className="border-t border-line py-2 pr-2 text-muted">{r.label}</td>
+                <td className="border-t border-line py-2 pr-2 text-muted">{simple && r.simple ? r.simple.label : r.label}</td>
                 {vals.map((x, i) => {
                   const isBest = Math.abs(x.v - best) < 1e-9 && vals.length > 1;
                   const diff = x.v - x.v0;
@@ -246,7 +251,7 @@ export function CompareView() {
                     );
                   return (
                     <td key={i} className={`tabular border-t border-line p-2 ${isBest ? "bg-white/[0.04] text-foreground" : "text-muted"}`}>
-                      {r.fmt(x.v)}
+                      {simple && r.simple ? r.simple.fmt(x.v, settings.windowDays) : r.fmt(x.v)}
                       {delay > 0 && (improved || worse) && (
                         <span className={`ml-1.5 text-xs ${improved ? "text-good" : "text-poor"}`} title={`on time: ${r.fmt(x.v0)}`}>
                           {improved ? "▲" : "▼"}
@@ -260,8 +265,8 @@ export function CompareView() {
             ))}
             <tr>
               <td className="border-t border-line py-2 pr-2 align-top text-muted">
-                Light + comms vs delay
-                <div className="text-xs">0 → {MAX_DELAY} days</div>
+                {simple ? "How a launch delay changes it" : "Light + comms vs delay"}
+                <div className="text-xs">{simple ? `higher = better, delay 0 → ${MAX_DELAY} days` : `0 → ${MAX_DELAY} days`}</div>
               </td>
               {computed.map((c, i) => (
                 <td key={i} className="border-t border-line p-2">
@@ -334,5 +339,35 @@ function CustomInputs({ value, onChange }: { value: { lat: number; lon: number }
       <input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} className="w-1/2" aria-label="Latitude (south negative)" title="Latitude, south negative" />
       <input type="number" step="any" value={lon} onChange={(e) => setLon(e.target.value)} className="w-1/2" aria-label="Longitude (east positive)" title="Longitude, east positive" />
     </div>
+  );
+}
+
+/** Simple mode: who wins, in one card. */
+function QuickAnswer({ names, metrics, delay }: { names: string[]; metrics: (WindowMetrics | null)[]; delay: number }) {
+  const ready = metrics.map((m, i) => ({ m, name: names[i] })).filter((x): x is { m: WindowMetrics; name: string } => x.m !== null);
+  if (ready.length < 2) return null;
+  const best = (f: (m: WindowMetrics) => number) => {
+    const top = Math.max(...ready.map((x) => f(x.m)));
+    const winners = ready.filter((x) => Math.abs(f(x.m) - top) < 1e-6).map((x) => x.name);
+    return winners.length === ready.length ? "all the same" : winners.join(" and ");
+  };
+  return (
+    <section className="card grid gap-4 p-6 md:grid-cols-3">
+      <div className="md:col-span-3">
+        <div className="eyebrow !text-[0.62rem] !tracking-[0.3em] text-muted">Quick answer{delay ? ` · launch ${delay} days late` : ""}</div>
+      </div>
+      <div>
+        <div className="text-xs text-muted">☀ Most sunlight</div>
+        <div className="mt-1 text-lg">{best((m) => m.illuminationPct)}</div>
+      </div>
+      <div>
+        <div className="text-xs text-muted">⊕ Easiest to talk to Earth</div>
+        <div className="mt-1 text-lg">{best((m) => m.commsPct)}</div>
+      </div>
+      <div>
+        <div className="text-xs text-muted">Best of both (Sun and Earth together)</div>
+        <div className="mt-1 text-lg">{best((m) => m.combinedH)}</div>
+      </div>
+    </section>
   );
 }

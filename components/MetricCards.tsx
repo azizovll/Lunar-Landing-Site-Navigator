@@ -51,7 +51,7 @@ interface Props {
 
 export function MetricCards({ now, events, searchDays, metrics, settings, onSettings }: Props) {
   const { mode } = useMode();
-  const expert = mode === "expert";
+  const expert = mode === "pro";
   const lit = now.sunFrac > 0;
   const comms = now.earthClear >= settings.marginDeg;
   const pv = powerVerdict(metrics);

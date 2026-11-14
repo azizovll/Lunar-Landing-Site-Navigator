@@ -4,7 +4,7 @@ import { useState } from "react";
 import { shareUrl } from "@/lib/useUrlState";
 import { useMode } from "./ModeProvider";
 
-/** Copies the current scenario URL (including Explain/Expert mode) and confirms it. */
+/** Copies the current scenario URL (including Simple/Pro mode) and confirms it. */
 export function CopyLinkButton() {
   const { mode } = useMode();
   const [state, setState] = useState<"idle" | "ok" | "fail">("idle");
