@@ -58,4 +58,4 @@ npm run build
 - `pipeline/`: horizon masks from LOLA polar DEMs (with an orientation check on five craters).
 - `app/api/horizons/route.ts`: validated proxy to JPL Horizons for the live re-check.
 
-See [PRESENTATION_NOTES.md](PRESENTATION_NOTES.md) for the full write-up.
+See [PRESENTATION_NOTES.md](PRESENTATION_NOTES.md) for the full write-up and [SUBMISSION.md](SUBMISSION.md) for the Space Apps submission texts.

@@ -2,189 +2,187 @@
 
 Team **infinium** · NASA Space Apps Challenge 2026 · Challenge: *Lunar Landing Site Navigator*
 
+Texts for the submission page are in [SUBMISSION.md](SUBMISSION.md).
+
 ## 1. Problem
 
-Landing near the lunar south pole is attractive (water ice in permanently shadowed craters, long sunlit periods on nearby ridges), but the lighting is extreme:
+Landing near the lunar south pole is attractive: there is water ice in permanently shadowed craters and long sunlit periods on nearby ridges. But the conditions are extreme.
 
-- The Moon's spin axis is tilted only ~1.5° to the ecliptic, so at the pole the Sun circles the horizon and never climbs more than a degree or two. A ridge a few hundred metres away can block it for days.
-- Earth never rises or sets the normal way. It hangs in one part of the sky and wobbles by several degrees (libration). Near the pole, that wobble decides whether terrain blocks the direct radio link.
-- A change of site by a few kilometres, or a launch slip of a few days, can change power and comms dramatically.
+- **The Sun skims the horizon.** The Moon's axis is tilted only ~1.5°, so at the pole the Sun circles the horizon and never climbs more than about 1.5°. A ridge a few hundred metres away can block it for days.
+- **Earth hangs low and wobbles.** Earth never rises or sets the normal way; it wobbles by several degrees (libration). Near the pole that wobble decides whether terrain blocks the direct radio link.
+- **There is no atmosphere.** No refraction and no twilight: the horizon is only terrain and the curve of the Moon.
+- **Small changes have large effects.** Moving a few hundred metres, or slipping the launch a few days, can change power and comms completely. Schedules slip all the time.
 
-Mission planners, educators and the public need a quick, trustworthy way to see this and to compare options.
+Mission planners need a fast, trustworthy way to re-plan; students and the public need a way to see why this is hard.
 
 ## 2. Solution
 
-A web app that runs entirely in the browser:
+A web app that computes everything in the browser from NASA data.
 
-- **Site view:**
-  - 360° panoramic sky with the real terrain horizon, the Sun and Earth drawn at their true angular sizes, and their tracks.
-  - A time scrubber with playback.
-  - Power, Comms and Combined cards with countdowns (“sunset over terrain in 3 d 4 h”).
-  - A 30-day timeline with shaded *light*, *comms* and *both* windows.
-- **Compare:** up to four “site + date” scenarios, with the best value per metric highlighted. A **launch-delay slider (0–60 days)** shows instantly what a slip does, with ▲/▼ arrows against the on-time plan.
-- **Mission rescue** (`/rescue`): enter the planned site, date and launch delay; the tool scores every south-pole site on every day within ±3/7/14 days of the new date and shows the 3 best alternatives with a 0–100 score, a traffic light, a one-line reason and the gain over simply landing late at the planned site.
-- **Lunar day timelapse** (▶ Lunar day in the 3D view): the real Sun circles low over the pole and long shadows sweep across the craters; Earth wobbles and lander panels track the Sun.
-- **Stand on the surface**: puts the camera on the ground at a station, facing Earth's real direction, so you see whether the LOLA horizon hides Earth.
-- **30-second guided tour** (home page): overview → Shackleton rim → a lunar day in seconds → standing where Earth is best visible right now → Mission rescue, with captions. Screen-record it for the demo video.
-- **Moon vs Earth** (home page): day length, highest polar Sun, no atmosphere (no refraction or twilight), black sky, horizon distance, temperatures, Earth fixed in the sky. Solar elevation is now shown large in both modes, with an Earth comparison in Simple (“as low as the Sun 6 minutes after sunrise at Earth’s equator”).
-- **Who else is here**: hardware already on the surface near the pole (Chandrayaan-1 impact probe 5 km from Connecting Ridge, LCROSS in Cabeus, IM-1 Odysseus, IM-2 Athena) and planned missions targeting the same regions (Chang’e-7, Blue Moon MK1, Griffin-1, Artemis), each with a source. The Site page warns when hardware is inside a 2 km plume safety zone (adjustable in Pro); Mission rescue tags contested alternatives and can push sites inside a safety zone down the list; the 3D view marks the hardware. Live data: Open Lunar Foundation’s Lunar Ledger registry.
-- **Landing precision**: full-resolution LOLA horizons at 6 points on a 250 m ring and a 1 km ring around every south-polar site (`pipeline/build_ellipse.py`); the Site page shows the score on target, the worst score off target and which direction is risky. Finding: the best-lit spots are narrow crests, so 1 km off target the score collapses at most sites, in line with published work that puts highly illuminated areas at a few hundred metres across.
-- **One rating system**: the 0–100 score with a traffic light is the overall rating everywhere; Power and Comms are rated Good / OK / Poor in every mode.
-- **Battery of a reference lander** (300 W panels, 2 kWh battery, 120 W load; editable in Pro): state of charge over the mission window driven by the real illumination series, lowest charge and hours without power; also a Compare row.
-- **“Why the south pole is tricky”**: three illustrated steps on the home page (low Sun, terrain decides light or dark, Earth wobbles near the horizon).
-- **Report as PDF**: “Save report (PDF)” on the Site and Mission rescue pages prints a light, one-to-two page report with the scenario link.
-- **Score 0–100:** 0.4 × illumination% (minus up to half for nights longer than 120 h) + 0.4 × comms% (minus up to half for blackouts longer than 96 h) + 0.2 × light-and-comms%. Green ≥ 70, amber 40–69, red < 40. Shown on the Site header, in Compare and in Mission rescue.
-- **Calendar:** a 12-month heatmap of daily light and comms, plus the best 14-day mission starts.
-- **Validation:** a live comparison with NASA JPL Horizons, and a terrain check against a published illumination study.
-- **Simple / Pro mode:** Simple (default) turns the numbers into plain language for the public: a one-sentence verdict, tiles rated in words, “Sun right now / Earth right now” sentences and a day-by-day strip. Pro shows every number, azimuths, CSV export and shareable URLs for planners.
-- **3D terrain on the home page:** an interactive **3D view of the south-polar terrain** (three.js): NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time with long shadows, Earth in the sky at its real direction (phase from the same Sun), and pins for every site; clicking a pin flies the camera there. Fine relief comes from a ~430 m/px LOLA normal map lit by the same Sun; lander models (built from primitives, no model files, ~300× real size) turn their solar panels to the real Sun and point their dishes at the real Earth. Edges fade into the background; tilt springs back after a drag. A decorative Moon in the hero is rendered offline from the NASA LROC mosaic (68 KB WebP). Hovering a pin (or tapping it on a phone) shows a thumbnail with the NASA image and a one-line description; clicking flies the camera there, and a "Photo & details" button opens the full station card: a NASA image of the site, a plain-language description, sunlight and Earth-visibility for the next 14 days, previous/next buttons and a list of all stations.
-- **Custom points:** click the polar map or type coordinates, on the Site, Compare and Calendar screens. An approximate terrain horizon is computed in a Web Worker in about a second.
-- **Separate verdicts:** each site shows a Power verdict and a Comms verdict next to the overall one, because near the pole a perfectly lit site can still have poor direct-to-Earth comms.
+**For planners**
+- **Mission Rescue.** Planned site, date and launch delay in; every south-pole site on every day within ±3/7/14 days of the new date out, ranked. The result shows the 3 best alternatives, each with a 0–100 score, a traffic light, a one-line reason and the gain over landing late at the original site.
+- **Compare.** Up to 4 site-and-date scenarios side by side, the best value per row highlighted, and a launch-delay slider (0–60 days) with ▲/▼ against the on-time plan.
+- **Site view.**
+  - A 360° sky panorama over the real terrain horizon, with the Sun and Earth at their true sizes.
+  - The solar elevation shown large, with countdowns to sunset and Earthset.
+  - A 30-day light/comms timeline.
+  - The battery of a reference lander.
+- **Landing precision.** Full-resolution horizons at 6 points 250 m and 1 km from each site show whether a target needs a precise landing.
+- **Who else is here.** Hardware already on the surface near the site and planned missions targeting the same region, each with a source and a 2 km plume safety zone. Linked to the Lunar Ledger registry.
+- **Calendar, CSV, PDF, links.** A 12-month heatmap with the best 14-day starts, CSV export, a PDF report and shareable URLs.
 
-Demo story (30 s): *“We planned Shackleton rim for 1 December. The launch slips 30 days. Open Mission rescue, set +30 days: the delayed plan drops to amber, and the tool ranks every south-pole site on every nearby day and proposes the three best alternatives, each with a score and a one-line reason. One click opens the sky view to see why.”* (Check the actual numbers in the app before recording.)
+**For everyone**
+- **3D south-pole terrain.**
+  - Built from LOLA and lit by the real Sun with long shadows.
+  - A lunar-day timelapse and a “stand on the surface” view facing Earth.
+  - Lander models whose panels track the Sun.
+  - NASA images of every station on hover.
+- **A 30-second guided tour with captions**, ready to screen-record.
+- **Simple mode (default).**
+  - A one-sentence verdict and tiles rated Good / OK / Poor.
+  - “Sun right now” with an Earth comparison (“as low as the Sun 6 minutes after sunrise at Earth's equator”).
+  - A day-by-day strip.
+- **Explainers.** “Why the south pole is tricky” in three illustrated steps and **Moon vs Earth** in seven comparisons.
+
+**Trust**
+- **Validation page.** Our values against NASA JPL Horizons, a live re-check and a comparison with a published illumination study.
 
 ## 3. Technologies and why
 
 | Technology | Why |
 | --- | --- |
-| **Next.js 16 (App Router) + React 19 + TypeScript** | Static prerendered pages (fast first load on Vercel); typed maths code; one codebase for UI and the small Horizons proxy. |
-| **Tailwind CSS 4** | Fast, consistent dark theme and responsive layout down to phone width. |
-| **astronomy-engine** (MIT) | Small, well-tested ephemeris library that runs in the browser: Sun, Moon and the IAU lunar rotation model. It gives sub-arcminute accuracy with no server. |
-| **SVG** | Panorama, timeline, map and heatmap. Crisp at any size, easy to make accessible, and accuracy matters more here than 3D effects. |
-| **three.js** | The 3D south-pole terrain on the home page (LOLA heightfield, real-Sun shadows). Loaded lazily after first paint, so it does not slow the first screen; falls back to the 2D polar map without WebGL. |
-| **Web Worker** | Computes horizons for custom points without freezing the UI. |
-| **Python + numpy** | Offline terrain pipeline: reads 115 MB LOLA rasters with memory mapping and ray-marches horizons. |
-| **Vitest** | Automated tests: Horizons fixtures, metrics and terrain acceptance criteria. |
-| **puppeteer-core** (with the system's Edge/Chrome) | Headless page checks on desktop and phone: console errors, overflow, screenshots. |
-| **Vercel** | Free static hosting plus one serverless route (`/api/horizons`) for the live Horizons check. |
+| **Next.js 16 + React 19 + TypeScript** | Static prerendered pages (fast first load on Vercel), typed maths code, one small serverless route for the live Horizons check. |
+| **Tailwind CSS 4** | Consistent dark design down to phone width. |
+| **astronomy-engine** (MIT) | Sun, Moon and the IAU lunar rotation model (with libration) in the browser, no server. |
+| **SVG** | Panorama, timeline, maps, heatmap, charts: crisp and accessible. |
+| **three.js** | 3D terrain with real-Sun shadows; loaded after first paint; 2D fallback without WebGL. |
+| **Web Worker** | Horizons for custom points without freezing the UI. |
+| **Python + numpy** | Offline terrain pipeline: reads the 115 MB LOLA rasters and ray-marches horizons. |
+| **Vitest** | 42 automated tests: Horizons fixtures, metrics, terrain acceptance, score, rescue, battery, neighbours. |
+| **puppeteer-core** | Headless checks on desktop and phone: console errors, overflow, screenshots. |
+| **Vercel** | Hosting. |
 
-## 4. NASA data used
+## 4. Data
 
-- **LRO LOLA polar gridded DEMs** (PDS, `LOLA_GDR/POLAR/IMG`): LDEM_875S_20M, LDEM_85S_40M, LDEM_80S_80M, LDEM_75S_240M. Used for terrain horizons, the browser DEM and the polar map.
-- **JPL Horizons API**: reference Sun and Earth az/el from lunar surface points (saved fixtures and live re-check).
-- **NASA NTRS: Gläser et al.**, *Illumination conditions at the lunar poles* (20170007365): site coordinates and published illumination for validation.
-- **NASA SVS Artemis III candidate regions**, **LROC** site pages, and the **IAU/USGS Gazetteer**: site locations.
-- **NASA Blue Marble** (land, ocean, ice; public domain, via Wikimedia Commons): texture of the small Earth in the 3D view. **NASA SVS CGI Moon Kit** (LROC mosaic): the decorative Moon image in the hero.
-- **Station images** (shown only when a card is opened, ~570 KB in total): NASA Scientific Visualization Studio stills of the Artemis III candidate regions ([5013](https://svs.gsfc.nasa.gov/5013)), Shackleton crater ([4716](https://svs.gsfc.nasa.gov/4716)) and Mons Mouton ([5074](https://svs.gsfc.nasa.gov/5074)); the ShadowCam image of the Shackleton crater floor (NASA/KARI/ASU, [shadowcam.asu.edu/images/1284](https://www.shadowcam.asu.edu/images/1284)); and the LRO image of the IM-1 Odysseus lander (NASA/GSFC/ASU, [nasa.gov](https://www.nasa.gov/missions/lro/nasas-lro-images-intuitive-machines-odysseus-lander/)). The 3D terrain itself is a 513×513 LOLA heightfield (~1.3 km grid, ±330 km around the pole).
+**NASA**
+- **LRO LOLA polar DEMs** (20, 40, 80, 240 m/px): horizons, 3D terrain, maps.
+- **JPL Horizons API**: reference ephemerides.
+- **Gläser et al.** (NASA NTRS 20170007365): coordinates and validation.
+- **NASA SVS** (Artemis III regions, Shackleton, Mons Mouton, CGI Moon Kit): images and textures.
+- **LROC** landing-site images and coordinates.
+- **Blue Marble** (Earth texture) and **LRO Diviner** (temperatures).
+- **Artemis site-selection update**, LPSC 2026.
+
+**Partners and others**
+- **KARI:** ShadowCam on Danuri.
+- **JAXA:** Kaguya-based coordinates.
+- **ISRO:** Chandrayaan-3 site and the Chandrayaan-1 impact probe.
+- **Other:** astronomy-engine; the Open Lunar Foundation Lunar Ledger.
 
 ## 5. The math
 
-### Frames
+**Frames.**
+- astronomy-engine gives Earth→Moon and Earth→Sun in J2000. Moon→Earth = −GeoMoon; Moon→Sun = GeoSun − GeoMoon, with the Sun at the light-time-retarded epoch.
+- The IAU rotation model gives the Moon body-fixed frame: z = pole; node Q = [cos(α+90°), sin(α+90°), 0]; x = Q cos W + (z×Q) sin W; y = z×x.
+- The topocentric east/north/up frame sits on a 1737.4 km sphere. Azimuth is clockwise from lunar north, as in Horizons. At a south-polar site Earth appears across the pole, at azimuth ≈ 180° − longitude.
 
-1. astronomy-engine gives geocentric J2000 vectors: Earth→Moon (`GeoMoon`) and Earth→Sun (`GeoVector(Sun)`, evaluated at the light-time-retarded epoch, about 499 s earlier).
-   Moon→Earth = −GeoMoon, and Moon→Sun = GeoSun − GeoMoon.
-2. **Moon body-fixed frame** from the IAU rotation model (`RotationAxis(Moon)`), which includes the physical libration terms:
-   - z = pole direction;
-   - node Q = [cos(α+90°), sin(α+90°), 0];
-   - x = Q cos W + (z × Q) sin W;
-   - y = z × x.
-3. **Topocentric frame** at (lat, lon east-positive, height) on a 1737.4 km sphere:
-   - up = radial;
-   - east = (−sin λ, cos λ, 0);
-   - north = up × east.
-   - Elevation = asin(v·up / |v|). **Azimuth = atan2(v·east, v·north), clockwise from lunar north**, the same convention as Horizons.
-   - Note: at a south-polar site “north” points *away* from the pole, so Earth (toward the 0° meridian) appears across the pole at azimuth ≈ 180° − longitude.
-4. Angular radius = asin(R / d), with R_Sun = 695 700 km and R_Earth = 6378.137 km. The Sun's disk is ~0.53° across and Earth's ~1.9°.
+**Libration.** Earth's direction moves up to ±7° in latitude and ±8° in longitude over a month, so near the pole Earth dips in and out behind the terrain.
 
-### Libration
+**Terrain horizon.**
+- 1440 rays every 0.25°, out to 200 km, from an observer 2 m above the ground, using the finest DEM at each sample.
+- The elevation of a terrain point is el = atan2(r_t cos θ − r_o, r_t sin θ). This is exact sphere geometry, so curvature is included. There is no atmosphere, so there is no refraction term.
+- The DEM orientation was verified on five craters; for example, Shackleton comes out 4.0 km deep.
 
-Earth's direction in the body-fixed frame drifts by up to about ±7° in latitude and ±8° in longitude over a month. That is why Earth traces a small loop in the panorama, and why comms near the pole come and go.
+**Partial Sun.** The disk is cut into 24 strips, each compared with the horizon at its own azimuth.
 
-### Terrain horizon mask
+**Metrics (14-day window, 10-minute steps).**
+- Illumination % is the mean visible fraction of the Sun; the longest night is the longest run with no Sun visible.
+- Comms means Earth's centre is at least the terrain horizon + 2°; also reported: comms % and the longest blackout.
+- Light + comms counts the hours with both at once.
+- Countdowns are refined by bisection to under 30 s.
 
-- **1440 azimuths** (0.25° steps, finer than the 0.53° solar disk). Each ray runs out to **200 km** with a step of 10 m near the observer, growing to 200 m.
-- Each sample uses the **finest LOLA DEM** that covers it (20 → 40 → 80 → 240 m/px).
-- The observer stands **2 m** above the ground. The elevation angle of a terrain point at radius r_t and central angle θ, seen from radius r_o, is
+**Ratings.**
+- Power is Good at ≥ 70% illumination with nights ≤ 48 h, and Poor below 40% or with nights over 120 h.
+- Comms is Good at ≥ 80% with blackouts ≤ 24 h, and Poor below 40% or with blackouts over 96 h.
+- Everything in between is OK.
+- **Score 0–100** = 0.4·illumination% × (1 − 0.5·min(1, night/120 h)) + 0.4·comms% × (1 − 0.5·min(1, blackout/96 h)) + 0.2·light-and-comms%. Green ≥ 70, amber 40–69, red < 40.
 
-  `el = atan2(r_t cos θ − r_o, r_t sin θ)`
+**Rescue ranking.**
+- Each site gets its best day within the window, then sites are ranked by score.
+- Ties are broken by the unrounded score, then Earth's lowest elevation, then the date closest to the new launch date.
+- Sites inside another mission's 2 km safety zone can be pushed down the list.
 
-  This is exact sphere geometry, so lunar curvature is included. The mask is the maximum along the ray.
-- **DEM orientation check:** the PDS label does not state the axis directions. We tested all 8 sign/swap variants against five craters (Shackleton, Haworth, Shoemaker, Faustini, de Gerlache). Only `line = off − ρ cos λ`, `sample = off + ρ sin λ` turns all five into bowls, for example Shackleton 4.0 km deep. The pipeline re-checks Shackleton on every run.
-- **Region-level coordinates** (Nobile, Haworth, Malapert, Leibnitz β, Mons Mouton) are snapped to the highest DEM point within 2–6 km, and this is documented per site. Without it, a published point from another topography product can sit 500 m below a crest that blocks the whole northern sky.
-
-### Partial solar disk
-
-The disk is cut into 24 vertical strips. Each strip is compared with the horizon *at its own azimuth*, so a peak that hides half of the Sun is handled correctly. The visible fraction f is the visible chord length divided by the total chord length.
-
-### Metrics (default 14-day mission window, 10-minute sampling)
-
-- **Illumination %**: the time-average of f. **Longest night**: the longest run with f = 0.
-- **Power index**:
-  - sun-tracking panel: mean of f;
-  - horizontal panel: mean of f · max(0, sin el).
-- **Comms**: Earth's centre ≥ terrain horizon at Earth's azimuth + margin (default 2°). Also reported: **comms %** and **longest blackout**.
-- **Combined window**: hours that are lit *and* have comms.
-- **Countdowns**: the next transition is found on the sampled series, then refined by bisection to under 30 s.
-- **Verdicts**:
-
-  | Metric | Good | Poor |
-  | --- | --- | --- |
-  | Power | illumination ≥ 70% and night ≤ 48 h | < 40% or night > 120 h |
-  | Comms | ≥ 80% and blackout ≤ 24 h | < 40% or blackout > 96 h |
-
-  Anything in between is Marginal. The overall verdict is the worse of the two.
+**Battery.** A reference lander: 300 W sun-tracking array, 2 kWh, 120 W load, 90% charge efficiency, driven by the real illumination series.
 
 ## 6. Validation results
 
 | Check | Result |
 | --- | --- |
-| Sun and Earth az/el vs JPL Horizons: 5 sites (Apollo 11, Apollo 17, Shackleton, Malapert, Chandrayaan-3), 13 epochs in 1969 and 2026, Sun and Earth, 130 comparisons | **max error 0.0038°** (target ≤ 0.1°), **RMS 0.0016° = 5.6″** |
-| Apollo 11 landing, 1969-07-20 20:17 UTC | Horizons: Sun az 88.81°, el 10.70°. Ours agrees within 0.004°. Sun low in the east ✔ |
-| Annual illumination, Connecting Ridge C1 (2026, 20 m DEM) | **85.4%** vs 88.0% published (20-year mean, 20 m DEM) |
-| Annual illumination, Shackleton rim S | **84.3%** vs 82.1% published; longest night 64 h vs ~65 h published |
-| Shackleton floor (PSR, 10 km from the rim) | **0%** illumination; terrain walls 20–23° high |
-| Equatorial site over a lunar month (unit test) | 45–55% light, nights of 300–380 h, Earth always in view |
-| Pages on desktop and phone (headless Edge) | 0 console errors, no horizontal overflow |
-
-All of these run as automated tests (`npm test`, 27 tests), except the page checks, which run with `scripts/check-pages.mjs`.
+| Sun and Earth az/el vs JPL Horizons: 5 sites, 1969 and 2026, 130 comparisons | **max 0.0038°** (target ≤ 0.1°), **RMS 5.6″** |
+| Apollo 11 landing, 1969-07-20 20:17 UTC | Sun az 88.8°, el 10.7°, low in the east, matching Horizons within 0.004° |
+| Annual illumination, Connecting Ridge C1 | **85.4%** vs 88.0% published (Gläser et al., 20-year mean) |
+| Annual illumination, Shackleton rim S | **84.3%** vs 82.1% published; longest night 64 h vs ~65 h |
+| Shackleton crater floor | **0%**, a permanently shadowed region |
+| Custom-point horizons (480 m/px) vs precise masks | within 7 percentage points |
+| Pages on desktop and phone | 0 console errors, no horizontal overflow |
 
 ## 7. Limitations
 
-- Terrain horizons are precise only for the preset south-polar sites. Custom points use a 480 m/px DEM (labelled “lower accuracy”; tested on 4 preset sites: horizon RMS 0.6–1.0°, annual illumination and comms within 7 percentage points of the precise masks). Sites north of 75°S (Chandrayaan-3, Apollo) use a flat horizon.
-- LOLA polar DEMs have gaps and interpolation at the finest scales. Boulders and lander height are not modelled beyond a fixed 2 m observer.
-- Comms is geometric line-of-sight to Earth's centre. It ignores Deep Space Network schedules, antenna patterns and relay satellites.
-- Power is a geometric index. It ignores dust, temperature, Earthshine and battery state.
-- Region-level site coordinates are approximations snapped to the DEM crest. Real landing ellipses are larger than one point.
+- **Horizon precision.** Exact horizons exist only for the presets. Custom points use a 480 m/px DEM (labelled), and sites north of 75°S use a flat horizon.
+- **Comms.** Comms is line-of-sight to Earth's centre: no DSN schedules, antennas or relays.
+- **Power and battery.** Power and the battery are a geometric model of a reference lander: no dust or temperature effects.
+- **Planned missions.** Their targets are region-level and their schedules change; the live source is the Lunar Ledger.
+- **Snapped coordinates.** Region-level site coordinates are snapped to the local crest (documented per site).
 
 ## 8. Future work
 
-- Add the 5 m/px LOLA site DEMs (PGDA product 78) for selected sites.
-- Use landing ellipses instead of single points: show the distribution of illumination across the ellipse.
-- Add relay-satellite visibility (for example Lunar Pathfinder, Queqiao-2) and DSN station availability.
-- Add a 3D terrain view and an Earth-phase rendering.
-- Add a north-pole mode (same pipeline, north-polar DEMs).
+- **Finer terrain:** 5 m/px LOLA site DEMs (PGDA product 78) for the top candidate sites.
+- **Full landing ellipses** instead of rings, using real dispersion statistics.
+- **Comms beyond line of sight:** relay satellites (Lunar Pathfinder, Queqiao-2) and DSN availability.
+- **North-pole mode**, using the same pipeline.
+- **Live data:** a Lunar Ledger API integration once available.
+- **Interface languages:** Russian and Kyrgyz.
 
 ## 9. Seven-slide outline
 
-1. **The question.** “If the landing slips by two weeks, will we still have Sun and Earth?” Photo-free title with the panorama screenshot.
-2. **Why the pole is hard.** 1.5° tilt: the Sun skims the horizon. Libration: Earth wobbles. Show the panorama with the Sun track and Earth loop.
-3. **What we built.** Site view: panorama, timeline, Power and Comms cards. One screenshot with callouts.
-4. **Mission rescue.** “Launch slipped 30 days”: the delayed plan turns amber, the tool proposes the 3 best alternative sites and dates with a 0–100 score and a reason. This is the 30-second demo.
-5. **Real terrain.** LOLA DEM to horizon mask (1440 rays, 200 km, curvature), the orientation check on five craters, and Shackleton rim vs floor.
-6. **Can you trust it?** Horizons comparison: max 0.004° over 130 comparisons. Illumination vs a published study: 85.4% vs 88.0% and 84.3% vs 82.1%. The Apollo 11 check.
-7. **Impact and next steps.** Who it is for (planners, educators, public); runs in any browser with no install. Next: site DEMs, landing ellipses, relays. Team infinium.
+1. **“The launch slipped. Now what?”** One sentence of problem, one screenshot of the 3D terrain with the low Sun.
+2. **Why the pole is hard.** Sun ≤ 1.5°, Earth wobbling at the horizon, no atmosphere (use the “Why it is tricky” and “Moon vs Earth” visuals).
+3. **Mission Rescue.** Shackleton rim + 30 days → 44/100; the tool proposes Malapert 80/100 with the reason. This is the core value.
+4. **Why a few hundred metres matter.** The Landing precision ring: Shackleton rim 71 → 1 at 250 m; the Mons Mouton plateau stays 90–100.
+5. **Real data, real terrain.** LOLA horizons (1440 rays, 200 km, curvature), 3D view, who else is there (Chandrayaan-1 probe 5 km from Connecting Ridge; Chang’e-7 and Blue Moon target the same ridge).
+6. **Can you trust it?** 0.004° vs JPL Horizons over 130 comparisons; 85.4% vs 88.0% published illumination; 42 automated tests.
+7. **For whom, and next.** Planners (Rescue, Compare, PDF, links), students and the public (Simple mode, tour). Next: 5 m DEMs, relays, Lunar Ledger. Team infinium.
 
-## 10. Use of AI
+## 10. Video (30 s)
 
-The team wrote the specification and chose the method and the data. An AI coding assistant (Claude Code by Anthropic) generated most of the code, the terrain pipeline and the documentation. All outputs are checked independently against NASA data (Horizons fixtures in automated tests, a DEM orientation check, published illumination values). No AI-generated images or voices are used.
+- **Recording:** press **▶ 30-second tour** on the home page and screen-record it (Win+G or OBS). The tour flies over the pole, shows Shackleton rim, plays a lunar day, stands on the surface where Earth is best visible and ends on Mission Rescue.
+- **If there is time, add 5 seconds of the Rescue page:** set +30 days, and show the three alternatives appearing.
+- **Rules:** English only; no faces or voices of minors.
+- **Before recording:** check that the numbers on screen match the slides.
+
+## 11. Use of AI
+
+The team defined the problem, wrote the specification, chose the methods and data, and reviewed the results. An AI coding assistant (Claude Code by Anthropic) generated most of the code, the terrain pipeline and the documentation. Every number is checked independently against NASA data. No AI-generated images, video or voices are used.
 
 ---
 
 ## Краткое резюме для команды (RU)
 
-**Что сделали.** Веб‑приложение Lunar Site Navigator: панорама неба с реальным горизонтом по рельефу LOLA, Солнце и Земля в истинном угловом размере, таймлайн на 30 дней (свет, связь, оба окна), карточки Power, Comms и Combined с обратным отсчётом. Есть режим «Спасти миссию»: пользователь вводит план и задержку пуска, инструмент перебирает все южные станции и даты рядом и показывает три лучшие альтернативы с баллом 0–100 и объяснением. Также есть сравнение до 4 сценариев с ползунком задержки запуска 0–60 дней, годовой календарь, страница проверки режимы Simple (простой язык для всех, включён по умолчанию) и Pro (все цифры для специалистов), а на главной 3D‑рельеф южного полюса по данным LOLA с настоящими тенями от Солнца на выбранный момент, Землёй в небе и метками станций: при наведении (на телефоне при касании) появляется миниатюра со снимком NASA и коротким описанием, клик приближает камеру, а кнопка «Photo & details» открывает полную карточку станции с переключением между станциями. Всё считается в браузере, базы данных нет.
+**Что это.** Веб‑приложение, которое за секунды отвечает: если сядем здесь и в этот день или пуск сдвинется, хватит ли Солнца для энергии и будет ли видна Земля для связи? Всё считается в браузере по данным NASA.
 
-**Точность.**
-- Сверка с JPL Horizons: 130 сравнений, максимум 0,004°, RMS 5,6″ (цель была 0,1°).
-- Apollo 11: Солнце на востоке на высоте 10,7°, как и должно быть.
-- Освещённость за год по нашим маскам горизонта: Connecting Ridge 85,4% (в статье Gläser et al. 88,0%), Shackleton rim 84,3% (82,1%), дно Шеклтона 0%.
+**Главное для жюри**
+- **Mission Rescue.** Вводим план и задержку пуска; инструмент перебирает все 10 южных станций на каждый день рядом и даёт три лучшие альтернативы с баллом 0–100 и объяснением. Пример: Shackleton rim с задержкой 30 дней — 44 балла, предложен Malapert — 80.
+- **Точность посадки.** В 250 м от гребня Shackleton балл падает с 71 до 1, а плато Mons Mouton держит 90–100. Это объясняет, почему малые изменения решают всё.
+- **Соседи.** Уже лежащее оборудование (зонд Chandrayaan‑1 в 5 км от Connecting Ridge, LCROSS, IM‑1, IM‑2) и планы других миссий (Chang’e‑7, Blue Moon MK1, Griffin‑1, Artemis), зона безопасности 2 км, ссылка на реестр Lunar Ledger.
+- **Точность расчёта.** Против JPL Horizons максимум 0,004° на 130 сравнениях. Освещённость за год: 85,4% против 88,0% и 84,3% против 82,1% опубликованных. 42 автотеста.
+- **Для всех.** Режим Simple, 3D‑рельеф полюса с настоящими тенями, таймлапс лунного дня, вид с поверхности на Землю, тур на 30 секунд, «Moon vs Earth».
 
-**Рельеф.** Используем DEM LOLA 20/40/80/240 м на пиксель. Строим 1440 лучей (шаг 0,25°) на 200 км с учётом кривизны Луны, наблюдатель на высоте 2 м. Ориентацию растра проверили на пяти кратерах. Координаты регионального уровня привязаны к ближайшему гребню (до 2–6 км), это указано у каждой точки.
+**Видео.** Нажать «▶ 30-second tour» на главной и записать экран. По желанию добавить 5 секунд страницы Rescue (+30 дней).
 
-**Ограничения.** Для своих точек горизонт приблизительный (480 м на пиксель, расхождение с точными масками до 7 п.п. по освещённости и связи). У точек севернее 75°S (Chandrayaan‑3, Apollo) горизонт плоский. Связь оценивается только по геометрии, без расписания DSN.
+**Слайды.** План из 7 слайдов в разделе 9. Тексты для страницы сдачи — в `SUBMISSION.md`.
 
-**Соседи.** Учтены уже лежащие на поверхности аппараты (зонд Chandrayaan-1 в 5 км от Connecting Ridge, LCROSS, IM-1, IM-2) и запланированные миссии к тем же районам (Chang’e-7, Blue Moon MK1, Griffin-1, Artemis) с источниками; зона безопасности 2 км от чужого оборудования; для актуальных данных ссылка на реестр Lunar Ledger.
-
-**Видео.** На главной есть кнопка «▶ 30-second tour»: тур сам проходит облёт полюса, Shackleton, ускоренный лунный день, вид с поверхности на Землю и Mission rescue с субтитрами. Его можно просто записать с экрана.
-
-**Демо (30 с).** Shackleton rim → Compare → двигаем задержку на +14 дней → показываем, как падают часы «свет + связь» и какая точка становится лучше.
+**Ограничения.**
+- Точные горизонты есть только для готовых станций.
+- Связь считается только по геометрии, без DSN и ретрансляторов.
+- Батарея — упрощённая модель.
+- Планы других миссий указаны по регионам.
