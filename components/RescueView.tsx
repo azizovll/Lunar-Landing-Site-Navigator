@@ -11,6 +11,7 @@ import { SITES, getSite, resolvePreset } from "@/lib/sites";
 import { useUrlState } from "@/lib/useUrlState";
 import { ProOnly, Tip, useMode } from "./ModeProvider";
 import { SectionTitle } from "./ui";
+import { KEEP_OUT_KM, fmtKm, neighborsOf, type SiteNeighbors } from "@/lib/neighbors";
 import { PrintButton, PrintHeader } from "./PrintReport";
 
 const SOUTH = SITES.filter((s) => s.lat <= -80);
@@ -42,7 +43,16 @@ export function RescueView() {
     [planId, planStart, delay, flex],
   );
   const newStart = planStart + delay * DAY;
-  const top = result.ranked.slice(0, 3);
+  // Neighbours: hardware inside the plume safety zone, and planned missions targeting the same area.
+  const avoid = params.get("avoid") !== "0";
+  const nbOf = (id: string) => {
+    const site = getSite(id)!;
+    return neighborsOf(id, site.lat, site.lon);
+  };
+  const ranked = avoid
+    ? [...result.ranked].sort((a, b) => Number(nbOf(a.siteId).inKeepOut.length > 0) - Number(nbOf(b.siteId).inKeepOut.length > 0))
+    : result.ranked;
+  const top = ranked.slice(0, 3);
   const name = (id: string) => getSite(id)?.name ?? id;
   const planName = name(planId);
 
@@ -96,6 +106,10 @@ export function RescueView() {
             ))}
           </select>
         </label>
+        <label className="flex items-center gap-2 text-xs text-muted md:col-span-4">
+          <input type="checkbox" checked={avoid} onChange={(e) => set({ avoid: e.target.checked ? null : "0" })} />
+          Avoid the {KEEP_OUT_KM} km safety zone around hardware already on the surface (landers, impact sites)
+        </label>
       </section>
 
       {/* the problem */}
@@ -131,6 +145,7 @@ export function RescueView() {
               windowDays={windowDays}
               atEdge={Math.abs(Math.round((c.start - newStart) / DAY)) === flex && flex < 14}
               onWiden={() => set({ flex: 14 })}
+              nb={nbOf(c.siteId)}
             />
           ))}
         </div>
@@ -147,10 +162,11 @@ export function RescueView() {
               <th className="font-normal">Best landing day</th>
               <th className="font-normal">Score</th>
               <th className="font-normal">Why</th>
+              <th className="font-normal">Neighbours</th>
             </tr>
           </thead>
           <tbody>
-            {result.ranked.map((c, i) => (
+            {ranked.map((c, i) => (
               <tr key={c.siteId} className={`border-t border-line ${c.siteId === planId ? "bg-white/[0.03]" : ""}`}>
                 <td className="py-2 text-muted">{i + 1}</td>
                 <td>
@@ -164,6 +180,9 @@ export function RescueView() {
                   <ScoreChip value={c.score} />
                 </td>
                 <td className="text-xs text-muted">{why(c.metrics)}</td>
+                <td className="py-2">
+                  <NeighborTags nb={nbOf(c.siteId)} compact />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -226,6 +245,7 @@ function AltCard({
   simple,
   windowDays,
   atEdge,
+  nb,
   onWiden,
 }: {
   rank: number;
@@ -237,6 +257,7 @@ function AltCard({
   simple: boolean;
   windowDays: number;
   atEdge: boolean;
+  nb: SiteNeighbors;
   onWiden: () => void;
 }) {
   const gain = c.score - plan.score;
@@ -263,6 +284,7 @@ function AltCard({
         )}
       </div>
       <p className="text-sm leading-relaxed">{why(m)}.</p>
+      <NeighborTags nb={nb} />
       {gain !== 0 && (
         <div className={`text-sm ${gain > 0 ? "text-good" : "text-poor"}`}>
           {gain > 0 ? "▲" : "▼"} {Math.abs(gain)} points vs keeping the plan and landing late
@@ -291,6 +313,28 @@ function Stat({ k, v }: { k: string; v: string }) {
     <div className="frame p-2.5">
       <dt className="text-muted">{k}</dt>
       <dd className="mt-1 text-foreground">{v}</dd>
+    </div>
+  );
+}
+
+/** Small tags: hardware inside the safety zone (red) and planned missions targeting the same area (amber). */
+function NeighborTags({ nb, compact = false }: { nb: SiteNeighbors; compact?: boolean }) {
+  const near = nb.hardware[0];
+  return (
+    <div className={`flex flex-wrap gap-1.5 ${compact ? "" : "text-xs"}`}>
+      {nb.inKeepOut.map((h) => (
+        <span key={h.id} className="border border-poor/60 px-1.5 py-0.5 text-[11px] text-poor" title={h.note}>
+          ⚠ {h.name.split(" (")[0]} {fmtKm(h.km)} away
+        </span>
+      ))}
+      {nb.planned.length > 0 && (
+        <span className="border border-marginal/50 px-1.5 py-0.5 text-[11px] text-marginal" title={nb.planned.map((p) => `${p.name}: ${p.date}`).join("; ")}>
+          Also targeted by {nb.planned.map((p) => p.name.split(" (")[0]).join(", ")}
+        </span>
+      )}
+      {!nb.inKeepOut.length && !nb.planned.length && (
+        <span className="text-[11px] text-muted">{near ? `Nearest hardware ${fmtKm(near.km)}` : "No known neighbours"}</span>
+      )}
     </div>
   );
 }

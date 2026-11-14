@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { frameVectors, type Vec3 } from "@/lib/astro";
 import { SITES, fmtLatLon, resolvePreset } from "@/lib/sites";
 import { DAY, alignTime, sampleAt, sampleSeries, windowMetrics } from "@/lib/metrics";
+import { NEIGHBORS } from "@/lib/neighbors";
 
 /**
  * 3D terrain of the lunar south pole (home page hero).
@@ -47,11 +48,14 @@ interface Props {
 }
 
 const SOUTH_SITES = SITES.filter((s) => s.lat <= -80);
+/** Hardware already on the surface inside the 3D area (Odysseus is shown as a station already). */
+const HARDWARE = NEIGHBORS.filter((n) => n.kind !== "planned" && (n.lat ?? 0) <= -80 && n.id !== "im1-odysseus-hw");
 
 export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const mount = useRef<HTMLDivElement>(null);
   const pins = useRef<Record<string, HTMLButtonElement | null>>({});
+  const hwEls = useRef<Record<string, HTMLSpanElement | null>>({});
   const thumb = useRef<HTMLDivElement>(null);
   const caret = useRef<HTMLDivElement>(null);
   const hoveredRef = useRef<string | null>(null);
@@ -372,6 +376,11 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       let lastEarth: [number, number, number] = earthDir;
       aimLanders(setTime(timeMs).s, earthDir);
 
+      const hwAnchors = HARDWARE.map((n) => {
+        const p = surface(n.lat!, n.lon!, heightAt(n.lat!, n.lon!));
+        return { id: n.id, pos: new THREE.Vector3(p[0], p[1], p[2]).addScaledVector(radial(n.lat!, n.lon!), 0.6) };
+      });
+
       // ---- fly-to
       let flight: {
         t0: number;
@@ -511,6 +520,14 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         // pins
         const w = el.clientWidth;
         const h = el.clientHeight;
+        for (const a of hwAnchors) {
+          const el = hwEls.current[a.id];
+          if (!el) continue;
+          tmp.copy(a.pos).project(camera);
+          const on = tmp.z < 1 && Math.abs(tmp.x) < 1.05 && Math.abs(tmp.y) < 1.05;
+          el.style.opacity = on ? "1" : "0";
+          el.style.transform = `translate(${((tmp.x + 1) / 2) * w}px, ${((1 - tmp.y) / 2) * h}px)`;
+        }
         for (const a of anchors) {
           const pin = pins.current[a.id];
           if (!pin) continue;
@@ -753,6 +770,26 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
             role="img"
             aria-label="3D terrain of the lunar south pole from NASA LOLA data, lit by the Sun at the selected time, with Earth in the sky and landing sites pinned. Drag to rotate; hover a pin for a photo, click it to fly to the site."
           />
+          {HARDWARE.map((n) => (
+            <span
+              key={n.id}
+              ref={(el) => {
+                hwEls.current[n.id] = el;
+              }}
+              className="group absolute left-0 top-0 opacity-0 transition-opacity"
+              style={{ willChange: "transform" }}
+              title={`${n.name} · ${n.kind === "impact" ? "impact site" : "lander"} · ${n.date}`}
+            >
+              <span
+                className="absolute -translate-x-1/2 -translate-y-1/2 rotate-45 border border-black"
+                style={{ width: 9, height: 9, background: n.kind === "impact" ? "var(--poor)" : "#a8a8ae" }}
+                aria-hidden
+              />
+              <span className="pointer-events-none absolute left-2 top-[-8px] hidden whitespace-nowrap border border-line bg-black/85 px-1.5 py-0.5 text-[10px] text-muted group-hover:block">
+                {n.name} · {n.date.slice(0, 4)}
+              </span>
+            </span>
+          ))}
           {SOUTH_SITES.map((s) => {
             const sel = s.id === selectedId;
             const hot = s.id === hovered;
@@ -898,7 +935,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       </div>
       <figcaption className="text-center text-xs text-muted">
         NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time. Lander models are ~300× real size: panels face the real Sun, dishes point at the real
-        Earth (shown 2.5× larger). Drag to rotate; hover a pin or a name for a photo, click to fly in; “Stand on the surface” puts you on the ground facing Earth; ▶ Lunar day plays the Sun and shadows.
+        Earth (shown 2.5× larger). Drag to rotate; hover a pin or a name for a photo, click to fly in; “Stand on the surface” puts you on the ground facing Earth; ▶ Lunar day plays the Sun and shadows. ◆ Hardware already on the surface (red: impact sites).
       </figcaption>
     </figure>
   );

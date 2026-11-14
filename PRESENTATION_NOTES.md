@@ -26,6 +26,7 @@ A web app that runs entirely in the browser:
 - **Lunar day timelapse** (▶ Lunar day in the 3D view): the real Sun circles low over the pole and long shadows sweep across the craters; Earth wobbles and lander panels track the Sun.
 - **Stand on the surface**: puts the camera on the ground at a station, facing Earth's real direction, so you see whether the LOLA horizon hides Earth.
 - **30-second guided tour** (home page): overview → Shackleton rim → a lunar day in seconds → standing where Earth is best visible right now → Mission rescue, with captions. Screen-record it for the demo video.
+- **Who else is here**: hardware already on the surface near the pole (Chandrayaan-1 impact probe 5 km from Connecting Ridge, LCROSS in Cabeus, IM-1 Odysseus, IM-2 Athena) and planned missions targeting the same regions (Chang’e-7, Blue Moon MK1, Griffin-1, Artemis), each with a source. The Site page warns when hardware is inside a 2 km plume safety zone (adjustable in Pro); Mission rescue tags contested alternatives and can push sites inside a safety zone down the list; the 3D view marks the hardware. Live data: Open Lunar Foundation’s Lunar Ledger registry.
 - **Landing precision**: full-resolution LOLA horizons at 6 points on a 250 m ring and a 1 km ring around every south-polar site (`pipeline/build_ellipse.py`); the Site page shows the score on target, the worst score off target and which direction is risky. Finding: the best-lit spots are narrow crests, so 1 km off target the score collapses at most sites, in line with published work that puts highly illuminated areas at a few hundred metres across.
 - **One rating system**: the 0–100 score with a traffic light is the overall rating everywhere; Power and Comms are rated Good / OK / Poor in every mode.
 - **Battery of a reference lander** (300 W panels, 2 kWh battery, 120 W load; editable in Pro): state of charge over the mission window driven by the real illumination series, lowest charge and hours without power; also a Compare row.
@@ -180,6 +181,8 @@ The team wrote the specification and chose the method and the data. An AI coding
 **Рельеф.** Используем DEM LOLA 20/40/80/240 м на пиксель. Строим 1440 лучей (шаг 0,25°) на 200 км с учётом кривизны Луны, наблюдатель на высоте 2 м. Ориентацию растра проверили на пяти кратерах. Координаты регионального уровня привязаны к ближайшему гребню (до 2–6 км), это указано у каждой точки.
 
 **Ограничения.** Для своих точек горизонт приблизительный (480 м на пиксель, расхождение с точными масками до 7 п.п. по освещённости и связи). У точек севернее 75°S (Chandrayaan‑3, Apollo) горизонт плоский. Связь оценивается только по геометрии, без расписания DSN.
+
+**Соседи.** Учтены уже лежащие на поверхности аппараты (зонд Chandrayaan-1 в 5 км от Connecting Ridge, LCROSS, IM-1, IM-2) и запланированные миссии к тем же районам (Chang’e-7, Blue Moon MK1, Griffin-1, Artemis) с источниками; зона безопасности 2 км от чужого оборудования; для актуальных данных ссылка на реестр Lunar Ledger.
 
 **Видео.** На главной есть кнопка «▶ 30-second tour»: тур сам проходит облёт полюса, Shackleton, ускоренный лунный день, вид с поверхности на Землю и Mission rescue с субтитрами. Его можно просто записать с экрана.
 

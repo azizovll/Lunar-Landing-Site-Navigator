@@ -134,6 +134,10 @@ export default function AboutPage() {
             (<A href="https://svs.gsfc.nasa.gov/5013">5013</A>, <A href="https://svs.gsfc.nasa.gov/4716">4716</A>, <A href="https://svs.gsfc.nasa.gov/5074">5074</A>), ShadowCam (NASA/KARI/ASU) and
             LRO (NASA/GSFC/ASU); each card links to its source.
           </Panel>
+          <Panel title="Other missions">
+            Hardware on the surface and planned missions come from published sources (LROC, NASA, LPSC papers, SpaceNews), checked on 15 Nov 2026. For live, operator-submitted data see the{" "}
+            <A href="https://openlunar.org/blog/ledger-launch-press-release">Lunar Ledger</A> by the Open Lunar Foundation.
+          </Panel>
           <Panel title="Published illumination">
             <A href="https://ntrs.nasa.gov/citations/20170007365">Gläser et al., illumination conditions at the lunar poles (NASA NTRS)</A>: site coordinates and reference values for the terrain
             check.

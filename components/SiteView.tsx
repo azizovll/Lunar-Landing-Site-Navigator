@@ -21,6 +21,7 @@ import { CopyLinkButton } from "./CopyLinkButton";
 import { SimpleSummary } from "./SimpleSummary";
 import { BatteryPanel } from "./BatteryPanel";
 import { LandingPrecision } from "./LandingPrecision";
+import { NeighborsPanel } from "./NeighborsPanel";
 import { PoleExplainer } from "./PoleExplainer";
 import { PrintButton, PrintHeader } from "./PrintReport";
 import { Eyebrow, StatBox } from "./ui";
@@ -382,6 +383,7 @@ export function SiteView() {
                 </ExpertOnly>
                   </>
                 )}
+                <NeighborsPanel siteId={site.id === "custom" ? null : site.id} lat={site.lat} lon={site.lon} simple={mode === "simple"} />
                 {site.terrain === "lola" && <LandingPrecision siteId={site.id} from={windowFrom} to={windowTo} settings={settings} centre={metrics} simple={mode === "simple"} />}
                 <BatteryPanel series={series} from={windowFrom} to={windowTo} settings={settings} t={clampedT} simple={mode === "simple"} />
               </>

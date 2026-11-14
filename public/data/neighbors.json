@@ -1,0 +1,113 @@
+{
+ "checked": "2026-11-15",
+ "note": "Hardware already on the surface (landers and impact sites) and planned missions near the south pole. Planned targets are region-level unless an exact point is public. For live, operator-submitted data see the Open Lunar Foundation Lunar Ledger.",
+ "registry": { "name": "Lunar Ledger (Open Lunar Foundation)", "url": "https://openlunar.org/blog/ledger-launch-press-release" },
+ "items": [
+  {
+   "id": "chandrayaan1-mip",
+   "name": "Chandrayaan-1 Moon Impact Probe",
+   "kind": "impact",
+   "lat": -89.55,
+   "lon": -122.93,
+   "date": "2008-11-14",
+   "note": "India’s impact probe; crashed on the Earth-facing slope of Connecting Ridge (refined location from LROC images).",
+   "source": "https://ui.adsabs.harvard.edu/abs/2021LPI....52.1013S/abstract",
+   "sourceLabel": "Stooke et al. 2021, LPSC 52"
+  },
+  {
+   "id": "lcross-centaur",
+   "name": "LCROSS Centaur stage",
+   "kind": "impact",
+   "lat": -84.68,
+   "lon": -48.71,
+   "date": "2009-10-09",
+   "note": "NASA’s spent Centaur upper stage, crashed into permanently shadowed Cabeus crater to search for water.",
+   "source": "https://ntrs.nasa.gov/citations/20140005563",
+   "sourceLabel": "NASA NTRS 20140005563"
+  },
+  {
+   "id": "lcross-ssc",
+   "name": "LCROSS shepherding spacecraft",
+   "kind": "impact",
+   "lat": -84.719,
+   "lon": -49.61,
+   "date": "2009-10-09",
+   "note": "Followed the Centaur into Cabeus four minutes later.",
+   "source": "https://arxiv.org/abs/1103.1687",
+   "sourceLabel": "Locating the LCROSS impact craters (arXiv:1103.1687)"
+  },
+  {
+   "id": "im1-odysseus-hw",
+   "name": "IM-1 Odysseus lander",
+   "kind": "lander",
+   "lat": -80.13,
+   "lon": 1.44,
+   "date": "2024-02-22",
+   "note": "Intuitive Machines; lying on its side near Malapert A.",
+   "source": "https://www.nasa.gov/missions/lro/nasas-lro-images-intuitive-machines-odysseus-lander/",
+   "sourceLabel": "NASA / LRO"
+  },
+  {
+   "id": "im2-athena",
+   "name": "IM-2 Athena lander",
+   "kind": "lander",
+   "lat": -84.7906,
+   "lon": 29.1957,
+   "date": "2025-03-06",
+   "note": "Intuitive Machines; landed about 250 m from its target on Mons Mouton and tipped over.",
+   "source": "https://www.lroc.asu.edu/images/1401",
+   "sourceLabel": "LROC: IM-2 landing region"
+  },
+  {
+   "id": "chandrayaan3-vikram-hw",
+   "name": "Chandrayaan-3 Vikram lander and Pragyan rover",
+   "kind": "lander",
+   "lat": -69.373,
+   "lon": 32.319,
+   "date": "2023-08-23",
+   "note": "ISRO; outside the polar region shown in 3D.",
+   "source": "https://www.lroc.asu.edu/posts/1327",
+   "sourceLabel": "LROC: Chandrayaan-3 landing site"
+  },
+  {
+   "id": "change-7",
+   "name": "Chang’e-7 (China)",
+   "kind": "planned",
+   "nearSites": ["shackleton-rim", "connecting-ridge"],
+   "date": "2027 (postponed from Aug 2026)",
+   "note": "Lander, rover and hopper expected to target the Shackleton crater rim; the official landing point has not been published.",
+   "source": "https://spacenews.com/china-delays-change-7-lunar-south-pole-landing-mission-launch/",
+   "sourceLabel": "SpaceNews, Aug 2026"
+  },
+  {
+   "id": "blue-moon-mk1",
+   "name": "Blue Moon MK1 pathfinder (Blue Origin)",
+   "kind": "planned",
+   "nearSites": ["connecting-ridge"],
+   "date": "NET late 2026",
+   "note": "Reported target: Shackleton Connecting Ridge. Landing not confirmed at the time of our check.",
+   "source": "https://en.wikipedia.org/wiki/Blue_Moon_Pathfinder",
+   "sourceLabel": "Blue Moon Pathfinder (overview)"
+  },
+  {
+   "id": "griffin-1",
+   "name": "Griffin Mission One (Astrobotic)",
+   "kind": "planned",
+   "nearSites": ["nobile-rim", "mons-mouton"],
+   "date": "late 2026 – early 2027",
+   "note": "NASA CLPS delivery to the Nobile crater region.",
+   "source": "https://en.wikipedia.org/wiki/Griffin_Mission_One",
+   "sourceLabel": "Griffin Mission One (overview)"
+  },
+  {
+   "id": "artemis-crewed",
+   "name": "Artemis crewed landing (NASA)",
+   "kind": "planned",
+   "nearSites": ["haworth", "malapert-massif", "leibnitz-beta", "mons-mouton", "nobile-rim", "de-gerlache-rim"],
+   "date": "2027 or later",
+   "note": "One of the 9 candidate regions (Haworth, Malapert Massif, Mons Mouton Plateau, Mons Mouton, Nobile Rim 1 and 2, de Gerlache Rim 2, Peak near Cabeus B, Slater Plain).",
+   "source": "https://www.hou.usra.edu/meetings/lpsc2026/pdf/1901.pdf",
+   "sourceLabel": "NASA, LPSC 2026 site-selection update"
+  }
+ ]
+}
