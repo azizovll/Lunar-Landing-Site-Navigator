@@ -154,7 +154,7 @@ export function RescueView() {
       {/* every site */}
       <section className="card overflow-x-auto p-5">
         <h2 className="display mb-3 text-sm tracking-[0.2em]">All sites, best day each</h2>
-        <table className="w-full min-w-[620px] text-sm">
+        <table className="w-full min-w-[620px] text-sm [&_td]:pr-4 [&_th]:pr-4 [&_td]:align-middle">
           <thead className="text-left text-xs text-muted">
             <tr>
               <th className="py-1.5 font-normal">#</th>
@@ -179,7 +179,7 @@ export function RescueView() {
                 <td>
                   <ScoreChip value={c.score} />
                 </td>
-                <td className="text-xs text-muted">{why(c.metrics)}</td>
+                <td className="py-2 text-xs leading-snug text-foreground/75">{why(c.metrics)}</td>
                 <td className="py-2">
                   <NeighborTags nb={nbOf(c.siteId)} compact />
                 </td>

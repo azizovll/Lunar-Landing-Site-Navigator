@@ -10,9 +10,13 @@ async function loadGrid(): Promise<LightGrid> {
   return { data: new Int16Array(buf), n: meta.n, scaleM: meta.scaleM };
 }
 
-self.onmessage = async (e: MessageEvent<{ id: number; body: "sun" | "earth"; marginDeg: number; from: number; to: number; stepMs: number; rowFrom: number; rowTo: number }>) => {
+self.onmessage = async (
+  e: MessageEvent<{ id: number; body: "sun" | "earth"; marginDeg: number; from: number; to: number; stepMs: number; rowFrom: number; rowTo: number; grid?: LightGrid }>,
+) => {
   const { id, body, marginDeg, from, to, stepMs, rowFrom, rowTo } = e.data;
   try {
+    // the page sends its already-downloaded heights with the first job; fetch only as a fallback
+    if (e.data.grid) grid = Promise.resolve(e.data.grid);
     grid ??= loadGrid();
     const g = await grid;
     const sun: number[] = [];

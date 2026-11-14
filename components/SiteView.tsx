@@ -338,7 +338,7 @@ export function SiteView() {
           <aside className="no-print order-2 flex flex-col gap-4 lg:order-none">
             <PolarMap selectedId={siteId} custom={customPoint} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />
             <SiteList selectedId={customLat !== null ? null : siteId} from={windowFrom} settings={settings} onSelect={selectSite} />
-            <CustomForm onSubmit={(lat, lon) => set({ lat, lon, site: null })} />
+            <CustomForm key={customPoint ? `${customPoint.lat},${customPoint.lon}` : "none"} initial={customPoint} onSubmit={(lat, lon) => set({ lat, lon, site: null })} />
           </aside>
 
           <div className="order-1 flex min-w-0 flex-col gap-4 lg:order-none">
@@ -458,9 +458,10 @@ export function SiteView() {
   );
 }
 
-function CustomForm({ onSubmit }: { onSubmit: (lat: number, lon: number) => void }) {
-  const [lat, setLat] = useState("-89.0");
-  const [lon, setLon] = useState("0");
+function CustomForm({ initial, onSubmit }: { initial: { lat: number; lon: number } | null; onSubmit: (lat: number, lon: number) => void }) {
+  // shows the point currently in the URL (e.g. one clicked on the 3D terrain)
+  const [lat, setLat] = useState(initial ? String(initial.lat) : "-89.0");
+  const [lon, setLon] = useState(initial ? String(initial.lon) : "0");
   return (
     <form
       className="card flex flex-wrap items-end gap-2 p-4 text-sm"

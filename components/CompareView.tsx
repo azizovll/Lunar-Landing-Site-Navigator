@@ -365,7 +365,7 @@ function QuickAnswer({ names, metrics, delay }: { names: string[]; metrics: (Win
   const best = (f: (m: WindowMetrics) => number) => {
     const top = Math.max(...ready.map((x) => f(x.m)));
     const winners = ready.filter((x) => Math.abs(f(x.m) - top) < 1e-6).map((x) => x.name);
-    return winners.length === ready.length ? "all the same" : winners.join(" and ");
+    return winners.length === ready.length ? "all the same" : winners.length > 1 ? `${winners.slice(0, -1).join(", ")} and ${winners[winners.length - 1]}` : winners[0];
   };
   return (
     <section className="card grid gap-4 p-6 md:grid-cols-3">

@@ -470,6 +470,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback, custom = nul
         ground.material = heat ? heatMat : mat;
       };
       const pool: Worker[] = [];
+      const gridSent = new WeakSet<Worker>();
       const lightReq: Record<MapBody, number> = { sun: 0, earth: 0 };
       const computeLight = async (from: number, body: MapBody) => {
         const id = ++lightReq[body];
@@ -505,7 +506,10 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback, custom = nul
                   stepMs: 6 * 3_600_000,
                   rowFrom: q * chunk,
                   rowTo: Math.min(N, (q + 1) * chunk),
+                  // first job per worker carries the heights (0.5 MB copy) so it does not download them again
+                  grid: gridSent.has(w) ? undefined : { data: heights, n: N, scaleM: scale },
                 });
+                gridSent.add(w);
               }),
           ),
         );
@@ -1307,14 +1311,14 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback, custom = nul
                 style={{ width: 9, height: 9, background: n.kind === "impact" ? "var(--poor)" : "#a8a8ae" }}
                 aria-hidden
               />
-              <span className="pointer-events-none absolute left-2 top-[-8px] hidden whitespace-nowrap border border-line bg-black/85 px-1.5 py-0.5 text-[11px] text-muted group-hover:block">
+              <span className="pointer-events-none absolute left-2 top-[-8px] hidden whitespace-nowrap border border-line bg-black/85 px-1.5 py-0.5 text-xs text-muted group-hover:block">
                 {n.name} · {n.date.slice(0, 4)}
               </span>
             </span>
           ))}
           <span ref={customMarker} className="pointer-events-none absolute left-0 top-0 opacity-0" style={{ willChange: "transform" }} aria-hidden>
             <span className="absolute -translate-x-1/2 -translate-y-1/2 text-lg leading-none text-white drop-shadow-[0_0_6px_rgba(0,0,0,0.9)]">✚</span>
-            <span className="absolute left-3 top-[-22px] whitespace-nowrap border border-white/70 bg-black/80 px-1.5 py-0.5 text-[11px] text-white">Your point</span>
+            <span className="absolute left-3 top-[-22px] whitespace-nowrap border border-white/70 bg-black/80 px-1.5 py-0.5 text-xs text-white">Your point</span>
           </span>
           {cands.map((c, q) => (
             <button
@@ -1327,7 +1331,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback, custom = nul
               onClick={() => onPickRef.current?.(c.lat, c.lon)}
               title="Bright spot from the approximate light map: click to check it with the exact horizon"
             >
-              <span className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap border border-sun bg-black/85 px-1.5 py-0.5 text-[11px] text-sun group-hover:bg-sun group-hover:text-black">
+              <span className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap border border-sun bg-black/85 px-1.5 py-0.5 text-xs text-sun group-hover:bg-sun group-hover:text-black">
                 ✦ {q + 1} · ~{Math.round(c.sun * 100)}%
               </span>
             </button>
@@ -1344,7 +1348,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback, custom = nul
               aria-hidden
             >
               <span
-                className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap border bg-black/80 px-1.5 py-0.5 text-[11px]"
+                className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap border bg-black/80 px-1.5 py-0.5 text-xs"
                 style={{ color: t.ok ? t.okColor : "var(--poor)", borderColor: t.ok ? t.okColor : "var(--poor)" }}
               >
                 {t.label}
@@ -1372,7 +1376,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback, custom = nul
               >
                 <span className="absolute bottom-0 left-0 flex -translate-x-1/2 flex-col items-center">
                   <span
-                    className={`whitespace-nowrap border px-1.5 py-0.5 text-[11px] uppercase tracking-[0.15em] backdrop-blur ${
+                    className={`whitespace-nowrap border px-1.5 py-0.5 text-xs uppercase tracking-[0.15em] backdrop-blur ${
                       sel && hovered !== s.id ? "border-foreground bg-black/80 text-foreground" : "hidden"
                     }`}
                     style={{ fontFamily: "var(--font-orbitron)" }}
@@ -1416,7 +1420,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback, custom = nul
               <div className="display text-xs tracking-[0.15em] text-sun">{hoveredSite.name}</div>
               <div className="text-xs text-muted">{fmtLatLon(hoveredSite.lat, hoveredSite.lon)}</div>
               {hoveredSite.description && <p className="text-xs leading-snug text-muted">{hoveredSite.description.split(". ")[0]}.</p>}
-              {hoveredSite.photo && <div className="text-[11px] text-faint">Image: {hoveredSite.photo.credit}</div>}
+              {hoveredSite.photo && <div className="text-xs text-faint">Image: {hoveredSite.photo.credit}</div>}
             </div>
           </div>
         )}
@@ -1458,7 +1462,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback, custom = nul
             </div>
           )}
           {mapMode && (mapMode === "sun" ? lightFrom : earthFrom) !== null && (
-            <span className="flex flex-col gap-1 bg-black/55 px-2.5 py-1.5 text-[11px] text-muted backdrop-blur-sm">
+            <span className="flex flex-col gap-1 bg-black/55 px-2.5 py-1.5 text-xs text-muted backdrop-blur-sm">
               <span>
                 {mapMode === "sun" ? "Time in sunlight" : `Time with Earth ${DEFAULT_SETTINGS.marginDeg}° above the hills (direct radio link)`},{" "}
                 {new Date((mapMode === "sun" ? lightFrom : earthFrom)!).toISOString().slice(0, 10)} + 29.5 days
@@ -1468,28 +1472,28 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback, custom = nul
                 <span className="block h-2 w-32" style={{ background: `linear-gradient(to right,${MAP_RAMP[mapMode].join(",")})` }} />
                 100%
               </span>
-              <span className="hidden text-faint sm:inline">approximate: 1.3 km grid; site numbers use 20 m horizons</span>
+              <span className="hidden text-muted sm:inline">approximate: 1.3 km grid; site numbers use 20 m horizons</span>
             </span>
           )}
           {!focused && !mapMode && (
-            <span className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted">
+            <span className="flex flex-wrap items-center gap-x-2 bg-black/55 px-1.5 py-0.5 text-xs text-muted">
               Pin colour = score, next 14 days:
               <span style={{ color: "var(--good)" }}>● 70+</span>
               <span style={{ color: "var(--marginal)" }}>● 40–69</span>
               <span style={{ color: "var(--poor)" }}>● under 40</span>
-              <span className="text-faint">· click the ground to test any point</span>
+              <span className="text-foreground/80">· click the ground to test any point</span>
             </span>
           )}
           {mapMode === "sun" && cands.length > 0 && (
-            <span className="hidden bg-black/55 px-1.5 text-[11px] text-sun sm:inline">✦ brightest spots ≥6 km from known sites · approximate, click to check</span>
+            <span className="hidden bg-black/55 px-1.5 text-xs text-sun sm:inline">✦ brightest spots ≥6 km from known sites · approximate, click to check</span>
           )}
           {ready && !standing && (
-            <span className="mt-1 flex items-center gap-2 text-[11px] text-faint">
+            <span className="mt-1 flex items-center gap-2 bg-black/55 px-1.5 py-0.5 text-xs text-muted">
               <span className="flex flex-col items-start">
                 <span ref={scaleLabel} className="text-muted" />
                 <span ref={scaleBar} className="block h-1.5 border-x border-b border-muted" style={{ width: 60 }} />
               </span>
-              <span>heights ×2 · landers ×300</span>
+              <span className="hidden sm:inline">heights ×2 · landers ×300</span>
             </span>
           )}
         </div>
