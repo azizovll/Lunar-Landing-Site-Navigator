@@ -992,6 +992,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
     setTouring(false);
     setCaption(null);
     setPlaying(false);
+    setMapMode(null);
   };
   const runTour = async () => {
     const id = ++tourId.current;
@@ -1001,21 +1002,32 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
     setPhoto(null);
     setPlaying(false);
     overview();
+    setMapMode(null);
     setCaption("The lunar south pole, built from NASA LOLA laser-altimeter data and lit by the real Sun.");
-    await wait(4000);
+    await wait(3500);
     if (!alive()) return;
     goTo("shackleton-rim");
-    hover("shackleton-rim");
-    setCaption("Shackleton rim: a ridge that sees the Sun most of the year, next to a crater floor that never does.");
-    await wait(4500);
+    setCaption("Shackleton rim. The lines show its way to the Sun and to Earth: gold or blue when clear, red where hills or the horizon block it.");
+    await wait(5500);
     if (!alive()) return;
-    hover(null);
+    if (lightFrom !== null) {
+      overview();
+      setMapMode("sun");
+      setCaption("Light map for the next month: bright ridges see the Sun most of the time, crater floors stay in darkness.");
+      await wait(5000);
+      if (!alive()) return;
+      setMapMode("earth");
+      setCaption("Signal map: where Earth stays above the hills for a direct radio link. Near the pole it is scarce.");
+      await wait(4500);
+      if (!alive()) return;
+      setMapMode(null);
+    }
     overview();
     setSpeedH(48);
     startClock();
     setPlaying(true);
     setCaption("A lunar day in seconds: the Sun circles just above the horizon and shadows sweep across the craters.");
-    await wait(7000);
+    await wait(6000);
     if (!alive()) return;
     setPlaying(false);
     setSpeedH(24);
@@ -1027,10 +1039,10 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         ? `Standing on ${best.s.name}: Earth hangs just above the hills, so a radio link home works.`
         : `Standing on ${best.s.name}: even here Earth is behind the hills right now, so the lander would need a relay.`,
     );
-    await wait(6000);
+    await wait(5000);
     if (!alive()) return;
     setCaption("Launch slipped? Mission rescue finds the best new site and date in one click.");
-    await wait(4500);
+    await wait(3500);
     if (!alive()) return;
     overview();
     setTouring(false);
