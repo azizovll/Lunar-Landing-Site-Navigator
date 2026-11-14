@@ -2,10 +2,10 @@
  {
   "id": "shackleton-rim",
   "name": "Shackleton rim",
-  "lat": -89.7815,
-  "lon": 204.7,
+  "lat": -89.6866,
+  "lon": 197.19,
   "kind": "south-pole",
-  "note": "Most illuminated rim point (S) in Gläser et al. 2018.",
+  "note": "Point of maximum average illumination on the Shackleton rim (site S in Gläser et al. 2018, 'SR2' in Gläser et al. 2014).",
   "source": "https://ntrs.nasa.gov/citations/20170007365",
   "sourceLabel": "Gläser et al. 2018, Planet. Space Sci. (NASA NTRS)"
  },
@@ -62,8 +62,8 @@
  {
   "id": "leibnitz-beta",
   "name": "Leibnitz beta plateau",
-  "lat": -85.4051,
-  "lon": 31.7278,
+  "lat": -85.4026,
+  "lon": 31.6876,
   "kind": "south-pole",
   "note": "Plateau point from Kaguya-based illumination study; now part of 'Mons Mouton Plateau'. Snapped to the local crest (≤2 km) in the LOLA DEM: the published coordinate comes from a different topography product.",
   "source": "https://spudislunarresources.nss.org/Bibliography/p/98.pdf",

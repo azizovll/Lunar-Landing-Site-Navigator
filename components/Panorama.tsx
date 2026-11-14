@@ -134,10 +134,10 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
         {/* outlines over terrain so hidden bodies are still findable */}
         <circle cx={sunX} cy={sunY} r={sunR} fill="none" stroke="var(--sun)" strokeOpacity={0.6} strokeDasharray="2 2" />
         <circle cx={earthX} cy={earthY} r={earthR} fill="none" stroke="var(--earth)" strokeOpacity={0.6} strokeDasharray="2 2" />
-        <text x={sunX} y={Math.max(14, sunY - sunR - 8)} fontSize={13} fill="var(--sun)" textAnchor="middle" fontWeight={600}>
+        <text x={Math.min(W - 40, Math.max(40, sunX))} y={Math.max(14, sunY - sunR - 8)} fontSize={13} fill="var(--sun)" textAnchor="middle" fontWeight={600}>
           Sun {expert ? `${now.sunEl.toFixed(2)}°` : ""}
         </text>
-        <text x={earthX} y={Math.max(14, earthY - earthR - 8)} fontSize={13} fill="var(--earth)" textAnchor="middle" fontWeight={600}>
+        <text x={Math.min(W - 40, Math.max(40, earthX))} y={Math.max(14, earthY - earthR - 8)} fontSize={13} fill="var(--earth)" textAnchor="middle" fontWeight={600}>
           Earth {expert ? `${now.earthEl.toFixed(2)}°` : ""}
         </text>
         {ticks.map((t) => (

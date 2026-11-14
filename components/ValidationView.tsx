@@ -29,7 +29,7 @@ function compare(siteId: string, lat: number, lon: number, body: "sun" | "earth"
 
 const LITERATURE = [
   { id: "connecting-ridge", label: "Connecting Ridge (C1)", published: 88.0 },
-  { id: "shackleton-rim", label: "Shackleton rim (S)", published: 85.5 },
+  { id: "shackleton-rim", label: "Shackleton rim (S)", published: 82.1 },
   { id: "shackleton-floor", label: "Shackleton floor (PSR)", published: 0 },
 ];
 
