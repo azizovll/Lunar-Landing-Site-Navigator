@@ -12,6 +12,7 @@ import { Dot } from "./SiteList";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { ExpertOnly, Tip, useMode } from "./ModeProvider";
 import { plainDuration, plainShare } from "@/lib/plain";
+import { score } from "@/lib/score";
 import { SectionTitle } from "./ui";
 
 const KEYS = ["a", "b", "c", "d"] as const;
@@ -39,6 +40,7 @@ interface RowDef {
 }
 
 const ROWS: RowDef[] = [
+  { label: "Score (0–100)", get: (m) => score(m), fmt: (v) => `${v}`, better: "high", simple: { label: "Overall score", fmt: (v) => `${v} / 100` } },
   { label: "Illumination", get: (m) => m.illuminationPct, fmt: (v) => `${v.toFixed(1)}%`, better: "high", simple: { label: "☀ Sunlight", fmt: plainShare } },
   { label: "Longest night", get: (m) => m.longestNightH, fmt: fmtHours, better: "low", simple: { label: "Longest darkness", fmt: (v) => plainDuration(v) } },
   { label: "Power index", get: (m) => m.powerIndex * 100, fmt: (v) => `${v.toFixed(1)}%`, better: "high" },
@@ -153,6 +155,12 @@ export function CompareView() {
         </label>
       </div>
       {simple && <QuickAnswer names={cols.map((c, i) => sites[i]?.name ?? (c.custom ? "Custom point" : c.siteId))} metrics={computed.map((c) => c?.sweep[delay] ?? null)} delay={delay} />}
+      <p className="-mt-4 text-center text-sm text-muted">
+        Want the tool to pick for you?{" "}
+        <Link className="text-foreground underline underline-offset-4" href={`/rescue?site=${cols[0]?.siteId && !cols[0].custom ? cols[0].siteId : "shackleton-rim"}&date=${toUtcInput(cols[0]?.start ?? today, false)}&delay=${delay || 14}`}>
+          Mission rescue finds the 3 best alternatives →
+        </Link>
+      </p>
       <Tip>Drag the delay slider: if the launch slips by N days, every scenario’s landing date shifts by N days. Arrows show whether each number got better (▲) or worse (▼) than the on-time plan.</Tip>
 
       <div className="overflow-x-auto">

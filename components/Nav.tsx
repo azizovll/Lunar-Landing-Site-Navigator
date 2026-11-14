@@ -7,6 +7,7 @@ import { useMode } from "./ModeProvider";
 const LINKS = [
   { href: "/", label: "Site" },
   { href: "/compare", label: "Compare" },
+  { href: "/rescue", label: "Rescue" },
   { href: "/calendar", label: "Calendar" },
   { href: "/validation", label: "Validation" },
   { href: "/about", label: "About" },

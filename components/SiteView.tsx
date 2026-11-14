@@ -15,6 +15,7 @@ import { commsVerdict, overallVerdict, powerVerdict } from "@/lib/metrics";
 import { PolarMap } from "./PolarMap";
 import { Terrain3D } from "./Terrain3D";
 import { Dot, SiteList } from "./SiteList";
+import { LIGHT_COLOR, light, score, why } from "@/lib/score";
 import { ExpertOnly, Tip, useMode } from "./ModeProvider";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { SimpleSummary } from "./SimpleSummary";
@@ -150,6 +151,9 @@ export function SiteView() {
             <Link href="/compare" className="btn">
               Compare sites
             </Link>
+            <Link href={`/rescue?site=${siteId}`} className="btn">
+              Launch slipped? Rescue →
+            </Link>
           </div>
           <p className="text-xs text-muted">
             {mode === "simple" ? (
@@ -198,6 +202,14 @@ export function SiteView() {
                 <VerdictBadge v={overallVerdict(metrics)} />
                 <Dot v={powerVerdict(metrics)} label="Power" color="var(--sun)" />
                 <Dot v={commsVerdict(metrics)} label="Comms" color="var(--earth)" />
+                <span
+                  className="inline-flex items-center gap-1.5 border px-2 py-0.5 text-[11px] uppercase tracking-[0.12em]"
+                  style={{ borderColor: LIGHT_COLOR[light(score(metrics))], color: LIGHT_COLOR[light(score(metrics))] }}
+                  title={`Score 0–100: ${why(metrics)}`}
+                >
+                  Score {score(metrics)}
+                </span>
+                <span className="text-sm text-muted">{why(metrics)}</span>
               </div>
             )}
             <p className="text-sm text-muted">

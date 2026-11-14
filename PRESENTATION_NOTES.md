@@ -22,6 +22,8 @@ A web app that runs entirely in the browser:
   - Power, Comms and Combined cards with countdowns (“sunset over terrain in 3 d 4 h”).
   - A 30-day timeline with shaded *light*, *comms* and *both* windows.
 - **Compare:** up to four “site + date” scenarios, with the best value per metric highlighted. A **launch-delay slider (0–60 days)** shows instantly what a slip does, with ▲/▼ arrows against the on-time plan.
+- **Mission rescue** (`/rescue`): enter the planned site, date and launch delay; the tool scores every south-pole site on every day within ±3/7/14 days of the new date and shows the 3 best alternatives with a 0–100 score, a traffic light, a one-line reason and the gain over simply landing late at the planned site.
+- **Score 0–100:** 0.4 × illumination% (minus up to half for nights longer than 120 h) + 0.4 × comms% (minus up to half for blackouts longer than 96 h) + 0.2 × light-and-comms%. Green ≥ 70, amber 40–69, red < 40. Shown on the Site header, in Compare and in Mission rescue.
 - **Calendar:** a 12-month heatmap of daily light and comms, plus the best 14-day mission starts.
 - **Validation:** a live comparison with NASA JPL Horizons, and a terrain check against a published illumination study.
 - **Simple / Pro mode:** Simple (default) turns the numbers into plain language for the public: a one-sentence verdict, tiles rated in words, “Sun right now / Earth right now” sentences and a day-by-day strip. Pro shows every number, azimuths, CSV export and shareable URLs for planners.
@@ -29,7 +31,7 @@ A web app that runs entirely in the browser:
 - **Custom points:** click the polar map or type coordinates, on the Site, Compare and Calendar screens. An approximate terrain horizon is computed in a Web Worker in about a second.
 - **Separate verdicts:** each site shows a Power verdict and a Comms verdict next to the overall one, because near the pole a perfectly lit site can still have poor direct-to-Earth comms.
 
-Demo story (30 s): *“We plan Shackleton rim and Connecting Ridge for 1 December. The launch slips two weeks. Drag the slider: every number updates, the arrows show what got worse, and the table highlights which site is now best.”* (Check the actual numbers in the app before recording.)
+Demo story (30 s): *“We planned Shackleton rim for 1 December. The launch slips 30 days. Open Mission rescue, set +30 days: the delayed plan drops to amber, and the tool ranks every south-pole site on every nearby day and proposes the three best alternatives, each with a score and a one-line reason. One click opens the sky view to see why.”* (Check the actual numbers in the app before recording.)
 
 ## 3. Technologies and why
 
@@ -147,7 +149,7 @@ All of these run as automated tests (`npm test`, 27 tests), except the page chec
 1. **The question.** “If the landing slips by two weeks, will we still have Sun and Earth?” Photo-free title with the panorama screenshot.
 2. **Why the pole is hard.** 1.5° tilt: the Sun skims the horizon. Libration: Earth wobbles. Show the panorama with the Sun track and Earth loop.
 3. **What we built.** Site view: panorama, timeline, Power and Comms cards. One screenshot with callouts.
-4. **Compare and delay.** The launch-delay slider moving from 0 to 14 days, with ▲/▼ indicators. This is the 30-second demo.
+4. **Mission rescue.** “Launch slipped 30 days”: the delayed plan turns amber, the tool proposes the 3 best alternative sites and dates with a 0–100 score and a reason. This is the 30-second demo.
 5. **Real terrain.** LOLA DEM to horizon mask (1440 rays, 200 km, curvature), the orientation check on five craters, and Shackleton rim vs floor.
 6. **Can you trust it?** Horizons comparison: max 0.004° over 130 comparisons. Illumination vs a published study: 85.4% vs 88.0% and 84.3% vs 82.1%. The Apollo 11 check.
 7. **Impact and next steps.** Who it is for (planners, educators, public); runs in any browser with no install. Next: site DEMs, landing ellipses, relays. Team infinium.
@@ -160,7 +162,7 @@ The team wrote the specification and chose the method and the data. An AI coding
 
 ## Краткое резюме для команды (RU)
 
-**Что сделали.** Веб‑приложение Lunar Site Navigator: панорама неба с реальным горизонтом по рельефу LOLA, Солнце и Земля в истинном угловом размере, таймлайн на 30 дней (свет, связь, оба окна), карточки Power, Comms и Combined с обратным отсчётом. Также есть сравнение до 4 сценариев с ползунком задержки запуска 0–60 дней, годовой календарь, страница проверки режимы Simple (простой язык для всех, включён по умолчанию) и Pro (все цифры для специалистов), а на главной 3D‑рельеф южного полюса по данным LOLA с настоящими тенями от Солнца на выбранный момент, Землёй в небе и метками станций: при наведении (на телефоне при касании) появляется миниатюра со снимком NASA и коротким описанием, клик приближает камеру, а кнопка «Photo & details» открывает полную карточку станции с переключением между станциями. Всё считается в браузере, базы данных нет.
+**Что сделали.** Веб‑приложение Lunar Site Navigator: панорама неба с реальным горизонтом по рельефу LOLA, Солнце и Земля в истинном угловом размере, таймлайн на 30 дней (свет, связь, оба окна), карточки Power, Comms и Combined с обратным отсчётом. Есть режим «Спасти миссию»: пользователь вводит план и задержку пуска, инструмент перебирает все южные станции и даты рядом и показывает три лучшие альтернативы с баллом 0–100 и объяснением. Также есть сравнение до 4 сценариев с ползунком задержки запуска 0–60 дней, годовой календарь, страница проверки режимы Simple (простой язык для всех, включён по умолчанию) и Pro (все цифры для специалистов), а на главной 3D‑рельеф южного полюса по данным LOLA с настоящими тенями от Солнца на выбранный момент, Землёй в небе и метками станций: при наведении (на телефоне при касании) появляется миниатюра со снимком NASA и коротким описанием, клик приближает камеру, а кнопка «Photo & details» открывает полную карточку станции с переключением между станциями. Всё считается в браузере, базы данных нет.
 
 **Точность.**
 - Сверка с JPL Horizons: 130 сравнений, максимум 0,004°, RMS 5,6″ (цель была 0,1°).
