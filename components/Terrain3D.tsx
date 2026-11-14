@@ -381,6 +381,28 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         return { id: n.id, pos: new THREE.Vector3(p[0], p[1], p[2]).addScaledVector(radial(n.lat!, n.lon!), 0.6) };
       });
 
+      // ---- line of sight over the heightfield: is the straight line from `eye` to `pt` cut by terrain?
+      // Used to lift the camera until a deep crater floor is in view, and to fade pins hidden behind hills.
+      const blocked = (eye: import("three").Vector3, pt: import("three").Vector3) => {
+        const STEPS = 48;
+        for (let i = 1; i < STEPS; i++) {
+          const f = (i / STEPS) * 0.97; // stop just short of the point so its own slope does not count
+          const x = eye.x + (pt.x - eye.x) * f;
+          const y = eye.y + (pt.y - eye.y) * f + R_KM;
+          const z = eye.z + (pt.z - eye.z) * f;
+          const r = Math.hypot(x, y, z);
+          const lat = -Math.asin(y / r) / D2R;
+          if (lat > -78) continue; // outside the DEM
+          const lon = Math.atan2(z, x) / D2R;
+          if (r < R_KM + (EXAG * heightAt(lat, lon)) / 1000) return true;
+        }
+        return false;
+      };
+      const sightPt = new THREE.Vector3();
+      const groundSight = (a: { ground: import("three").Vector3; up: import("three").Vector3 }) => sightPt.copy(a.ground).addScaledVector(a.up, 0.3);
+      const camTry = new THREE.Vector3();
+      const sphTry = new THREE.Spherical();
+
       // ---- fly-to
       let flight: {
         t0: number;
@@ -402,6 +424,16 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         const a = id ? anchors.find((x) => x.id === id) : null;
         off3.copy(camera.position).sub(controls.target);
         cur.setFromVector3(off3);
+        // Look down steeply enough to actually see the site (a crater floor is hidden from a low angle).
+        let toPhi = a ? ZOOM.phi : OVERVIEW.phi;
+        if (a) {
+          const g = groundSight(a);
+          while (toPhi > 0.3) {
+            camTry.setFromSpherical(sphTry.set(ZOOM.radius, toPhi, cur.theta)).add(a.pos);
+            if (!blocked(camTry, g)) break;
+            toPhi -= 0.06;
+          }
+        }
         flight = {
           t0: performance.now(),
           dur: 1400,
@@ -410,7 +442,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           fromR: cur.radius,
           toR: a ? ZOOM.radius : OVERVIEW.radius,
           fromPhi: cur.phi,
-          toPhi: a ? ZOOM.phi : OVERVIEW.phi,
+          toPhi,
           fromTheta: cur.theta,
           toTheta: cur.theta,
         };
@@ -525,7 +557,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           if (!el) continue;
           tmp.copy(a.pos).project(camera);
           const on = tmp.z < 1 && Math.abs(tmp.x) < 1.05 && Math.abs(tmp.y) < 1.05;
-          el.style.opacity = on ? "1" : "0";
+          el.style.opacity = on ? (blocked(camera.position, a.pos) ? "0.3" : "1") : "0";
           el.style.transform = `translate(${((tmp.x + 1) / 2) * w}px, ${((1 - tmp.y) / 2) * h}px)`;
         }
         for (const a of anchors) {
@@ -533,7 +565,9 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           if (!pin) continue;
           tmp.copy(a.pos).project(camera);
           const onScreen = tmp.z < 1 && tmp.x > -1.05 && tmp.x < 1.05 && tmp.y > -1.05 && tmp.y < 1.05;
-          pin.style.opacity = onScreen ? "1" : "0";
+          // behind a hill or a crater wall: fade the pin so it does not seem to stand on the near slope
+          const hidden = onScreen && blocked(camera.position, groundSight(a));
+          pin.style.opacity = onScreen ? (hidden ? "0.35" : "1") : "0";
           pin.style.pointerEvents = onScreen ? "auto" : "none";
           pin.style.transform = `translate(${((tmp.x + 1) / 2) * w}px, ${((1 - tmp.y) / 2) * h}px)`;
           if (a.id === hoveredRef.current && thumb.current) {
