@@ -33,6 +33,9 @@ Lunar Site Navigator answers a mission planner's most urgent question in seconds
 - **Landing precision.** Landers miss their targets (IM-1 Odysseus landed about 1.5 km away). For every polar site we computed full-resolution terrain horizons at six points 250 m and 1 km away. For a 14-day mission starting 15 Dec 2026, Shackleton rim drops from 71 to 1 just 250 m off the crest, while the Mons Mouton plateau stays at 90–100.
 - **Who else is here.** Hardware already on the surface near each site and planned missions targeting the same regions, each with a source and a 2 km plume safety zone. For example, the Chandrayaan-1 impact probe lies 5 km from Connecting Ridge, and Chang’e-7 and Blue Moon MK1 both target that area.
 - **3D south-pole terrain.** Built from LOLA and lit by the real Sun with long shadows:
+  - a sunlight map: the share of the next lunar month each patch of ground spends in sunlight, computed in the browser;
+  - lines of sight from the selected station to the Sun and Earth, turning red where a hill blocks them, with a live status (“Sun above the hills: panels charging”);
+  - pins coloured by the 0–100 score;
   - a lunar-day timelapse;
   - a “stand on the surface” view facing Earth;
   - lander models whose panels track the Sun;

@@ -18,7 +18,7 @@ It shows the Sun and Earth over the **real terrain horizon** of lunar south-pole
 | **Who else is here** (on Site, Rescue, 3D) | Hardware already on the surface and planned missions near each site, 2 km plume safety zone, link to the Lunar Ledger registry |
 | **Landing precision** (on Site) | Score on target vs 250 m or 1 km off in six directions, from full-resolution LOLA horizons: shows whether a site needs a precise landing |
 | **Battery** (on Site) | Reference lander (300 W panels, 2 kWh, 120 W load) charged by the real sunlight series: lowest charge and hours without power |
-| **3D extras** | ▶ Lunar day timelapse (real Sun and shadows), “Stand on the surface” facing Earth, and a 30-second guided tour with captions |
+| **3D extras** | ☀ Light map (share of the next lunar month in sunlight, computed in web workers from the LOLA grid; a test checks it against the exact site numbers), Sun/Earth lines of sight that turn red where terrain blocks them, pins coloured by score, ▶ Lunar day timelapse (real Sun and shadows), “Stand on the surface” facing Earth, and a 30-second guided tour with captions |
 | **Compare** | Up to 4 “site + date” scenarios, best value per row highlighted, launch-delay slider (0–60 days) with better/worse arrows |
 | **Calendar** | 12-month heatmap of daily light and comms; best 14-day mission starts; click a day to open it |
 | **Validation** | Our Sun/Earth positions vs saved JPL Horizons answers, a live Horizons re-check, and illumination compared with a published LOLA study |
