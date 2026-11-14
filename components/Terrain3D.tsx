@@ -990,7 +990,14 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       </nav>
       <div ref={wrap} className="relative aspect-[4/5] w-full sm:aspect-[16/8]">
         <div className="absolute inset-0 overflow-hidden" style={{ maskImage: fade, WebkitMaskImage: fade, maskComposite: "intersect", WebkitMaskComposite: "source-in" }}>
-          {!ready && <div className="absolute inset-0 animate-pulse bg-[radial-gradient(ellipse_at_50%_70%,#1c1c20,#000_70%)]" aria-hidden />}
+          {!ready && (
+            <>
+              {/* still frame of the same view (17 KB) while three.js and the terrain download */}
+              {/* eslint-disable-next-line @next/next/no-img-element -- tiny local poster, must show before JS-heavy 3D */}
+              <img src="/images/terrain-poster.webp" alt="" className="absolute inset-0 h-full w-full object-cover" aria-hidden />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse border border-line bg-black/60 px-3 py-1.5 text-xs text-muted">Loading 3D terrain…</span>
+            </>
+          )}
           <div
             ref={mount}
             onPointerDown={() => hover(null)}
@@ -1128,7 +1135,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
               <span style={{ color: "var(--poor)" }}>● under 40</span>
             </span>
           )}
-          {!standing && (
+          {ready && !standing && (
             <span className="mt-1 flex items-center gap-2 text-[11px] text-faint">
               <span className="flex flex-col items-start">
                 <span ref={scaleLabel} className="text-muted" />
