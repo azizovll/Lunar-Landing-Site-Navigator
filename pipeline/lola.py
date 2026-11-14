@@ -6,10 +6,12 @@ From the PDS label (DSMAP_POLAR.CAT), with 0-based line/sample and offset (N-1)/
 
     rho    = 2 R tan(pi/4 + lat/2)            (lat negative in the south)
     sample = S0 + rho * sin(lon) / scale
-    line   = L0 + rho * cos(lon) / scale
+    line   = L0 - rho * cos(lon) / scale
 
-so lon = 0 points "down" the image (increasing line) and lon = 90E points right.
-Verified against Shackleton crater (deep bowl at 89.67S, 129.2E): see verify_orientation().
+so lon = 0 points "up" the image (decreasing line) and lon = 90E points right.
+Verified empirically (pipeline/README.md): of the 8 possible axis sign/swap variants only this one
+turns Shackleton (4.0 km), Haworth (3.1 km), Shoemaker (3.2 km), Faustini (2.0 km) and
+de Gerlache (1.5 km) into bowls at their IAU positions. See verify_orientation().
 """
 from __future__ import annotations
 
@@ -39,7 +41,7 @@ class Dem:
         lat = np.radians(lat_deg)
         lon = np.radians(lon_deg)
         rho = 2.0 * R_M * np.tan(np.pi / 4.0 + lat / 2.0) / self.scale
-        return self.offset + rho * np.cos(lon), self.offset + rho * np.sin(lon)  # line, sample
+        return self.offset - rho * np.cos(lon), self.offset + rho * np.sin(lon)  # line, sample
 
     def sample(self, lat_deg, lon_deg):
         """Bilinear height (m). NaN where outside the nominal coverage."""
@@ -75,7 +77,7 @@ def load_dems() -> list[Dem]:
         ("LDEM_875S_20M", 7584, 20.0, -87.5),
         ("LDEM_85S_40M", 7584, 40.0, -85.0),
         ("LDEM_80S_80M", 7600, 80.0, -80.0),
-        ("LDEM_75S_240M", 3808, 240.0, -75.0),
+        ("LDEM_75S_240M", 3812, 240.0, -75.0),
     ]
     dems = [d for d in (open_dem(*s) for s in specs) if d is not None]
     if not dems:

@@ -1,0 +1,9 @@
+{
+ "n": 1265,
+ "scaleM": 480.0,
+ "offsetPx": 632.0,
+ "maxLat": -79.0,
+ "source": "LDEM_80S_80M",
+ "units": "metres above the 1737.4 km sphere, int16 little-endian, row-major (line, sample)",
+ "projection": "south polar stereographic; line = off - rho cos(lon), sample = off + rho sin(lon), rho = 2R tan(pi/4 + lat/2)/scale"
+}

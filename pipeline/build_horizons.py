@@ -65,6 +65,21 @@ def horizon_mask(dems: list[Dem], lat: float, lon: float):
     }
 
 
+def snap_to_high_ground(dems: list[Dem], lat: float, lon: float, radius_km: float):
+    """Region-level coordinates (e.g. an Artemis III candidate region) are moved to the highest
+    DEM point within radius_km: landers target the rim/ridge crest, not the slope below it."""
+    best = (-1e9, lat, lon)
+    for r in np.arange(0, radius_km * 1000 + 1, 100.0):
+        n = max(1, int(2 * math.pi * r / 100))
+        az = np.arange(n) * 360.0 / n
+        la, lo = destination(lat, lon, az, np.full(n, r))
+        h, _ = sample_best(dems, la, lo)
+        i = int(np.nanargmax(h))
+        if h[i] > best[0]:
+            best = (float(h[i]), float(la[i]), float(lo[i]))
+    return best[1], best[2]
+
+
 def verify_orientation(dems: list[Dem]) -> None:
     """Shackleton (89.67S, 129.2E, D~21 km) must be a deep bowl: centre ~4 km below its rim."""
     lat, lon = -89.67, 129.2
@@ -100,8 +115,9 @@ def browser_dem(dems: list[Dem]) -> None:
     src = next((d for d in dems if d.name == "LDEM_75S_240M"), None) or next(d for d in dems if d.name == "LDEM_80S_80M")
     factor = max(1, int(round(480.0 / src.scale)))
     scale = src.scale * factor
-    half_m = 2 * R_M * math.tan(math.pi / 4 + math.radians(-79.0) / 2)
-    half_px = int(half_m / scale)
+    bound = max(-79.0, src.max_lat)  # crop at 79S, or at the source's own edge if smaller
+    half_m = 2 * R_M * math.tan(math.pi / 4 + math.radians(bound) / 2)
+    half_px = min(int(half_m / scale), int(src.offset // factor) - 1)
     n = 2 * half_px + 1
     # Output pixel centres sit at source coordinates offset + (j - half_px) * factor.
     first_centre = src.offset - half_px * factor
@@ -112,9 +128,9 @@ def browser_dem(dems: list[Dem]) -> None:
     os.makedirs(os.path.join(OUT, "dem"), exist_ok=True)
     out.tofile(os.path.join(OUT, "dem", "south_480m.bin"))
     meta = {
-        "n": n, "scaleM": scale, "offsetPx": (n - 1) / 2, "maxLat": -79.0, "source": src.name,
+        "n": n, "scaleM": scale, "offsetPx": (n - 1) / 2, "maxLat": bound, "source": src.name,
         "units": "metres above the 1737.4 km sphere, int16 little-endian, row-major (line, sample)",
-        "projection": "south polar stereographic; line = off + rho cos(lon), sample = off + rho sin(lon), rho = 2R tan(pi/4 + lat/2)/scale",
+        "projection": "south polar stereographic; line = off - rho cos(lon), sample = off + rho sin(lon), rho = 2R tan(pi/4 + lat/2)/scale",
     }
     with open(os.path.join(OUT, "dem", "south_480m.json"), "w") as f:
         json.dump(meta, f, indent=1)
@@ -122,7 +138,7 @@ def browser_dem(dems: list[Dem]) -> None:
 
     # Hillshade image for the clickable polar map (80-90S), light from the upper left.
     m80 = 2 * R_M * math.tan(math.pi / 4 + math.radians(-80.0) / 2)
-    k = int(m80 / scale)
+    k = min(int(m80 / scale), half_px)
     sub = block[half_px - k:half_px + k + 1, half_px - k:half_px + k + 1]
     gy, gx = np.gradient(sub, scale)
     slope = np.arctan(np.hypot(gx, gy) * 2.0)
@@ -132,9 +148,12 @@ def browser_dem(dems: list[Dem]) -> None:
     lo_p, hi_p = np.percentile(sub, 1), np.percentile(sub, 99)
     elev = (sub - lo_p) / (hi_p - lo_p)
     img = np.clip(0.7 * np.clip(shade, 0, 1) + 0.3 * np.clip(elev, 0, 1), 0, 1)
+    # Every second pixel (~960 m/px): keeps the PNG small for a fast first screen.
+    # The grid stays symmetric about the pole, so offset = (size - 1) / 2 still holds.
+    img = img[::2, ::2]
     write_png(os.path.join(OUT, "polar-map.png"), (img * 255).astype(np.uint8))
     with open(os.path.join(OUT, "polar-map.json"), "w") as f:
-        json.dump({"sizePx": int(sub.shape[0]), "scaleM": scale, "maxLat": -80.0, "source": src.name}, f)
+        json.dump({"sizePx": int(img.shape[0]), "scaleM": scale * 2, "maxLat": -80.0, "source": src.name}, f)
 
 
 def main() -> None:
@@ -146,11 +165,16 @@ def main() -> None:
     with open(os.path.join(OUT, "sites.json"), encoding="utf-8") as f:
         sites = json.load(f)
     os.makedirs(os.path.join(OUT, "horizons"), exist_ok=True)
-    index = {}
     only = [a for a in sys.argv[1:] if not a.startswith("--")]
     for s in sites:
         if s["lat"] > -75 or (only and s["id"] not in only):
             continue
+        if s.get("snapKm"):
+            origin = s.get("snappedFrom") or [s["lat"], s["lon"]]
+            lat, lon = snap_to_high_ground(dems, origin[0], origin[1], s["snapKm"])
+            s["snappedFrom"] = origin
+            s["lat"], s["lon"] = round(lat, 4), round(((lon + 180) % 360) - 180, 4)
+            print(f"  snapped {s['id']} from {origin} to {s['lat']}, {s['lon']}")
         res = horizon_mask(dems, s["lat"], s["lon"])
         if res is None:
             continue
@@ -159,13 +183,22 @@ def main() -> None:
                     "demsUsed": [d.name for d in dems]})
         with open(os.path.join(OUT, "horizons", s["id"] + ".json"), "w") as f:
             json.dump(res, f, separators=(",", ":"))
-        index[s["id"]] = res["dem"]
         hz = np.array(res["horizon"])
         print(f"{s['id']:22s} h={res['terrainHeightM']:7.0f} m  dem={res['dem']}  horizon min/mean/max "
               f"{hz.min():5.2f}/{hz.mean():5.2f}/{hz.max():5.2f} deg  reach>={res['minReachKm']} km", flush=True)
     if not only:
-        with open(os.path.join(OUT, "horizons", "index.json"), "w") as f:
-            json.dump(index, f)
+        with open(os.path.join(OUT, "sites.json"), "w", encoding="utf-8") as f:
+            json.dump(sites, f, indent=1, ensure_ascii=False)
+    # Bundle every mask into one file that the app imports statically (fast first paint).
+    bundle = {}
+    for fn in sorted(os.listdir(os.path.join(OUT, "horizons"))):
+        if fn.endswith(".json") and fn not in ("all.json", "index.json"):
+            with open(os.path.join(OUT, "horizons", fn)) as f:
+                d = json.load(f)
+            bundle[d["id"]] = {"terrainHeightM": d["terrainHeightM"], "dem": d["dem"], "azStepDeg": d["azStepDeg"],
+                               "horizon": [round(v, 2) for v in d["horizon"]]}
+    with open(os.path.join(OUT, "horizons", "all.json"), "w") as f:
+        json.dump(bundle, f, separators=(",", ":"))
 
 
 if __name__ == "__main__":

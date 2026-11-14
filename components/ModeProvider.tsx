@@ -1,0 +1,52 @@
+"use client";
+
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+
+export type Mode = "explain" | "expert";
+
+const ModeContext = createContext<{ mode: Mode; setMode: (m: Mode) => void }>({ mode: "explain", setMode: () => {} });
+
+export function ModeProvider({ children }: { children: React.ReactNode }) {
+  const [mode, setModeState] = useState<Mode>("explain");
+
+  useEffect(() => {
+    try {
+      const fromUrl = new URLSearchParams(window.location.search).get("mode");
+      const saved = fromUrl ?? localStorage.getItem("lsn-mode");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync from browser-only storage after hydration
+      if (saved === "expert" || saved === "explain") setModeState(saved);
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+
+  const setMode = useCallback((m: Mode) => {
+    setModeState(m);
+    try {
+      localStorage.setItem("lsn-mode", m);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  return <ModeContext.Provider value={{ mode, setMode }}>{children}</ModeContext.Provider>;
+}
+
+export const useMode = () => useContext(ModeContext);
+
+/** Plain-language tip shown only in Explain mode. */
+export function Tip({ children }: { children: React.ReactNode }) {
+  const { mode } = useMode();
+  if (mode !== "explain") return null;
+  return (
+    <p className="mt-2 rounded-lg border border-line bg-panel2 px-3 py-2 text-sm text-muted">
+      <span className="mr-1 font-semibold text-foreground">Tip:</span>
+      {children}
+    </p>
+  );
+}
+
+export function ExpertOnly({ children }: { children: React.ReactNode }) {
+  const { mode } = useMode();
+  return mode === "expert" ? <>{children}</> : null;
+}

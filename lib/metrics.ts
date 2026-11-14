@@ -78,6 +78,8 @@ export interface Sample {
   sunAz: number;
   sunR: number;
   sunFrac: number;
+  /** terrain horizon elevation at the Sun's azimuth */
+  sunHz: number;
   earthEl: number;
   earthAz: number;
   earthR: number;
@@ -103,6 +105,7 @@ export function sampleAt(site: SiteInput, t: number): Sample {
     sunAz: sun.az,
     sunR: sun.angRadius,
     sunFrac: visibleFraction(sun.el, sun.az, sun.angRadius, site.horizon),
+    sunHz: horizonEl(site.horizon, sun.az),
     earthEl: earth.el,
     earthAz: earth.az,
     earthR: earth.angRadius,
@@ -248,6 +251,7 @@ function sampleAtExact(site: SiteInput, t: number): Sample {
     sunAz: sky.sun.az,
     sunR: sky.sun.angRadius,
     sunFrac: visibleFraction(sky.sun.el, sky.sun.az, sky.sun.angRadius, site.horizon),
+    sunHz: horizonEl(site.horizon, sky.sun.az),
     earthEl: sky.earth.el,
     earthAz: sky.earth.az,
     earthR: sky.earth.angRadius,

@@ -1,0 +1,269 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { DAY, DEFAULT_SETTINGS, HOUR, alignTime, nextEvents, sampleAt, sampleSeries, windowMetrics, type Settings } from "@/lib/metrics";
+import { downloadCsv, fmtRelative, fmtUtc, parseUtc, toUtcInput } from "@/lib/format";
+import { DEFAULT_SITE_ID, fmtLatLon } from "@/lib/sites";
+import { useUrlState } from "@/lib/useUrlState";
+import { useResolvedSite } from "@/lib/useResolvedSite";
+import { Lens, Panorama } from "./Panorama";
+import { Timeline } from "./Timeline";
+import { MetricCards, VerdictBadge } from "./MetricCards";
+import { overallVerdict } from "@/lib/metrics";
+import { PolarMap } from "./PolarMap";
+import { SiteList } from "./SiteList";
+import { ExpertOnly, Tip, useMode } from "./ModeProvider";
+
+const TIMELINE_DAYS = 30;
+const SERIES_DAYS = 45; // extra 15 days so countdowns near the end of the timeline still resolve
+const PLAY_SPEEDS = [
+  { label: "1 h/s", msPerSec: HOUR },
+  { label: "6 h/s", msPerSec: 6 * HOUR },
+  { label: "1 d/s", msPerSec: DAY },
+];
+
+export function SiteView() {
+  const { params, set } = useUrlState();
+  const { mode } = useMode();
+  const expert = mode === "expert";
+
+  const siteId = params.get("site") ?? DEFAULT_SITE_ID;
+  const cLat = params.get("lat");
+  const cLon = params.get("lon");
+  const customLat = cLat !== null ? Number(cLat) : null;
+  const customLon = cLon !== null ? Number(cLon) : null;
+  const { site, loading } = useResolvedSite(siteId, customLat, customLon);
+
+  // "now" is fixed once per page load so the page renders deterministically.
+  const [loadTime] = useState(() => alignTime(Date.now(), 60_000));
+  const start = parseUtc(params.get("start")) ?? alignTime(loadTime, DAY);
+  const settings: Settings = {
+    marginDeg: Number(params.get("margin") ?? DEFAULT_SETTINGS.marginDeg),
+    panel: params.get("panel") === "horizontal" ? "horizontal" : "tracking",
+    windowDays: Number(params.get("window") ?? DEFAULT_SETTINGS.windowDays),
+  };
+  const urlT = parseUtc(params.get("t"));
+  const [t, setT] = useState<number>(() => urlT ?? Math.min(Math.max(loadTime, start), start + TIMELINE_DAYS * DAY));
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+
+  // keep the cursor inside the timeline if the start date changes
+  const clampedT = Math.min(Math.max(t, start), start + TIMELINE_DAYS * DAY);
+
+  const series = useMemo(() => (site ? sampleSeries(site, start, start + SERIES_DAYS * DAY) : []), [site, start]);
+  const windowFrom = start;
+  const windowTo = start + settings.windowDays * DAY;
+  const metrics = useMemo(() => windowMetrics(series, windowFrom, windowTo, settings), [series, windowFrom, windowTo, settings.marginDeg, settings.panel]); // eslint-disable-line react-hooks/exhaustive-deps
+  const now = useMemo(() => (site ? sampleAt(site, Math.round(clampedT)) : null), [site, clampedT]);
+  const events = useMemo(
+    () => (site && series.length ? nextEvents(site, series, clampedT, settings.marginDeg) : { sunset: null, sunrise: null, earthset: null, earthrise: null }),
+    // events only need minute resolution; avoids recomputation on every animation frame
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [site, series, Math.floor(clampedT / (playing ? HOUR : 60_000)), settings.marginDeg],
+  );
+  const sunTrack = useMemo(() => series.filter((s) => Math.abs(s.t - clampedT) <= 7 * DAY && s.t % HOUR === 0), [series, clampedT]);
+  const earthTrack = useMemo(() => series.filter((s) => s.t <= start + TIMELINE_DAYS * DAY && s.t % (2 * HOUR) === 0), [series, start]);
+
+  // play loop
+  const raf = useRef<number | null>(null);
+  useEffect(() => {
+    if (!playing) return;
+    let last = performance.now();
+    const step = (ts: number) => {
+      const dt = (ts - last) / 1000;
+      last = ts;
+      setT((prev) => {
+        const next = Math.max(prev, start) + dt * PLAY_SPEEDS[speed].msPerSec;
+        if (next >= start + TIMELINE_DAYS * DAY) {
+          setPlaying(false);
+          return start + TIMELINE_DAYS * DAY;
+        }
+        return next;
+      });
+      raf.current = requestAnimationFrame(step);
+    };
+    raf.current = requestAnimationFrame(step);
+    return () => {
+      if (raf.current) cancelAnimationFrame(raf.current);
+    };
+  }, [playing, speed, start]);
+
+  // write the cursor to the URL when paused (shareable state)
+  useEffect(() => {
+    if (playing) return;
+    const id = setTimeout(() => set({ t: toUtcInput(clampedT) }), 400);
+    return () => clearTimeout(id);
+  }, [clampedT, playing, set]);
+
+  const selectSite = (id: string) => set({ site: id, lat: null, lon: null });
+  const onSettings = (s: Partial<Settings>) =>
+    set({
+      margin: s.marginDeg ?? (params.get("margin") || null),
+      panel: s.panel ?? (params.get("panel") || null),
+      window: s.windowDays ?? (params.get("window") || null),
+    });
+
+  const exportCsv = () => {
+    if (!site) return;
+    downloadCsv(`${site.id}-${toUtcInput(start, false)}.csv`, [
+      ["utc", "sun_el_deg", "sun_az_deg", "terrain_at_sun_deg", "sun_visible_fraction", "earth_el_deg", "earth_az_deg", "terrain_at_earth_deg", "comms"],
+      ...series
+        .filter((s) => s.t <= start + TIMELINE_DAYS * DAY)
+        .map((s) => [new Date(s.t).toISOString(), s.sunEl.toFixed(4), s.sunAz.toFixed(4), s.sunHz.toFixed(3), s.sunFrac.toFixed(4), s.earthEl.toFixed(4), s.earthAz.toFixed(4), s.earthHz.toFixed(3), s.earthClear >= settings.marginDeg ? 1 : 0]),
+    ]);
+  };
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
+      <aside className="flex flex-col gap-3">
+        <PolarMap selectedId={siteId} custom={customLat !== null && customLon !== null ? { lat: customLat, lon: customLon } : null} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />
+        <SiteList selectedId={customLat !== null ? null : siteId} from={windowFrom} settings={settings} onSelect={selectSite} />
+        <CustomForm onSubmit={(lat, lon) => set({ lat, lon, site: null })} />
+      </aside>
+
+      <div className="flex min-w-0 flex-col gap-3">
+        <header className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-semibold sm:text-2xl">
+              {site?.name ?? "Custom point"}{" "}
+              {site && <VerdictBadge v={overallVerdict(metrics)} />}
+            </h1>
+            <p className="text-sm text-muted">
+              {site ? fmtLatLon(site.lat, site.lon) : ""}
+              {site?.terrain === "lola" && ` · terrain ${Math.round(site.heightM ?? 0)} m · horizon from ${site.dem}`}
+              {site?.terrain === "approx" && (
+                <span className="ml-1 rounded bg-marginal/15 px-1.5 text-marginal">lower accuracy: approximate horizon from 480 m/px DEM</span>
+              )}
+              {site?.terrain === "flat" && <span className="ml-1 rounded bg-panel2 px-1.5">flat horizon (outside the polar DEM)</span>}
+              {site?.meta && (
+                <>
+                  {" · "}
+                  <a href={site.meta.source} target="_blank" rel="noreferrer" className="underline decoration-dotted hover:text-foreground">
+                    source
+                  </a>
+                </>
+              )}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <label className="flex items-center gap-1.5">
+              <span className="text-muted">Mission start</span>
+              <input type="date" value={toUtcInput(start, false)} onChange={(e) => e.target.value && set({ start: e.target.value, t: null })} />
+            </label>
+            <button className="btn" onClick={() => set({ start: toUtcInput(alignTime(Date.now(), DAY), false), t: null })}>
+              Today
+            </button>
+            <Link className="btn" href={`/compare?a=${site?.id === "custom" ? DEFAULT_SITE_ID : siteId}:${toUtcInput(start, false)}`}>
+              Compare…
+            </Link>
+          </div>
+        </header>
+
+        {site?.meta?.note && <p className="-mt-1 text-sm text-muted">{site.meta.note}</p>}
+
+        {loading || !site || !now ? (
+          <div className="card grid h-72 place-items-center text-muted">Computing terrain horizon in the browser…</div>
+        ) : (
+          <>
+            <Panorama horizon={site.horizon} now={now} sunTrack={sunTrack} earthTrack={earthTrack} expert={expert} marginDeg={settings.marginDeg} />
+
+            {/* scrubber */}
+            <div className="card flex flex-wrap items-center gap-3 p-3">
+              <button className="btn btn-active w-20" onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Pause" : "Play"}>
+                {playing ? "❚❚ Pause" : "▶ Play"}
+              </button>
+              <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))} aria-label="Playback speed">
+                {PLAY_SPEEDS.map((s, i) => (
+                  <option key={s.label} value={i}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="range"
+                className="min-w-40 flex-1"
+                min={start}
+                max={start + TIMELINE_DAYS * DAY}
+                step={10 * 60_000}
+                value={clampedT}
+                onChange={(e) => {
+                  setPlaying(false);
+                  setT(Number(e.target.value));
+                }}
+                aria-label="Time"
+              />
+              <div className="tabular text-right text-sm">
+                <div className="font-semibold">{fmtUtc(clampedT)}</div>
+                <div className="text-xs text-muted">{Math.abs(clampedT - loadTime) < 60_000 ? "now" : fmtRelative(clampedT, loadTime).replace("in ", "now + ").replace(" ago", " before now")}</div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Lens horizon={site.horizon} az={now.sunAz} el={now.sunEl} r={now.sunR} kind="sun" fraction={now.sunFrac} />
+              <Lens horizon={site.horizon} az={now.earthAz} el={now.earthEl} r={now.earthR} kind="earth" clearance={now.earthClear} />
+            </div>
+            <Tip>
+              The Moon’s axis is tilted only ~1.5° to the Sun, so at the south pole the Sun never climbs high: it circles the whole horizon once a lunar day (29.5 Earth days),
+              skimming the ridges. A few metres of terrain decide light or shadow, which is why every site here uses a real LOLA horizon.
+            </Tip>
+
+            <MetricCards now={now} events={events} metrics={metrics} settings={settings} onSettings={onSettings} />
+
+            <Timeline series={series} start={start} days={TIMELINE_DAYS} t={clampedT} windowFrom={windowFrom} windowTo={windowTo} marginDeg={settings.marginDeg} onSeek={(v) => {
+              setPlaying(false);
+              setT(v);
+            }} />
+
+            <ExpertOnly>
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <button className="btn" onClick={exportCsv}>
+                  Export 30-day CSV (10-min steps)
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(window.location.href);
+                  }}
+                >
+                  Copy shareable link
+                </button>
+                <span className="text-muted">Azimuth: degrees clockwise from lunar north (N 0°, E 90°). Elevations are topocentric, airless, relative to the local sphere horizontal.</span>
+              </div>
+            </ExpertOnly>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CustomForm({ onSubmit }: { onSubmit: (lat: number, lon: number) => void }) {
+  const [lat, setLat] = useState("-89.0");
+  const [lon, setLon] = useState("0");
+  return (
+    <form
+      className="card flex flex-wrap items-end gap-2 p-3 text-sm"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const a = Number(lat);
+        const b = Number(lon);
+        if (Number.isFinite(a) && Number.isFinite(b) && Math.abs(a) <= 90) onSubmit(a, b);
+      }}
+    >
+      <div className="w-full text-xs font-semibold uppercase tracking-wide text-muted">Custom coordinates</div>
+      <label className="flex flex-col">
+        <span className="text-xs text-muted">Lat (°, S negative)</span>
+        <input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} className="w-24" />
+      </label>
+      <label className="flex flex-col">
+        <span className="text-xs text-muted">Lon (°E)</span>
+        <input type="number" step="any" value={lon} onChange={(e) => setLon(e.target.value)} className="w-24" />
+      </label>
+      <button className="btn" type="submit">
+        Go
+      </button>
+      <p className="w-full text-xs text-muted">South of 79°S: approximate terrain horizon (480 m/px). Elsewhere: flat horizon.</p>
+    </form>
+  );
+}
