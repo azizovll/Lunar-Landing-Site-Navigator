@@ -13,7 +13,8 @@
    "src": "/images/sites/shackleton.webp",
    "caption": "Shackleton crater with its permanently dark interior, rendered from Lunar Reconnaissance Orbiter data.",
    "credit": "NASA's Scientific Visualization Studio (LRO data)",
-   "link": "https://svs.gsfc.nasa.gov/4716"
+   "link": "https://svs.gsfc.nasa.gov/4716",
+   "thumb": "/images/sites/thumb-shackleton.webp"
   }
  },
  {
@@ -30,7 +31,8 @@
    "src": "/images/sites/connecting-ridge-de-gerlache.webp",
    "caption": "Artemis III candidate regions Connecting Ridge, Connecting Ridge Extension and de Gerlache Rim 1.",
    "credit": "NASA's Scientific Visualization Studio (LRO data)",
-   "link": "https://svs.gsfc.nasa.gov/5013"
+   "link": "https://svs.gsfc.nasa.gov/5013",
+   "thumb": "/images/sites/thumb-connecting-ridge-de-gerlache.webp"
   }
  },
  {
@@ -47,7 +49,8 @@
    "src": "/images/sites/connecting-ridge-de-gerlache.webp",
    "caption": "de Gerlache Rim 1 (upper left) with Connecting Ridge and its extension, Artemis III candidate regions.",
    "credit": "NASA's Scientific Visualization Studio (LRO data)",
-   "link": "https://svs.gsfc.nasa.gov/5013"
+   "link": "https://svs.gsfc.nasa.gov/5013",
+   "thumb": "/images/sites/thumb-connecting-ridge-de-gerlache.webp"
   }
  },
  {
@@ -69,7 +72,8 @@
    "src": "/images/sites/leibnitz-nobile.webp",
    "caption": "Artemis III candidate regions Nobile Rim 1 and Leibnitz Beta Plateau.",
    "credit": "NASA's Scientific Visualization Studio (LRO data)",
-   "link": "https://svs.gsfc.nasa.gov/5013"
+   "link": "https://svs.gsfc.nasa.gov/5013",
+   "thumb": "/images/sites/thumb-leibnitz-nobile.webp"
   }
  },
  {
@@ -91,7 +95,8 @@
    "src": "/images/sites/haworth-malapert.webp",
    "caption": "Artemis III candidate regions Malapert Massif (upper right) and Haworth.",
    "credit": "NASA's Scientific Visualization Studio (LRO data)",
-   "link": "https://svs.gsfc.nasa.gov/5013"
+   "link": "https://svs.gsfc.nasa.gov/5013",
+   "thumb": "/images/sites/thumb-haworth-malapert.webp"
   }
  },
  {
@@ -113,7 +118,8 @@
    "src": "/images/sites/leibnitz-nobile.webp",
    "caption": "Artemis III candidate regions Leibnitz Beta Plateau (left) and Nobile Rim 1.",
    "credit": "NASA's Scientific Visualization Studio (LRO data)",
-   "link": "https://svs.gsfc.nasa.gov/5013"
+   "link": "https://svs.gsfc.nasa.gov/5013",
+   "thumb": "/images/sites/thumb-leibnitz-nobile.webp"
   }
  },
  {
@@ -135,7 +141,8 @@
    "src": "/images/sites/haworth-malapert.webp",
    "caption": "Artemis III candidate regions Haworth (lower left) and Malapert Massif.",
    "credit": "NASA's Scientific Visualization Studio (LRO data)",
-   "link": "https://svs.gsfc.nasa.gov/5013"
+   "link": "https://svs.gsfc.nasa.gov/5013",
+   "thumb": "/images/sites/thumb-haworth-malapert.webp"
   }
  },
  {
@@ -157,7 +164,8 @@
    "src": "/images/sites/mons-mouton-earthview.webp",
    "caption": "Mons Mouton with Earth above the horizon, as seen from the lunar south pole.",
    "credit": "NASA's Scientific Visualization Studio (LRO data)",
-   "link": "https://svs.gsfc.nasa.gov/5074"
+   "link": "https://svs.gsfc.nasa.gov/5074",
+   "thumb": "/images/sites/thumb-mons-mouton-earthview.webp"
   }
  },
  {
@@ -174,7 +182,8 @@
    "src": "/images/sites/shackleton-floor-shadowcam.webp",
    "caption": "Inside the permanently shadowed Shackleton crater, imaged by ShadowCam using light reflected off the sunlit rim (about 2 km across).",
    "credit": "NASA/KARI/Arizona State University",
-   "link": "https://www.shadowcam.asu.edu/images/1284"
+   "link": "https://www.shadowcam.asu.edu/images/1284",
+   "thumb": "/images/sites/thumb-shackleton-floor-shadowcam.webp"
   }
  },
  {
@@ -191,7 +200,8 @@
    "src": "/images/sites/odysseus-lro.webp",
    "caption": "Lunar Reconnaissance Orbiter image of the landing area; the arrow marks the Odysseus lander.",
    "credit": "NASA/GSFC/Arizona State University",
-   "link": "https://www.nasa.gov/missions/lro/nasas-lro-images-intuitive-machines-odysseus-lander/"
+   "link": "https://www.nasa.gov/missions/lro/nasas-lro-images-intuitive-machines-odysseus-lander/",
+   "thumb": "/images/sites/thumb-odysseus-lro.webp"
   }
  },
  {

@@ -16,7 +16,7 @@ export interface SiteMeta {
   snappedFrom?: [number, number];
   /** plain-language description shown in the station card */
   description?: string;
-  photo?: { src: string; caption: string; credit: string; link: string };
+  photo?: { src: string; thumb?: string; caption: string; credit: string; link: string };
 }
 
 interface HorizonEntry {

@@ -52,11 +52,14 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const mount = useRef<HTMLDivElement>(null);
   const pins = useRef<Record<string, HTMLButtonElement | null>>({});
+  const thumb = useRef<HTMLDivElement>(null);
+  const hoveredRef = useRef<string | null>(null);
   const api = useRef<{ setTime: (t: number) => void; flyTo: (id: string | null) => void } | null>(null);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
   const [focus, setFocus] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
 
   useEffect(() => {
     let disposed = false;
@@ -425,6 +428,17 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           pin.style.opacity = onScreen ? "1" : "0";
           pin.style.pointerEvents = onScreen ? "auto" : "none";
           pin.style.transform = `translate(${((tmp.x + 1) / 2) * w}px, ${((1 - tmp.y) / 2) * h}px)`;
+          if (a.id === hoveredRef.current && thumb.current) {
+            const px = ((tmp.x + 1) / 2) * w;
+            const py = ((1 - tmp.y) / 2) * h;
+            const tw = thumb.current.offsetWidth;
+            const th = thumb.current.offsetHeight;
+            // above the pin when there is room, otherwise below; kept inside the scene horizontally
+            const x = Math.min(w - tw - 8, Math.max(8, px - tw / 2));
+            const y = py - 40 - th > 8 ? py - 40 - th : py + 14;
+            thumb.current.style.transform = `translate(${x}px, ${y}px)`;
+            thumb.current.style.opacity = onScreen ? "1" : "0";
+          }
         }
       };
       loop();
@@ -479,14 +493,13 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
     setFocus(id);
     api.current?.flyTo(id);
   };
-  // First click flies to a station; clicking the same station again opens its photo card.
-  const pick = (id: string) => {
-    if (photo) {
-      setPhoto(id);
-      goTo(id);
-    } else if (focus === id) setPhoto(id);
-    else goTo(id);
+  // Clicking a pin flies to the station; the photo appears as a hover thumbnail (tap on touch screens).
+  const pick = (id: string) => goTo(id);
+  const hover = (id: string | null) => {
+    hoveredRef.current = id;
+    setHovered(id);
   };
+  const hoveredSite = SOUTH_SITES.find((s) => s.id === hovered);
   // Soft edges on all four sides (intersection of two linear fades).
   const fade =
     "linear-gradient(to right, transparent 0%, #000 13%, #000 87%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 14%, #000 80%, transparent 100%)";
@@ -498,9 +511,10 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           {!ready && <div className="absolute inset-0 animate-pulse bg-[radial-gradient(ellipse_at_50%_70%,#1c1c20,#000_70%)]" aria-hidden />}
           <div
             ref={mount}
+            onPointerDown={() => hover(null)}
             className="absolute inset-0 cursor-grab active:cursor-grabbing"
             role="img"
-            aria-label="3D terrain of the lunar south pole from NASA LOLA data, lit by the Sun at the selected time, with Earth in the sky and landing sites pinned. Drag to rotate; click a pin to fly to a site, click it again for photos."
+            aria-label="3D terrain of the lunar south pole from NASA LOLA data, lit by the Sun at the selected time, with Earth in the sky and landing sites pinned. Drag to rotate; hover a pin for a photo, click it to fly to the site."
           />
           {SOUTH_SITES.map((s) => {
             const sel = s.id === selectedId;
@@ -511,20 +525,23 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
                   pins.current[s.id] = n;
                 }}
                 onClick={() => pick(s.id)}
+                onPointerEnter={(e) => e.pointerType === "mouse" && hover(s.id)}
+                onPointerLeave={(e) => e.pointerType === "mouse" && hover(null)}
+                onPointerDown={(e) => e.pointerType !== "mouse" && hover(s.id)}
+                onFocus={() => hover(s.id)}
+                onBlur={() => hover(null)}
                 className="group absolute left-0 top-0 opacity-0 transition-opacity"
                 style={{ willChange: "transform" }}
-                aria-label={focus === s.id ? `Open photo and details of ${s.name}` : `Fly to ${s.name}`}
-                title={focus === s.id ? `${s.name}: click for photo` : s.name}
+                aria-label={`Fly to ${s.name}`}
               >
                 <span className="absolute bottom-0 left-0 flex -translate-x-1/2 flex-col items-center">
                   <span
                     className={`whitespace-nowrap border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.15em] backdrop-blur ${
-                      sel ? "border-foreground bg-black/80 text-foreground" : "hidden border-line bg-black/70 text-muted group-hover:block"
+                      sel && hovered !== s.id ? "border-foreground bg-black/80 text-foreground" : "hidden"
                     }`}
                     style={{ fontFamily: "var(--font-orbitron)" }}
                   >
                     {s.name}
-                    {focus === s.id && <span className="ml-1.5 text-muted normal-case tracking-normal">· photo</span>}
                   </span>
                   <svg width={sel ? 22 : 16} height={sel ? 30 : 22} viewBox="0 0 22 30" aria-hidden className="drop-shadow-[0_0_6px_rgba(255,255,255,0.45)]">
                     <path d="M11 29 C11 29 2 17 2 10.5 A9 9 0 0 1 20 10.5 C20 17 11 29 11 29 Z" fill={sel ? "#ffffff" : "#cfcfd4"} stroke="#000" strokeWidth="1.2" />
@@ -537,6 +554,24 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         </div>
 
         {/* overlays sit outside the fade mask so they stay crisp */}
+        {hoveredSite && (
+          <div
+            ref={thumb}
+            className="pointer-events-none absolute left-0 top-0 z-10 w-56 border border-line bg-black/90 opacity-0 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur transition-opacity"
+            role="tooltip"
+          >
+            {hoveredSite.photo?.thumb && (
+              // eslint-disable-next-line @next/next/no-img-element -- 10-25 KB local thumbnail
+              <img src={hoveredSite.photo.thumb} alt="" className="block aspect-video w-full object-cover" />
+            )}
+            <div className="flex flex-col gap-1 p-2.5">
+              <div className="display text-[11px] tracking-[0.15em]">{hoveredSite.name}</div>
+              <div className="text-[11px] text-muted">{fmtLatLon(hoveredSite.lat, hoveredSite.lon)}</div>
+              {hoveredSite.description && <p className="text-[11px] leading-snug text-muted">{hoveredSite.description.split(". ")[0]}.</p>}
+              {hoveredSite.photo && <div className="text-[9px] text-faint">Image: {hoveredSite.photo.credit}</div>}
+            </div>
+          </div>
+        )}
         <div className="pointer-events-none absolute left-4 top-3 flex flex-col gap-1 sm:left-[6%] sm:top-[6%]">
           <span className="eyebrow !text-[0.6rem] !tracking-[0.35em] text-muted">South pole · 3D terrain</span>
           {focused && (
@@ -577,7 +612,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       </div>
       <figcaption className="text-center text-xs text-muted">
         NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time. Lander models are ~300× real size: panels face the real Sun, dishes point at the real
-        Earth (shown 2.5× larger). Drag to rotate; click a pin to fly in, click it again for photos.
+        Earth (shown 2.5× larger). Drag to rotate; hover a pin for a photo, click it to fly in.
       </figcaption>
     </figure>
   );
