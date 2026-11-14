@@ -45,6 +45,6 @@ works for all of them (80 m DEM, ring mean minus centre height):
 
 ## Horizon mask
 
-720 azimuths (0.5°), rays to 200 km, step 10 m near the observer growing to 200 m, observer 2 m
+1440 azimuths (0.25°, finer than the 0.53° solar disk), rays to 200 km, step 10 m near the observer growing to 200 m, observer 2 m
 above the terrain, finest DEM covering each sample, exact spherical geometry
 (`el = atan2(r_t cos θ − r_o, r_t sin θ)`), so lunar curvature is included.

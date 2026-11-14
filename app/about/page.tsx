@@ -42,7 +42,7 @@ export default function AboutPage() {
         <h2 className="mb-2 text-lg font-semibold">How it works</h2>
         <ol className="list-decimal space-y-1 pl-5">
           <li>Sun and Earth positions are computed in your browser (astronomy-engine + IAU lunar rotation model with libration) and checked against NASA JPL Horizons to ≤ 0.004° (<Link className="text-earth underline" href="/validation">Validation</Link>).</li>
-          <li>Each preset site has a terrain horizon: 720 rays through NASA LOLA elevation models out to 200 km, including lunar curvature, for an observer 2 m above the ground.</li>
+          <li>Each preset site has a terrain horizon: 1440 rays (every 0.25°) through NASA LOLA elevation models out to 200 km, including lunar curvature, for an observer 2 m above the ground.</li>
           <li>The share of the solar disk above that horizon gives power; Earth’s height above the horizon (plus a 2° margin) gives comms.</li>
           <li>Everything runs client-side. No accounts, no database: the URL is the saved state.</li>
         </ol>

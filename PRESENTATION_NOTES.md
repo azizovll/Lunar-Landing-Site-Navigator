@@ -25,7 +25,8 @@ A web app that runs entirely in the browser:
 - **Calendar:** a 12-month heatmap of daily light and comms, plus the best 14-day mission starts.
 - **Validation:** a live comparison with NASA JPL Horizons, and a terrain check against a published illumination study.
 - **Explain / Expert mode:** plain-language tips for newcomers; exact numbers, CSV export and a shareable URL for planners.
-- **Custom points:** click the polar map. An approximate terrain horizon is computed in a Web Worker in about a second.
+- **Custom points:** click the polar map or type coordinates, on the Site, Compare and Calendar screens. An approximate terrain horizon is computed in a Web Worker in about a second.
+- **Separate verdicts:** each site shows a Power verdict and a Comms verdict next to the overall one, because near the pole a perfectly lit site can still have poor direct-to-Earth comms.
 
 Demo story (30 s): *“We plan Shackleton rim and Connecting Ridge for 1 December. The launch slips two weeks. Drag the slider: every number updates, the arrows show what got worse, and the table highlights which site is now best.”* (Check the actual numbers in the app before recording.)
 
@@ -75,7 +76,7 @@ Earth's direction in the body-fixed frame drifts by up to about ±7° in latitud
 
 ### Terrain horizon mask
 
-- **720 azimuths** (0.5° steps). Each ray runs out to **200 km** with a step of 10 m near the observer, growing to 200 m.
+- **1440 azimuths** (0.25° steps, finer than the 0.53° solar disk). Each ray runs out to **200 km** with a step of 10 m near the observer, growing to 200 m.
 - Each sample uses the **finest LOLA DEM** that covers it (20 → 40 → 80 → 240 m/px).
 - The observer stands **2 m** above the ground. The elevation angle of a terrain point at radius r_t and central angle θ, seen from radius r_o, is
 
@@ -113,17 +114,17 @@ The disk is cut into 24 vertical strips. Each strip is compared with the horizon
 | --- | --- |
 | Sun and Earth az/el vs JPL Horizons: 5 sites (Apollo 11, Apollo 17, Shackleton, Malapert, Chandrayaan-3), 13 epochs in 1969 and 2026, Sun and Earth, 130 comparisons | **max error 0.0038°** (target ≤ 0.1°), **RMS 0.0016° = 5.6″** |
 | Apollo 11 landing, 1969-07-20 20:17 UTC | Horizons: Sun az 88.81°, el 10.70°. Ours agrees within 0.004°. Sun low in the east ✔ |
-| Annual illumination, Connecting Ridge C1 (2026, 40 m DEM) | **86.7%** vs 88.0% published (20-year mean, 20 m DEM) |
-| Annual illumination, Shackleton rim S | **85.7%** vs 82.1% published; longest night 64 h vs ~65 h published |
+| Annual illumination, Connecting Ridge C1 (2026, 20 m DEM) | **85.4%** vs 88.0% published (20-year mean, 20 m DEM) |
+| Annual illumination, Shackleton rim S | **84.3%** vs 82.1% published; longest night 64 h vs ~65 h published |
 | Shackleton floor (PSR, 10 km from the rim) | **0%** illumination; terrain walls 20–23° high |
 | Equatorial site over a lunar month (unit test) | 45–55% light, nights of 300–380 h, Earth always in view |
 | Pages on desktop and phone (headless Edge) | 0 console errors, no horizontal overflow |
 
-All of these run as automated tests (`npm test`, 22 tests), except the page checks, which run with `scripts/check-pages.mjs`.
+All of these run as automated tests (`npm test`, 27 tests), except the page checks, which run with `scripts/check-pages.mjs`.
 
 ## 7. Limitations
 
-- Terrain horizons are precise only for the preset south-polar sites. Custom points use a 480 m/px DEM (labelled “lower accuracy”). Sites north of 75°S (Chandrayaan-3, Apollo) use a flat horizon.
+- Terrain horizons are precise only for the preset south-polar sites. Custom points use a 480 m/px DEM (labelled “lower accuracy”; tested on 4 preset sites: horizon RMS 0.6–1.0°, annual illumination and comms within 7 percentage points of the precise masks). Sites north of 75°S (Chandrayaan-3, Apollo) use a flat horizon.
 - LOLA polar DEMs have gaps and interpolation at the finest scales. Boulders and lander height are not modelled beyond a fixed 2 m observer.
 - Comms is geometric line-of-sight to Earth's centre. It ignores Deep Space Network schedules, antenna patterns and relay satellites.
 - Power is a geometric index. It ignores dust, temperature, Earthshine and battery state.
@@ -143,8 +144,8 @@ All of these run as automated tests (`npm test`, 22 tests), except the page chec
 2. **Why the pole is hard.** 1.5° tilt: the Sun skims the horizon. Libration: Earth wobbles. Show the panorama with the Sun track and Earth loop.
 3. **What we built.** Site view: panorama, timeline, Power and Comms cards. One screenshot with callouts.
 4. **Compare and delay.** The launch-delay slider moving from 0 to 14 days, with ▲/▼ indicators. This is the 30-second demo.
-5. **Real terrain.** LOLA DEM to horizon mask (720 rays, 200 km, curvature), the orientation check on five craters, and Shackleton rim vs floor.
-6. **Can you trust it?** Horizons comparison: max 0.004° over 130 comparisons. Illumination vs a published study: 86.7% vs 88.0%. The Apollo 11 check.
+5. **Real terrain.** LOLA DEM to horizon mask (1440 rays, 200 km, curvature), the orientation check on five craters, and Shackleton rim vs floor.
+6. **Can you trust it?** Horizons comparison: max 0.004° over 130 comparisons. Illumination vs a published study: 85.4% vs 88.0% and 84.3% vs 82.1%. The Apollo 11 check.
 7. **Impact and next steps.** Who it is for (planners, educators, public); runs in any browser with no install. Next: site DEMs, landing ellipses, relays. Team infinium.
 
 ## 10. Use of AI
@@ -160,10 +161,10 @@ The team wrote the specification and chose the method and the data. An AI coding
 **Точность.**
 - Сверка с JPL Horizons: 130 сравнений, максимум 0,004°, RMS 5,6″ (цель была 0,1°).
 - Apollo 11: Солнце на востоке на высоте 10,7°, как и должно быть.
-- Освещённость за год по нашим маскам горизонта: Connecting Ridge 86,7% (в статье Gläser et al. 88,0%), Shackleton rim 85,7% (82,1%), дно Шеклтона 0%.
+- Освещённость за год по нашим маскам горизонта: Connecting Ridge 85,4% (в статье Gläser et al. 88,0%), Shackleton rim 84,3% (82,1%), дно Шеклтона 0%.
 
-**Рельеф.** Используем DEM LOLA 20/40/80/240 м на пиксель. Строим 720 лучей на 200 км с учётом кривизны Луны, наблюдатель на высоте 2 м. Ориентацию растра проверили на пяти кратерах. Координаты регионального уровня привязаны к ближайшему гребню (до 2–6 км), это указано у каждой точки.
+**Рельеф.** Используем DEM LOLA 20/40/80/240 м на пиксель. Строим 1440 лучей (шаг 0,25°) на 200 км с учётом кривизны Луны, наблюдатель на высоте 2 м. Ориентацию растра проверили на пяти кратерах. Координаты регионального уровня привязаны к ближайшему гребню (до 2–6 км), это указано у каждой точки.
 
-**Ограничения.** Для своих точек горизонт приблизительный (480 м на пиксель). У точек севернее 75°S (Chandrayaan‑3, Apollo) горизонт плоский. Связь оценивается только по геометрии, без расписания DSN.
+**Ограничения.** Для своих точек горизонт приблизительный (480 м на пиксель, расхождение с точными масками до 7 п.п. по освещённости и связи). У точек севернее 75°S (Chandrayaan‑3, Apollo) горизонт плоский. Связь оценивается только по геометрии, без расписания DSN.
 
 **Демо (30 с).** Shackleton rim → Compare → двигаем задержку на +14 дней → показываем, как падают часы «свет + связь» и какая точка становится лучше.

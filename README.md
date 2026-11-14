@@ -23,8 +23,8 @@ It shows the Sun and Earth over the **real terrain horizon** of lunar south-pole
 - Sun and Earth topocentric az/el vs **JPL Horizons**: 130 comparisons across 5 sites × 13 epochs × Sun and Earth. Max error is **0.004°**, RMS 5.6″. The target was ≤ 0.1°.
 - Apollo 11 landing (1969-07-20 20:17 UTC): Sun at az 88.8°, el 10.7°, low in the east as expected.
 - Annual illumination from our LOLA horizon masks compared with Gläser et al. 2018:
-  - Connecting Ridge: **86.7%** (published 88.0%)
-  - Shackleton rim: **85.7%** (published 82.1%)
+  - Connecting Ridge: **85.4%** (published 88.0%)
+  - Shackleton rim: **84.3%** (published 82.1%)
   - Shackleton floor (a permanently shadowed region): 0%.
 
 ## Development

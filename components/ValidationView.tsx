@@ -154,7 +154,7 @@ export function ValidationView() {
           </li>
           <li>Topocentric east/north/up frame at (lat, lon east-positive, height) on a 1737.4 km sphere. Elevation is relative to the local horizontal; azimuth is measured clockwise from lunar north (N 0°, E 90°, S 180°, W 270°), the same convention as Horizons.</li>
           <li>Angular radius = asin(R / distance), Sun R = 695 700 km, Earth R = 6378.137 km.</li>
-          <li>Terrain horizon: 720 rays (0.5°) through NASA LOLA polar DEMs (20/40/80/240 m/px) out to 200 km with exact spherical geometry (lunar curvature) for an observer 2 m above the ground.</li>
+          <li>Terrain horizon: 1440 rays (0.25°) through NASA LOLA polar DEMs (20/40/80/240 m/px, finest available per sample) out to 200 km with exact spherical geometry (lunar curvature) for an observer 2 m above the ground.</li>
         </ol>
         <Tip>A 0.004° error is about 1/130 of the Sun’s diameter: far smaller than anything that matters for power or radio links.</Tip>
       </section>

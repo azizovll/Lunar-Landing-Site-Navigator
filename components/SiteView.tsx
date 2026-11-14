@@ -142,8 +142,8 @@ export function SiteView() {
               {site ? fmtLatLon(site.lat, site.lon) : ""}
               {site?.terrain === "lola" && ` · terrain ${Math.round(site.heightM ?? 0)} m · horizon from ${site.dem}`}
               {site?.terrain === "approx" && (
-                <span className="ml-1 rounded bg-marginal/15 px-1.5 text-marginal" title="Tested on 4 preset sites: horizon RMS error 0.6–0.8°, up to 3°; annual illumination and comms within about ±6 percentage points.">
-                  lower accuracy: approximate horizon from 480 m/px DEM (illumination/comms ±~6 pp)
+                <span className="ml-1 rounded bg-marginal/15 px-1.5 text-marginal" title="Tested on 4 preset sites: horizon RMS error 0.6–1.0°, up to 3°; annual illumination and comms within 7 percentage points of the precise masks.">
+                  lower accuracy: approximate horizon from 480 m/px DEM (illumination/comms ±7 pp)
                 </span>
               )}
               {site?.terrain === "flat" && <span className="ml-1 rounded bg-panel2 px-1.5">flat horizon (outside the polar DEM)</span>}
