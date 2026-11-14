@@ -26,6 +26,8 @@ A web app that runs entirely in the browser:
 - **Lunar day timelapse** (▶ Lunar day in the 3D view): the real Sun circles low over the pole and long shadows sweep across the craters; Earth wobbles and lander panels track the Sun.
 - **Stand on the surface**: puts the camera on the ground at a station, facing Earth's real direction, so you see whether the LOLA horizon hides Earth.
 - **30-second guided tour** (home page): overview → Shackleton rim → a lunar day in seconds → standing where Earth is best visible right now → Mission rescue, with captions. Screen-record it for the demo video.
+- **Landing precision**: full-resolution LOLA horizons at 6 points on a 250 m ring and a 1 km ring around every south-polar site (`pipeline/build_ellipse.py`); the Site page shows the score on target, the worst score off target and which direction is risky. Finding: the best-lit spots are narrow crests, so 1 km off target the score collapses at most sites, in line with published work that puts highly illuminated areas at a few hundred metres across.
+- **One rating system**: the 0–100 score with a traffic light is the overall rating everywhere; Power and Comms are rated Good / OK / Poor in every mode.
 - **Battery of a reference lander** (300 W panels, 2 kWh battery, 120 W load; editable in Pro): state of charge over the mission window driven by the real illumination series, lowest charge and hours without power; also a Compare row.
 - **“Why the south pole is tricky”**: three illustrated steps on the home page (low Sun, terrain decides light or dark, Earth wobbles near the horizon).
 - **Report as PDF**: “Save report (PDF)” on the Site and Mission rescue pages prints a light, one-to-two page report with the scenario link.

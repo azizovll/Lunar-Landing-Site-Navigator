@@ -69,8 +69,8 @@ export function Nav() {
               </button>
             ))}
           </div>
-          <Link href="/compare" className="btn btn-solid hidden sm:inline-flex">
-            Compare sites
+          <Link href="/rescue" className="btn btn-solid hidden sm:inline-flex">
+            Launch slipped?
           </Link>
         </div>
       </div>

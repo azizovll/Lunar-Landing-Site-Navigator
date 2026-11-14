@@ -21,7 +21,7 @@ export function commsRating(m: WindowMetrics): Rating {
   return "ok";
 }
 
-export const RATING_WORD: Record<Rating, string> = { great: "Great", ok: "So-so", poor: "Hard" };
+export const RATING_WORD: Record<Rating, string> = { great: "Good", ok: "OK", poor: "Poor" };
 
 /** "4 days 17 hours", "9 hours", "none" */
 export function plainDuration(hours: number): string {

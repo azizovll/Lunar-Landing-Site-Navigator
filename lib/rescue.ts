@@ -7,7 +7,7 @@
  * alternative is.
  */
 import { DAY, HOUR, alignTime, sampleSeries, windowMetrics, type Settings, type SiteInput, type WindowMetrics } from "./metrics";
-import { score } from "./score";
+import { rawScore, score } from "./score";
 
 export interface Candidate {
   siteId: string;
@@ -60,7 +60,15 @@ export function rescue(input: RescueInput): RescueResult {
     }
     ranked.push(best!);
   }
-  ranked.sort((a, b) => b.score - a.score || a.start - b.start);
+  // Ties on the rounded score are broken by the unrounded score, then by Earth's lowest elevation
+  // during the mission (more link margin), then by the date closest to the new launch date.
+  ranked.sort(
+    (a, b) =>
+      b.score - a.score ||
+      rawScore(b.metrics) - rawScore(a.metrics) ||
+      b.metrics.minEarthEl - a.metrics.minEarthEl ||
+      Math.abs(a.start - newStart) - Math.abs(b.start - newStart),
+  );
 
   const plan = sites.find((s) => s.id === planSiteId) ?? sites[0];
   const onTimeSeries = sampleSeries(plan, planStart, planStart + settings.windowDays * DAY, step);

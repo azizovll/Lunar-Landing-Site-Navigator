@@ -10,16 +10,17 @@ import { useUrlState } from "@/lib/useUrlState";
 import { useResolvedSite } from "@/lib/useResolvedSite";
 import { Lens, Panorama } from "./Panorama";
 import { Timeline } from "./Timeline";
-import { MetricCards, VerdictBadge } from "./MetricCards";
-import { commsVerdict, overallVerdict, powerVerdict } from "@/lib/metrics";
+import { MetricCards, ScoreBadge } from "./MetricCards";
+import { commsVerdict, powerVerdict } from "@/lib/metrics";
 import { PolarMap } from "./PolarMap";
 import { Terrain3D } from "./Terrain3D";
 import { Dot, SiteList } from "./SiteList";
-import { LIGHT_COLOR, light, score, why } from "@/lib/score";
+import { why } from "@/lib/score";
 import { ExpertOnly, Tip, useMode } from "./ModeProvider";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { SimpleSummary } from "./SimpleSummary";
 import { BatteryPanel } from "./BatteryPanel";
+import { LandingPrecision } from "./LandingPrecision";
 import { PoleExplainer } from "./PoleExplainer";
 import { PrintButton, PrintHeader } from "./PrintReport";
 import { Eyebrow, StatBox } from "./ui";
@@ -216,16 +217,9 @@ export function SiteView() {
             <h2 className="display text-3xl sm:text-4xl">{site?.name ?? "Custom point"}</h2>
             {site && (
               <div className="flex flex-wrap items-center gap-2">
-                <VerdictBadge v={overallVerdict(metrics)} />
+                <ScoreBadge m={metrics} />
                 <Dot v={powerVerdict(metrics)} label="Power" color="var(--sun)" />
                 <Dot v={commsVerdict(metrics)} label="Comms" color="var(--earth)" />
-                <span
-                  className="inline-flex items-center gap-1.5 border px-2 py-0.5 text-[11px] uppercase tracking-[0.12em]"
-                  style={{ borderColor: LIGHT_COLOR[light(score(metrics))], color: LIGHT_COLOR[light(score(metrics))] }}
-                  title={`Score 0–100: ${why(metrics)}`}
-                >
-                  Score {score(metrics)}
-                </span>
                 <span className="text-sm text-muted">{why(metrics)}</span>
               </div>
             )}
@@ -388,6 +382,7 @@ export function SiteView() {
                 </ExpertOnly>
                   </>
                 )}
+                {site.terrain === "lola" && <LandingPrecision siteId={site.id} from={windowFrom} to={windowTo} settings={settings} centre={metrics} simple={mode === "simple"} />}
                 <BatteryPanel series={series} from={windowFrom} to={windowTo} settings={settings} t={clampedT} simple={mode === "simple"} />
               </>
             )}

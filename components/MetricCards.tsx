@@ -1,6 +1,7 @@
 "use client";
 
-import { commsVerdict, overallVerdict, powerVerdict, THRESHOLDS, type Events, type Sample, type Settings, type Verdict, type WindowMetrics } from "@/lib/metrics";
+import { LIGHT_COLOR, VERDICT_LABEL, light, score, why } from "@/lib/score";
+import { commsVerdict, powerVerdict, THRESHOLDS, type Events, type Sample, type Settings, type Verdict, type WindowMetrics } from "@/lib/metrics";
 import { compass, fmtHours, fmtRelative, fmtUtc } from "@/lib/format";
 import { Tip, useMode } from "./ModeProvider";
 
@@ -12,7 +13,23 @@ export function VerdictBadge({ v, small }: { v: Verdict; small?: boolean }) {
       style={{ color, borderColor: color }}
     >
       <span aria-hidden>{v === "Good" ? "●" : v === "Marginal" ? "◐" : "○"}</span>
-      {v}
+      {VERDICT_LABEL[v]}
+    </span>
+  );
+}
+
+/** The single overall rating: 0–100 score with a traffic-light colour. */
+export function ScoreBadge({ m, small }: { m: WindowMetrics; small?: boolean }) {
+  const sc = score(m);
+  const color = LIGHT_COLOR[light(sc)];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 border uppercase tracking-[0.12em] ${small ? "px-1.5 py-0 text-[10px]" : "px-2 py-0.5 text-[11px]"}`}
+      style={{ color, borderColor: color }}
+      title={`Overall score 0–100. ${why(m)}`}
+    >
+      <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: color }} aria-hidden />
+      Score {sc}
     </span>
   );
 }
@@ -56,7 +73,6 @@ export function MetricCards({ now, events, searchDays, metrics, settings, onSett
   const comms = now.earthClear >= settings.marginDeg;
   const pv = powerVerdict(metrics);
   const cv = commsVerdict(metrics);
-  const ov = overallVerdict(metrics);
   const wDays = Math.round((metrics.to - metrics.from) / 86_400_000);
 
   return (
@@ -130,7 +146,7 @@ export function MetricCards({ now, events, searchDays, metrics, settings, onSett
       <section className="card flex flex-col gap-1 p-5" style={{ borderTop: "1px solid var(--both)" }}>
         <header className="mb-2 flex items-center justify-between">
           <h3 className="display text-xs tracking-[0.3em] text-both">Combined window</h3>
-          <VerdictBadge v={ov} />
+          <ScoreBadge m={metrics} />
         </header>
         <div className="num mb-3 text-xl leading-snug">{fmtHours(metrics.combinedH)} of light + comms</div>
         <Row label="Share of mission window" value={`${metrics.combinedPct.toFixed(1)}%`} />
@@ -156,7 +172,7 @@ export function MetricCards({ now, events, searchDays, metrics, settings, onSett
             <li>
               Comms Good: ≥ {THRESHOLDS.comms.goodPct}% and blackout ≤ {THRESHOLDS.comms.goodBlackoutH} h. Poor: &lt; {THRESHOLDS.comms.poorPct}% or blackout &gt; {THRESHOLDS.comms.poorBlackoutH} h.
             </li>
-            <li>Otherwise Marginal. Overall = the worse of the two.</li>
+            <li>Otherwise OK. The overall rating is the 0–100 score: 70+ green, 40–69 amber, below 40 red.</li>
           </ul>
         </details>
         <Tip>A lander needs both: sunlight to charge and Earth in view to send data home. This counts the hours where both happen at once.</Tip>

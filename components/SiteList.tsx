@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { SITES, fmtLatLon, resolvePreset } from "@/lib/sites";
+import { VERDICT_LABEL } from "@/lib/score";
 import { commsVerdict, powerVerdict, sampleSeries, windowMetrics, type Settings, type Verdict } from "@/lib/metrics";
 
 const GROUPS = [
@@ -93,7 +94,7 @@ export function Dot({ v, label, color }: { v: Verdict; label: string; color: str
   return (
     <span className="inline-flex items-center gap-1 border px-1.5 text-[10px] uppercase tracking-[0.1em]" style={{ borderColor: VCOLOR[v], color: VCOLOR[v] }} title={`${label}: ${v}`}>
       <span style={{ color }}>{label === "Power" ? "☀" : "⊕"}</span>
-      {v}
+      {VERDICT_LABEL[v]}
     </span>
   );
 }

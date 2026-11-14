@@ -98,7 +98,7 @@ export default function AboutPage() {
           <Panel title="Verdicts">
             Power is Good with ≥ {THRESHOLDS.power.goodPct}% illumination and nights ≤ {THRESHOLDS.power.goodNightH} h; Poor below {THRESHOLDS.power.poorPct}% or with nights over{" "}
             {THRESHOLDS.power.poorNightH} h. Comms is Good with ≥ {THRESHOLDS.comms.goodPct}% and blackouts ≤ {THRESHOLDS.comms.goodBlackoutH} h; Poor below {THRESHOLDS.comms.poorPct}% or with
-            blackouts over {THRESHOLDS.comms.poorBlackoutH} h. Otherwise Marginal. Overall is the worse of the two; both are shown separately too.
+            blackouts over {THRESHOLDS.comms.poorBlackoutH} h. Otherwise OK. The overall rating is the 0–100 score (see “Battery and score”).
           </Panel>
           <Panel title="Battery and score">
             The battery card simulates a reference lander (300 W sun-tracking panels, 2 kWh battery, 120 W constant load, 90% charge efficiency) on the real sunlight series.

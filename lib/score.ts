@@ -9,10 +9,13 @@
  * site that would be Poor on nights or blackouts loses up to half of that part of the score.
  * Light: ≥ 70 green, 40–69 amber, < 40 red.
  */
-import { THRESHOLDS, type WindowMetrics } from "./metrics";
+import { THRESHOLDS, type Verdict, type WindowMetrics } from "./metrics";
 import { plainDuration } from "./plain";
 
 export type Light = "green" | "amber" | "red";
+
+/** Display words for the power and comms ratings, the same in every mode and screen. */
+export const VERDICT_LABEL: Record<Verdict, string> = { Good: "Good", Marginal: "OK", Poor: "Poor" };
 
 export function powerPart(m: WindowMetrics): number {
   return m.illuminationPct * (1 - 0.5 * Math.min(1, m.longestNightH / THRESHOLDS.power.poorNightH));
@@ -22,9 +25,12 @@ export function commsPart(m: WindowMetrics): number {
   return m.commsPct * (1 - 0.5 * Math.min(1, m.longestBlackoutH / THRESHOLDS.comms.poorBlackoutH));
 }
 
+export function rawScore(m: WindowMetrics): number {
+  return Math.max(0, Math.min(100, 0.4 * powerPart(m) + 0.4 * commsPart(m) + 0.2 * m.combinedPct));
+}
+
 export function score(m: WindowMetrics): number {
-  const s = 0.4 * powerPart(m) + 0.4 * commsPart(m) + 0.2 * m.combinedPct;
-  return Math.round(Math.max(0, Math.min(100, s)));
+  return Math.round(rawScore(m));
 }
 
 export function light(sc: number): Light {

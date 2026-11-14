@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { DAY, DEFAULT_SETTINGS, alignTime, commsVerdict, overallVerdict, powerVerdict, sampleAt, sampleSeries, windowMetrics, type Settings, type WindowMetrics } from "@/lib/metrics";
+import { DAY, DEFAULT_SETTINGS, alignTime, commsVerdict, powerVerdict, sampleAt, sampleSeries, windowMetrics, type Settings, type WindowMetrics } from "@/lib/metrics";
 import { downloadCsv, fmtHours, parseUtc, toUtcInput } from "@/lib/format";
 import { SITES, fmtLatLon, getSite, resolvePreset, type ResolvedSite } from "@/lib/sites";
 import { useUrlState } from "@/lib/useUrlState";
 import { parseLatLon, useCustomSites } from "@/lib/useResolvedSite";
-import { VerdictBadge } from "./MetricCards";
+import { ScoreBadge } from "./MetricCards";
 import { Dot } from "./SiteList";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { ExpertOnly, Tip, useMode } from "./ModeProvider";
@@ -132,7 +132,7 @@ export function CompareView() {
     downloadCsv(`compare-delay${delay}d.csv`, [
       ["metric", ...cols.map((c) => `${c.custom ? fmtLatLon(c.custom.lat, c.custom.lon) : c.siteId} ${toUtcInput(c.start + delay * DAY, false)}`)],
       ...rows.map(({ r, vals }) => [r.label, ...vals.map((x) => (Number.isNaN(x.v) ? "" : r.fmt(x.v)))]),
-      ["verdict", ...computed.map((c) => (c ? overallVerdict(c.sweep[delay]) : ""))],
+      ["power / comms", ...computed.map((c) => (c ? `${powerVerdict(c.sweep[delay])} / ${commsVerdict(c.sweep[delay])}` : ""))],
     ]);
 
   return (
@@ -234,7 +234,7 @@ export function CompareView() {
           </thead>
           <tbody>
             <tr>
-              <td className="py-2 pr-2 text-muted">Verdict<div className="text-xs">overall · power · comms</div></td>
+              <td className="py-2 pr-2 text-muted">Verdict<div className="text-xs">score · power · comms</div></td>
               {computed.map((c, i) =>
                 !c ? (
                   <td key={i} className="p-2 text-xs text-muted">
@@ -243,7 +243,7 @@ export function CompareView() {
                 ) : (
                 <td key={i} className="p-2">
                   <div className="flex flex-wrap items-center gap-1">
-                    <VerdictBadge v={overallVerdict(c.sweep[delay])} small />
+                    <ScoreBadge m={c.sweep[delay]} small />
                     <Dot v={powerVerdict(c.sweep[delay])} label="Power" color="var(--sun)" />
                     <Dot v={commsVerdict(c.sweep[delay])} label="Comms" color="var(--earth)" />
                   </div>
