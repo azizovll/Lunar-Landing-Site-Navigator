@@ -65,6 +65,8 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
     flyTo: (id: string | null) => void;
     standAt: (id: string) => void;
     setRays: (id: string | null, sunOk: boolean, earthOk: boolean) => void;
+    computeLight: (from: number) => Promise<boolean>;
+    setHeat: (on: boolean) => void;
   } | null>(null);
   const scaleBar = useRef<HTMLDivElement>(null);
   const scaleLabel = useRef<HTMLSpanElement>(null);
@@ -85,6 +87,9 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   const [caption, setCaption] = useState<string | null>(null);
   const [touring, setTouring] = useState(false);
   const tourId = useRef(0);
+  // sunlight map: share of the next lunar month in sunlight, computed in workers
+  const [heat, setHeat] = useState(false);
+  const [lightFrom, setLightFrom] = useState<number | null>(null);
 
   useEffect(() => {
     let disposed = false;
@@ -192,7 +197,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         roughness: 1,
         metalness: 0,
       });
-      const ground = new THREE.Mesh(geo, mat);
+      const ground = new THREE.Mesh<import("three").BufferGeometry, import("three").Material>(geo, mat);
       ground.receiveShadow = true;
       ground.castShadow = true;
 
@@ -410,6 +415,77 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       const groundSight = (a: { ground: import("three").Vector3; up: import("three").Vector3 }) => sightPt.copy(a.ground).addScaledVector(a.up, 0.3);
       const camTry = new THREE.Vector3();
       const sphTry = new THREE.Spherical();
+
+      // ---- sunlight map (lightmapCore.ts): darkens ground that stays in shadow all month, and a heat-map view
+      const fadeCol = col.slice();
+      const colAttr = geo.getAttribute("color") as import("three").BufferAttribute;
+      // fixed overhead hillshade so the heat map keeps its relief without the moving Sun
+      const nrm = geo.getAttribute("normal");
+      const shade = new Float32Array(M * M);
+      const L = new THREE.Vector3(0.35, 1, 0.25).normalize();
+      for (let v = 0; v < M * M; v++) shade[v] = 0.45 + 0.55 * Math.max(0, nrm.getX(v) * L.x + nrm.getY(v) * L.y + nrm.getZ(v) * L.z);
+      const RAMP = ["#0b0c1e", "#2b1d5c", "#7d2f6e", "#c9542e", "#eea53a", "#fff2c4"].map((h) => new THREE.Color(h));
+      const ramp = (f: number, outC: import("three").Color) => {
+        const x = Math.min(1, Math.max(0, f)) * (RAMP.length - 1);
+        const k = Math.min(RAMP.length - 2, Math.floor(x));
+        return outC.copy(RAMP[k]).lerp(RAMP[k + 1], x - k);
+      };
+      const heatMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+      let normalCol: Float32Array | null = null;
+      let heatCol: Float32Array | null = null;
+      let heatOn = false;
+      const applyColours = () => {
+        const src = heatOn && heatCol ? heatCol : normalCol ?? fadeCol;
+        col.set(src);
+        colAttr.needsUpdate = true;
+        ground.material = heatOn && heatCol ? heatMat : mat;
+      };
+      const pool: Worker[] = [];
+      let lightReq = 0;
+      const computeLight = async (from: number) => {
+        const id = ++lightReq;
+        const W = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
+        while (pool.length < W) pool.push(new Worker(new URL("../lib/lightmap.worker.ts", import.meta.url)));
+        const chunk = Math.ceil(N / W / 2) * 2;
+        const parts = await Promise.all(
+          pool.slice(0, W).map(
+            (w, q) =>
+              new Promise<{ lit: Float32Array; rowFrom: number; rowTo: number } | null>((resolve) => {
+                const onMsg = (e: MessageEvent) => {
+                  if (e.data.id !== id) return;
+                  w.removeEventListener("message", onMsg);
+                  resolve(e.data.ok ? e.data : null);
+                };
+                w.addEventListener("message", onMsg);
+                w.postMessage({ id, from, to: from + 29.5 * DAY, stepMs: 6 * 3_600_000, rowFrom: q * chunk, rowTo: Math.min(N, (q + 1) * chunk) });
+              }),
+          ),
+        );
+        if (disposed || id !== lightReq || parts.some((x) => !x)) return false;
+        const lit = new Float32Array(N * N).fill(-1);
+        for (const part of parts) lit.set(part!.lit.subarray(part!.rowFrom * N, part!.rowTo * N), part!.rowFrom * N);
+        normalCol = new Float32Array(M * M * 3);
+        heatCol = new Float32Array(M * M * 3);
+        const c = new THREE.Color();
+        for (let a = 0; a < M; a++)
+          for (let b = 0; b < M; b++) {
+            const v = a * M + b;
+            const f = lit[a * stride * N + b * stride];
+            const fade = fadeCol[v * 3];
+            // in shadow all month: only faint earthshine and light scattered off sunlit walls reach it
+            const dark = f < 0 ? 1 : 0.3 + 0.7 * Math.min(1, f / 0.04);
+            normalCol[v * 3] = normalCol[v * 3 + 1] = normalCol[v * 3 + 2] = fade * dark;
+            if (f < 0) c.setRGB(0, 0, 0);
+            else ramp(f, c).multiplyScalar(shade[v] * fade);
+            heatCol.set([c.r, c.g, c.b], v * 3);
+          }
+        applyColours();
+        return true;
+      };
+      const setHeatView = (on: boolean) => {
+        heatOn = on;
+        applyColours();
+      };
 
       // ---- lines of sight from the focused station to the Sun and to Earth.
       // Colour comes from the exact horizon calculation (the same numbers as the sky view); the 3D
@@ -681,6 +757,8 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         flyTo,
         standAt,
         setRays,
+        computeLight,
+        setHeat: setHeatView,
       };
       setReady(true);
 
@@ -701,6 +779,8 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         [metal, dark, cell, mSun, mEarth, mBlock].forEach((m) => m.dispose());
         gRay.dispose();
         gHit.dispose();
+        heatMat.dispose();
+        pool.forEach((w) => w.terminate());
         [gBody, gTop, gLeg, gPad, gMast, gPanel, gDish].forEach((x) => x.dispose());
         glowTex.dispose();
         sun.shadow.map?.dispose();
@@ -767,6 +847,22 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   const sunOk = !!live && live.sunFrac > 0;
   const earthOk = !!live && live.earthClear > 0;
   const rayId = focused && !standing ? focused.id : null;
+  // (re)compute the sunlight map for the lunar month starting on the page's day, once the scene is up
+  const lightDay = alignTime(timeMs, DAY);
+  useEffect(() => {
+    if (!ready) return;
+    let alive = true;
+    const id = setTimeout(() => {
+      api.current?.computeLight(lightDay).then((ok) => alive && ok && setLightFrom(lightDay));
+    }, 600);
+    return () => {
+      alive = false;
+      clearTimeout(id);
+    };
+  }, [ready, lightDay]);
+  useEffect(() => {
+    api.current?.setHeat(heat);
+  }, [heat, lightFrom]);
   useEffect(() => {
     api.current?.setRays(rayId, sunOk, earthOk);
   }, [rayId, sunOk, earthOk, ready]);
@@ -1011,6 +1107,19 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
               </span>
             </div>
           )}
+          {heat && lightFrom !== null && (
+            <span className="flex flex-col gap-1 bg-black/55 px-2.5 py-1.5 text-[11px] text-muted backdrop-blur-sm">
+              <span>
+                Time in sunlight, {new Date(lightFrom).toISOString().slice(0, 10)} + 29.5 days
+              </span>
+              <span className="flex items-center gap-2">
+                0%
+                <span className="block h-2 w-32" style={{ background: "linear-gradient(to right,#0b0c1e,#2b1d5c,#7d2f6e,#c9542e,#eea53a,#fff2c4)" }} />
+                100%
+              </span>
+              <span className="text-faint">approximate: 1.3 km grid; site numbers use 20 m horizons</span>
+            </span>
+          )}
           {!focused && (
             <span className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted">
               Pin colour = score, next 14 days:
@@ -1030,7 +1139,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           )}
         </div>
         {focused && !photo && !touring && (
-          <div className="absolute bottom-3 right-4 flex flex-wrap justify-end gap-2 sm:bottom-[6%] sm:right-[6%]">
+          <div className="absolute bottom-16 right-4 flex flex-wrap justify-end gap-2 sm:bottom-[6%] sm:right-[6%]">
             {standing ? (
               <button className="btn btn-solid !py-1.5 text-xs" onClick={() => goTo(focused.id)}>
                 ↑ Fly up
@@ -1063,22 +1172,31 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           >
             {playing ? "❚❚ Pause" : "▶ Lunar day"}
           </button>
+          <button
+            className={`btn !py-1.5 text-xs ${heat ? "btn-solid" : ""}`}
+            onClick={() => setHeat((h) => !h)}
+            disabled={lightFrom === null}
+            aria-pressed={heat}
+            title="Colour the ground by how much of the next lunar month it spends in sunlight"
+          >
+            {lightFrom === null ? "Light map…" : "☀ Light map"}
+          </button>
           <span className="hidden text-xs text-muted sm:inline">
             {new Date(shownT).toISOString().slice(0, 16).replace("T", " ")} UTC{playing ? ` · ×${speedH} h/s` : ""}
           </span>
         </div>
         {!touring && !focused && (
-          <button className="btn absolute right-4 top-3 !py-1.5 text-xs sm:right-[6%] sm:top-[6%]" onClick={runTour}>
+          <button className="btn absolute bottom-16 right-4 !py-1.5 text-xs sm:bottom-auto sm:right-[6%] sm:top-[6%]" onClick={runTour}>
             ▶ 30-second tour
           </button>
         )}
         {touring && (
-          <button className="btn absolute right-4 top-3 !py-1.5 text-xs sm:right-[6%] sm:top-[6%]" onClick={stopTour}>
+          <button className="btn absolute bottom-16 right-4 !py-1.5 text-xs sm:bottom-auto sm:right-[6%] sm:top-[6%]" onClick={stopTour}>
             Skip tour ✕
           </button>
         )}
         {caption && (
-          <div className="pointer-events-none absolute inset-x-4 bottom-14 flex justify-center sm:bottom-[16%]" aria-live="polite">
+          <div className="pointer-events-none absolute inset-x-4 bottom-28 flex justify-center sm:bottom-[16%]" aria-live="polite">
             <p className="max-w-2xl border border-line bg-black/80 px-4 py-2.5 text-center text-sm leading-relaxed text-foreground backdrop-blur sm:text-base">{caption}</p>
           </div>
         )}
@@ -1096,7 +1214,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       </div>
       <figcaption className="text-center text-xs text-muted">
         NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time. Lander models are ~300× real size: panels face the real Sun, dishes point at the real
-        Earth (shown 2.5× larger). Drag to rotate; hover a pin or a name for a photo, click to fly in; “Stand on the surface” puts you on the ground facing Earth; ▶ Lunar day plays the Sun and shadows. ◆ Hardware already on the surface (red: impact sites).
+        Earth (shown 2.5× larger). Drag to rotate; hover a pin or a name for a photo, click to fly in; “Stand on the surface” puts you on the ground facing Earth; ▶ Lunar day plays the Sun and shadows. A selected station shows its line of sight to the Sun (gold) and Earth (blue), red where hills block it. ☀ Light map colours the ground by its share of sunlight over the next lunar month (ground that stays dark all month is also shaded darker in the normal view). ◆ Hardware already on the surface (red: impact sites).
       </figcaption>
     </figure>
   );
