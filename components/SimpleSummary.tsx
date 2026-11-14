@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { DAY, hasComms, type Events, type Sample, type WindowMetrics } from "@/lib/metrics";
-import { RATING_WORD, commsRating, earthNow, headline, plainDuration, plainShare, plainWhen, sunNow, sunRating, type Rating } from "@/lib/plain";
+import { RATING_WORD, commsRating, earthNow, headline, plainDuration, plainShare, plainWhen, sunHeightOnEarth, sunNow, sunRating, type Rating } from "@/lib/plain";
 
 const RATING_COLOR: Record<Rating, string> = { great: "var(--good)", ok: "var(--marginal)", poor: "var(--poor)" };
 
@@ -66,6 +66,10 @@ export function SimpleSummary({ siteName, now, events, metrics, windowDays, marg
           </span>
           <div>
             <div className="eyebrow mb-1 !text-[0.6rem] !tracking-[0.3em] text-muted">Sun right now</div>
+            <div className="mb-1.5 flex items-baseline gap-2">
+              <span className="num text-3xl text-sun">{now.sunEl.toFixed(1)}°</span>
+              <span className="text-xs text-muted">above the horizon, {sunHeightOnEarth(now.sunEl)}</span>
+            </div>
             <p className="text-sm leading-relaxed">{sunNow(now, events, now.t, when)}</p>
           </div>
         </div>

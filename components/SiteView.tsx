@@ -23,6 +23,7 @@ import { BatteryPanel } from "./BatteryPanel";
 import { LandingPrecision } from "./LandingPrecision";
 import { NeighborsPanel } from "./NeighborsPanel";
 import { PoleExplainer } from "./PoleExplainer";
+import { MoonVsEarth } from "./MoonVsEarth";
 import { PrintButton, PrintHeader } from "./PrintReport";
 import { Eyebrow, StatBox } from "./ui";
 
@@ -205,8 +206,9 @@ export function SiteView() {
         </div>
       </section>
 
-      <div className="no-print">
+      <div className="no-print flex flex-col gap-16 sm:gap-24">
         <PoleExplainer />
+        <MoonVsEarth />
       </div>
 
       {/* ---------- sky view ---------- */}

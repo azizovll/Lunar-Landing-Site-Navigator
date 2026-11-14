@@ -105,3 +105,14 @@ export function plainWhen(t: number, now: number): string {
   else s = plural(Math.max(1, Math.round(abs / 60_000)), "minute");
   return diff >= 0 ? `in ${s}` : `${s} ago`;
 }
+
+/**
+ * Compare a solar elevation with something familiar: at Earth's equator the Sun climbs 15° per hour
+ * (0.25° per minute) after sunrise, so 1.6° is "about 6 minutes after sunrise".
+ */
+export function sunHeightOnEarth(elDeg: number): string {
+  if (elDeg <= 0) return "below the flat horizon: on Earth that would be twilight";
+  const min = elDeg / 0.25;
+  if (min < 90) return `as low as the Sun about ${Math.max(1, Math.round(min))} minute${Math.round(min) === 1 ? "" : "s"} after sunrise at Earth’s equator`;
+  return `like the Sun about ${(min / 60).toFixed(1)} hours after sunrise at Earth’s equator`;
+}

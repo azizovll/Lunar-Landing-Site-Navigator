@@ -141,7 +141,7 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
         <circle cx={sunX} cy={sunY} r={sunR} fill="none" stroke="var(--sun)" strokeOpacity={0.6} strokeDasharray="2 2" />
         <circle cx={earthX} cy={earthY} r={earthR} fill="none" stroke="var(--earth)" strokeOpacity={0.6} strokeDasharray="2 2" />
         <text x={Math.min(W - 40, Math.max(40, sunX))} y={Math.max(14, sunY - sunR - 8)} fontSize={13} fill="var(--sun)" textAnchor="middle" fontWeight={600}>
-          Sun {expert ? `${now.sunEl.toFixed(2)}°` : ""}
+          Sun {now.sunEl.toFixed(expert ? 2 : 1)}°
         </text>
         <text x={Math.min(W - 40, Math.max(40, earthX))} y={Math.max(14, earthY - earthR - 8)} fontSize={13} fill="var(--earth)" textAnchor="middle" fontWeight={600}>
           Earth {expert ? `${now.earthEl.toFixed(2)}°` : ""}
@@ -164,6 +164,7 @@ export function Panorama({ horizon, now, sunTrack, earthTrack, expert, marginDeg
           <span className="text-earth">●</span> Earth track 30 days (libration wobble)
         </span>
         <span>Grey: terrain horizon{horizon ? "" : " (flat: no DEM here)"}</span>
+        <span>No atmosphere: no refraction or twilight, the horizon is only terrain and the curve of the Moon; the sky stays black in daylight</span>
         <span>
           Vertical scale ×{exaggeration.toFixed(1)};{" "}
           {now.sunR * pyd < 3 || now.earthR * pyd < 4

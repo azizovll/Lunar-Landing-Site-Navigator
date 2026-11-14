@@ -83,8 +83,12 @@ export function MetricCards({ now, events, searchDays, metrics, settings, onSett
           <h3 className="display text-xs tracking-[0.3em] text-sun">Power</h3>
           <VerdictBadge v={pv} />
         </header>
-        <div className="num mb-3 text-xl leading-snug">
-          {lit ? `${(now.sunFrac * 100).toFixed(0)}% of Sun visible` : "Sun hidden"}
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div className="num text-xl leading-snug">{lit ? `${(now.sunFrac * 100).toFixed(0)}% of Sun visible` : "Sun hidden"}</div>
+          <div className="text-right" title="Solar elevation above the local horizontal plane (no atmosphere, no refraction)">
+            <div className="num text-3xl leading-none text-sun">{now.sunEl.toFixed(1)}°</div>
+            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-muted">Sun elevation</div>
+          </div>
         </div>
         <Row label="Sun elevation" value={`${now.sunEl.toFixed(2)}°`} sub={expert ? `az ${now.sunAz.toFixed(2)}° · terrain ${now.sunHz.toFixed(2)}°` : `toward ${compass(now.sunAz)}`} />
         {lit ? <EventRow label="Sunset over terrain" at={events.sunset} now={now.t} searchDays={searchDays} /> : <EventRow label="Sunrise over terrain" at={events.sunrise} now={now.t} searchDays={searchDays} />}

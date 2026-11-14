@@ -68,8 +68,9 @@ export default function AboutPage() {
             </Link>
             ).
           </Step>
-          <Step n={2} title="Real terrain">
-            Each preset site has a terrain horizon: 1440 rays (every 0.25°) through NASA LOLA elevation models out to 200 km, with lunar curvature, for an observer 2 m above the ground.
+          <Step n={2} title="Real terrain, no air">
+            The Moon has no atmosphere, so nothing bends light over the horizon: what blocks the Sun or Earth is only terrain and the curve of the Moon. Each preset site has a
+            terrain horizon: 1440 rays (every 0.25°) through NASA LOLA elevation models out to 200 km, with lunar curvature, for an observer 2 m above the ground.
           </Step>
           <Step n={3} title="Power and comms">
             The share of the solar disk above that horizon gives power. Earth’s height above the horizon, with a 2° margin, gives comms.

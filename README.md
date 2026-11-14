@@ -12,6 +12,7 @@ It shows the Sun and Earth over the **real terrain horizon** of lunar south-pole
 | --- | --- |
 | **Site** (home) | Clickable south-polar map with site list; 360° panoramic sky with terrain profile, Sun and Earth disks and their tracks; 1:1 close-ups; time scrubber with playback; Power / Comms / Combined cards with countdowns; 30-day light/comms timeline |
 | **Mission rescue** | Launch slipped by N days? Scores every south-pole site on every day around the new date (0–100 with a traffic light and a one-line reason) and shows the 3 best alternatives against the delayed plan |
+| **Moon vs Earth** (home) | Day length, polar Sun height, no atmosphere and refraction, black sky, horizon distance, temperatures |
 | **Who else is here** (on Site, Rescue, 3D) | Hardware already on the surface and planned missions near each site, 2 km plume safety zone, link to the Lunar Ledger registry |
 | **Landing precision** (on Site) | Score on target vs 250 m or 1 km off in six directions, from full-resolution LOLA horizons: shows whether a site needs a precise landing |
 | **Battery** (on Site) | Reference lander (300 W panels, 2 kWh, 120 W load) charged by the real sunlight series: lowest charge and hours without power |

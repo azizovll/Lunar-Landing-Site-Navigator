@@ -160,7 +160,9 @@ export function ValidationView() {
             East/north/up frame at (lat, lon east-positive, height) on a 1737.4 km sphere. Azimuth is clockwise from lunar north (N 0°, E 90°, S 180°, W 270°), as in Horizons. Angular
             radius = asin(R / distance), with Sun R = 695 700 km and Earth R = 6378.137 km.
           </Step>
-          <Step n={4} title="Terrain horizon">
+          <Step n={4} title="Terrain horizon, no atmosphere">
+            The Moon has no atmosphere, so there is no refraction lifting the Sun or Earth above the horizon (on Earth it adds about 0.5°) and no twilight: the horizon is set
+            only by the terrain and the curvature of the lunar sphere. Horizons is queried in the same airless mode.{" "}
             1440 rays (0.25°) through NASA LOLA polar DEMs (20/40/80/240 m/px, finest available per sample) out to 200 km, with exact spherical geometry (lunar curvature), for an observer
             2 m above the ground.
           </Step>
