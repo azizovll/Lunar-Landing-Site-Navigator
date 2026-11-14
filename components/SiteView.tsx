@@ -5,7 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { DAY, DEFAULT_SETTINGS, HOUR, alignTime, nextEvents, sampleAt, sampleSeries, windowMetrics, type Settings } from "@/lib/metrics";
 import { downloadCsv, fmtRelative, fmtUtc, parseUtc, toUtcInput } from "@/lib/format";
-import { DEFAULT_SITE_ID, SITES, fmtLatLon } from "@/lib/sites";
+import { SITES, fmtLatLon, resolvePreset } from "@/lib/sites";
+import { rankSites } from "@/lib/rescue";
+import { SafeBoundary } from "./SafeBoundary";
 import { useUrlState } from "@/lib/useUrlState";
 import { useResolvedSite } from "@/lib/useResolvedSite";
 import { Lens, Panorama } from "./Panorama";
@@ -15,7 +17,7 @@ import { commsVerdict, powerVerdict } from "@/lib/metrics";
 import { PolarMap } from "./PolarMap";
 import { Terrain3D } from "./Terrain3D";
 import { Dot, SiteList } from "./SiteList";
-import { why } from "@/lib/score";
+import { LIGHT_COLOR, light, why } from "@/lib/score";
 import { ExpertOnly, Tip, useMode } from "./ModeProvider";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { SimpleSummary } from "./SimpleSummary";
@@ -40,22 +42,32 @@ export function SiteView() {
   const { mode, setMode } = useMode();
   const expert = mode === "pro";
 
-  const siteId = params.get("site") ?? DEFAULT_SITE_ID;
-  const cLat = params.get("lat");
-  const cLon = params.get("lon");
-  const customLat = cLat !== null ? Number(cLat) : null;
-  const customLon = cLon !== null ? Number(cLon) : null;
-  const { site, loading } = useResolvedSite(siteId, customLat, customLon);
-
   // "now" is fixed once per page load so the page renders deterministically.
   const [loadTime] = useState(() => alignTime(Date.now(), 60_000));
-  const start = parseUtc(params.get("start")) ?? alignTime(loadTime, DAY);
   // Memoised on the primitive values: a fresh object on every render (e.g. each playback frame)
   // would make the site list recompute 13 sites per frame.
   const marginDeg = Number(params.get("margin") ?? DEFAULT_SETTINGS.marginDeg);
   const panel: Settings["panel"] = params.get("panel") === "horizontal" ? "horizontal" : "tracking";
   const windowDays = Number(params.get("window") ?? DEFAULT_SETTINGS.windowDays);
   const settings: Settings = useMemo(() => ({ marginDeg, panel, windowDays }), [marginDeg, panel, windowDays]);
+
+  // "Best site right now": every south-pole candidate scored for a mission starting today.
+  const today = alignTime(loadTime, DAY);
+  const ranking = useMemo(
+    () => rankSites(SITES.filter((s) => s.kind === "south-pole").map((s) => ({ ...resolvePreset(s), id: s.id })), today, settings, 2 * HOUR),
+    [today, settings],
+  );
+  const best = ranking[0];
+  const siteName = (id: string) => SITES.find((s) => s.id === id)?.name ?? id;
+  // With no ?site in the URL, open on today's best site rather than a fixed one.
+  const siteId = params.get("site") ?? best.siteId;
+  const cLat = params.get("lat");
+  const cLon = params.get("lon");
+  const customLat = cLat !== null ? Number(cLat) : null;
+  const customLon = cLon !== null ? Number(cLon) : null;
+  const { site, loading } = useResolvedSite(siteId, customLat, customLon);
+
+  const start = parseUtc(params.get("start")) ?? today;
   const urlT = parseUtc(params.get("t"));
   const [t, setT] = useState<number>(() => urlT ?? Math.min(Math.max(loadTime, start), start + TIMELINE_DAYS * DAY));
   const [playing, setPlaying] = useState(false);
@@ -129,6 +141,7 @@ export function SiteView() {
   };
 
   const customPoint = customLat !== null && customLon !== null ? { lat: customLat, lon: customLon } : null;
+  const map2d = <PolarMap variant="planet" selectedId={siteId} custom={customPoint} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />;
 
   return (
     <div className="flex flex-col gap-16 sm:gap-24">
@@ -150,25 +163,27 @@ export function SiteView() {
             Compare landing sites and dates near the lunar south pole. See the Sun and Earth over the real LOLA terrain horizon, with solar-power and direct-to-Earth
             communication windows, computed in your browser.
           </p>
-          <div className="flex flex-wrap gap-3">
-            <button
-              className="btn btn-solid"
+          <div className="grid gap-3 sm:grid-cols-3">
+            <EntryCard
+              kicker="Learning"
+              title="30-second tour"
+              text="The south pole explained in a few stops."
+              cta="▶ Start tour"
+              solid
               onClick={() => {
                 document.getElementById("terrain3d")?.scrollIntoView({ behavior: "smooth", block: "center" });
                 window.dispatchEvent(new Event("lsn-tour"));
               }}
-            >
-              ▶ 30-second tour
-            </button>
-            <a href="#sky" className="btn">
-              Open sky view
-            </a>
-            <Link href="/compare" className="btn">
-              Compare sites
-            </Link>
-            <Link href={`/rescue?site=${siteId}`} className="btn">
-              Launch slipped? Rescue →
-            </Link>
+            />
+            <EntryCard kicker="Exploring" title="Stand on a site" text="Watch the Sun and Earth move over the real horizon." cta="Open sky view" href="#sky" />
+            <EntryCard
+              kicker="Planning"
+              title="Pick a site and date"
+              text="Rank sites, or rescue a mission whose launch slipped."
+              cta="Rescue →"
+              href={`/rescue?site=${siteId}`}
+              extra={{ href: "/compare", label: "Compare sites" }}
+            />
           </div>
           <p className="text-xs text-muted">
             {mode === "simple" ? (
@@ -190,19 +205,56 @@ export function SiteView() {
             )}
           </p>
         </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col gap-3">
+            <div className="card flex flex-col gap-3 p-5" style={{ borderTop: `1px solid ${LIGHT_COLOR[light(best.score)]}` }}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="eyebrow !text-[0.6rem] !tracking-[0.3em] text-muted">Best site right now</span>
+                <span className="text-xs text-muted">
+                  {settings.windowDays}-day mission from {fmtUtc(today, false)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="display text-xl">{siteName(best.siteId)}</div>
+                  <p className="mt-1 text-sm leading-relaxed text-muted">{why(best.metrics)}</p>
+                </div>
+                <ScoreBadge m={best.metrics} />
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
+                <button
+                  className="btn !py-1 text-xs"
+                  onClick={() => {
+                    selectSite(best.siteId);
+                    document.getElementById("sky")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  Show this site
+                </button>
+                <span>
+                  Next:{" "}
+                  {ranking.slice(1, 3).map((r, i) => (
+                    <span key={r.siteId}>
+                      {i ? ", " : ""}
+                      <button className="underline underline-offset-4 hover:text-foreground" onClick={() => selectSite(r.siteId)}>
+                        {siteName(r.siteId)}
+                      </button>{" "}
+                      <span className="num">{r.score}</span>
+                    </span>
+                  ))}
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
             <StatBox value="0.004°" label="Max error" sub="vs JPL Horizons" />
             <StatBox value={SITES.length} label="Sites" sub="with sources" />
             <StatBox value="1440" label="Terrain rays" sub="per site, 200 km" />
+            </div>
           </div>
         </div>
         <div id="terrain3d" className="relative z-10 w-full scroll-mt-24">
-          <Terrain3D
-            selectedId={customPoint ? null : siteId}
-            timeMs={clampedT}
-            onSelect={selectSite}
-            fallback={<PolarMap variant="planet" selectedId={siteId} custom={customPoint} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />}
-          />
+          <SafeBoundary fallback={map2d}>
+            <Terrain3D selectedId={customPoint ? null : siteId} timeMs={clampedT} onSelect={selectSite} fallback={map2d} />
+          </SafeBoundary>
         </div>
       </section>
 
@@ -266,7 +318,7 @@ export function SiteView() {
             <button className="btn" onClick={() => set({ start: toUtcInput(alignTime(Date.now(), DAY), false), t: null })}>
               Today
             </button>
-            <Link className="btn btn-solid" href={`/compare?a=${site?.id === "custom" ? DEFAULT_SITE_ID : siteId}:${toUtcInput(start, false)}`}>
+            <Link className="btn btn-solid" href={`/compare?a=${site?.id === "custom" ? best.siteId : siteId}:${toUtcInput(start, false)}`}>
               Compare
             </Link>
             <PrintButton />
@@ -424,5 +476,36 @@ function CustomForm({ onSubmit }: { onSubmit: (lat: number, lon: number) => void
       </button>
       <p className="w-full text-xs text-muted">South of 79°S: approximate terrain horizon (480 m/px). Elsewhere: flat horizon.</p>
     </form>
+  );
+}
+
+function EntryCard(p: { kicker: string; title: string; text: string; cta: string; href?: string; onClick?: () => void; solid?: boolean; extra?: { href: string; label: string } }) {
+  const cls = `btn ${p.solid ? "btn-solid" : ""} !py-1.5 text-xs`;
+  return (
+    <div className="card flex flex-col gap-2 p-4">
+      <span className="eyebrow !text-[0.6rem] !tracking-[0.3em] text-muted">{p.kicker}</span>
+      <span className="text-base text-foreground">{p.title}</span>
+      <span className="text-xs leading-relaxed text-muted">{p.text}</span>
+      <div className="mt-auto flex flex-wrap items-center gap-3 pt-1">
+        {p.href?.startsWith("#") ? (
+          <a href={p.href} className={cls}>
+            {p.cta}
+          </a>
+        ) : p.href ? (
+          <Link href={p.href} className={cls}>
+            {p.cta}
+          </Link>
+        ) : (
+          <button className={cls} onClick={p.onClick}>
+            {p.cta}
+          </button>
+        )}
+        {p.extra && (
+          <Link href={p.extra.href} className="text-xs text-muted underline underline-offset-4 hover:text-foreground">
+            {p.extra.label}
+          </Link>
+        )}
+      </div>
+    </div>
   );
 }

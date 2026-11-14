@@ -79,3 +79,15 @@ export function rescue(input: RescueInput): RescueResult {
   }
   return { onTime, delayedPlan, ranked };
 }
+
+/** Rank sites for a mission window starting at `from` (used for "best landing window now"). */
+export function rankSites(sites: (SiteInput & { id: string })[], from: number, settings: Settings, stepMs = HOUR): Candidate[] {
+  const start = alignTime(from, DAY);
+  const to = start + settings.windowDays * DAY;
+  return sites
+    .map((site) => {
+      const metrics = windowMetrics(sampleSeries(site, start, to, stepMs), start, to, settings);
+      return { siteId: site.id, start, metrics, score: score(metrics) };
+    })
+    .sort((a, b) => b.score - a.score || rawScore(b.metrics) - rawScore(a.metrics) || b.metrics.minEarthEl - a.metrics.minEarthEl);
+}

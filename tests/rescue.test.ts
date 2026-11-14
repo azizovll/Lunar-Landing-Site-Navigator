@@ -75,3 +75,14 @@ describe("mission rescue search", () => {
     expect(res.ranked.find((c) => c.siteId === "shackleton-floor")!.score).toBeLessThan(40);
   });
 });
+
+describe("best landing window now", () => {
+  it("ranks every south-polar site, best first, never the shadowed crater floor on top", async () => {
+    const { rankSites } = await import("@/lib/rescue");
+    const sites = SITES.filter((s) => s.lat <= -80).map((s) => ({ ...resolvePreset(s), id: s.id }));
+    const r = rankSites(sites, Date.UTC(2026, 10, 15), DEFAULT_SETTINGS, 2 * 3_600_000);
+    expect(r).toHaveLength(sites.length);
+    for (let i = 1; i < r.length; i++) expect(r[i - 1].score).toBeGreaterThanOrEqual(r[i].score);
+    expect(r[0].siteId).not.toBe("shackleton-floor");
+  });
+});
