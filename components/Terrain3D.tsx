@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { frameVectors, type Vec3 } from "@/lib/astro";
-import { SITES, fmtLatLon } from "@/lib/sites";
+import { SITES, fmtLatLon, resolvePreset } from "@/lib/sites";
+import { DAY, alignTime, sampleSeries, windowMetrics } from "@/lib/metrics";
 
 /**
  * 3D terrain of the lunar south pole (home page hero).
@@ -54,6 +56,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
   const [focus, setFocus] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     let disposed = false;
@@ -106,6 +109,9 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       const M = Math.floor((N - 1) / stride) + 1;
       const pos = new Float32Array(M * M * 3);
       const uv = new Float32Array(M * M * 2);
+      // vertex colours fade the terrain to black towards its outer edge, so the square mesh border never shows
+      const col = new Float32Array(M * M * 3);
+      const half: number = meta.halfM;
       for (let a = 0; a < M; a++)
         for (let b = 0; b < M; b++) {
           const i = a * stride;
@@ -119,6 +125,9 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           pos.set(p, (a * M + b) * 3);
           uv[(a * M + b) * 2] = j / (N - 1);
           uv[(a * M + b) * 2 + 1] = 1 - i / (N - 1);
+          const f = Math.min(1, Math.max(0, (1 - rho / half) / 0.22));
+          const ff = f * f * (3 - 2 * f);
+          col[(a * M + b) * 3] = col[(a * M + b) * 3 + 1] = col[(a * M + b) * 3 + 2] = ff;
         }
       const idx = new Uint32Array((M - 1) * (M - 1) * 6);
       let k = 0;
@@ -137,6 +146,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
       geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+      geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
       geo.setIndex(new THREE.BufferAttribute(idx, 1));
       geo.computeVertexNormals();
       // Fine relief: object-space normal map (~430 m/px, from LOLA) lit by the real Sun; regolith grain tiles on top.
@@ -150,6 +160,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         map: regolithTex,
         normalMap: normalTex,
         normalMapType: THREE.ObjectSpaceNormalMap,
+        vertexColors: true,
         roughness: 1,
         metalness: 0,
       });
@@ -463,61 +474,70 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
   if (failed) return <>{fallback}</>;
 
   const focused = SOUTH_SITES.find((s) => s.id === focus);
-  const pick = (id: string) => {
+  const goTo = (id: string) => {
     onSelect(id);
     setFocus(id);
     api.current?.flyTo(id);
   };
+  // First click flies to a station; clicking the same station again opens its photo card.
+  const pick = (id: string) => {
+    if (photo) {
+      setPhoto(id);
+      goTo(id);
+    } else if (focus === id) setPhoto(id);
+    else goTo(id);
+  };
+  // Soft edges on all four sides (intersection of two linear fades).
+  const fade =
+    "linear-gradient(to right, transparent 0%, #000 13%, #000 87%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 14%, #000 80%, transparent 100%)";
 
   return (
     <figure className="flex flex-col gap-3">
-      <div
-        ref={wrap}
-        className="relative aspect-[4/5] w-full overflow-hidden sm:aspect-[16/8]"
-        style={{
-          maskImage: "radial-gradient(ellipse 72% 78% at 50% 50%, #000 58%, transparent 100%)",
-          WebkitMaskImage: "radial-gradient(ellipse 72% 78% at 50% 50%, #000 58%, transparent 100%)",
-        }}
-      >
-        {!ready && <div className="absolute inset-0 animate-pulse bg-[radial-gradient(ellipse_at_50%_70%,#1c1c20,#000_70%)]" aria-hidden />}
-        <div
-          ref={mount}
-          className="absolute inset-0 cursor-grab active:cursor-grabbing"
-          role="img"
-          aria-label="3D terrain of the lunar south pole from NASA LOLA data, lit by the Sun at the selected time, with Earth in the sky and landing sites pinned. Drag to rotate; click a pin to fly to a site."
-        />
-        {SOUTH_SITES.map((s) => {
-          const sel = s.id === selectedId;
-          return (
-            <button
-              key={s.id}
-              ref={(n) => {
-                pins.current[s.id] = n;
-              }}
-              onClick={() => pick(s.id)}
-              className="group absolute left-0 top-0 opacity-0 transition-opacity"
-              style={{ willChange: "transform" }}
-              aria-label={`Fly to ${s.name}`}
-              title={s.name}
-            >
-              <span className="absolute bottom-0 left-0 flex -translate-x-1/2 flex-col items-center">
-                <span
-                  className={`whitespace-nowrap border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.15em] backdrop-blur ${
-                    sel ? "border-foreground bg-black/80 text-foreground" : "hidden border-line bg-black/70 text-muted group-hover:block"
-                  }`}
-                  style={{ fontFamily: "var(--font-orbitron)" }}
-                >
-                  {s.name}
+      <div ref={wrap} className="relative aspect-[4/5] w-full sm:aspect-[16/8]">
+        <div className="absolute inset-0 overflow-hidden" style={{ maskImage: fade, WebkitMaskImage: fade, maskComposite: "intersect", WebkitMaskComposite: "source-in" }}>
+          {!ready && <div className="absolute inset-0 animate-pulse bg-[radial-gradient(ellipse_at_50%_70%,#1c1c20,#000_70%)]" aria-hidden />}
+          <div
+            ref={mount}
+            className="absolute inset-0 cursor-grab active:cursor-grabbing"
+            role="img"
+            aria-label="3D terrain of the lunar south pole from NASA LOLA data, lit by the Sun at the selected time, with Earth in the sky and landing sites pinned. Drag to rotate; click a pin to fly to a site, click it again for photos."
+          />
+          {SOUTH_SITES.map((s) => {
+            const sel = s.id === selectedId;
+            return (
+              <button
+                key={s.id}
+                ref={(n) => {
+                  pins.current[s.id] = n;
+                }}
+                onClick={() => pick(s.id)}
+                className="group absolute left-0 top-0 opacity-0 transition-opacity"
+                style={{ willChange: "transform" }}
+                aria-label={focus === s.id ? `Open photo and details of ${s.name}` : `Fly to ${s.name}`}
+                title={focus === s.id ? `${s.name}: click for photo` : s.name}
+              >
+                <span className="absolute bottom-0 left-0 flex -translate-x-1/2 flex-col items-center">
+                  <span
+                    className={`whitespace-nowrap border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.15em] backdrop-blur ${
+                      sel ? "border-foreground bg-black/80 text-foreground" : "hidden border-line bg-black/70 text-muted group-hover:block"
+                    }`}
+                    style={{ fontFamily: "var(--font-orbitron)" }}
+                  >
+                    {s.name}
+                    {focus === s.id && <span className="ml-1.5 text-muted normal-case tracking-normal">· photo</span>}
+                  </span>
+                  <svg width={sel ? 22 : 16} height={sel ? 30 : 22} viewBox="0 0 22 30" aria-hidden className="drop-shadow-[0_0_6px_rgba(255,255,255,0.45)]">
+                    <path d="M11 29 C11 29 2 17 2 10.5 A9 9 0 0 1 20 10.5 C20 17 11 29 11 29 Z" fill={sel ? "#ffffff" : "#cfcfd4"} stroke="#000" strokeWidth="1.2" />
+                    <circle cx="11" cy="10.5" r="3.4" fill="#000" />
+                  </svg>
                 </span>
-                <svg width={sel ? 22 : 16} height={sel ? 30 : 22} viewBox="0 0 22 30" aria-hidden className="drop-shadow-[0_0_6px_rgba(255,255,255,0.45)]">
-                  <path d="M11 29 C11 29 2 17 2 10.5 A9 9 0 0 1 20 10.5 C20 17 11 29 11 29 Z" fill={sel ? "#ffffff" : "#cfcfd4"} stroke="#000" strokeWidth="1.2" />
-                  <circle cx="11" cy="10.5" r="3.4" fill="#000" />
-                </svg>
-              </span>
-            </button>
-          );
-        })}
-        <div className="pointer-events-none absolute left-[8%] top-[9%] flex flex-col gap-1">
+              </button>
+            );
+          })}
+        </div>
+
+        {/* overlays sit outside the fade mask so they stay crisp */}
+        <div className="pointer-events-none absolute left-4 top-3 flex flex-col gap-1 sm:left-[6%] sm:top-[6%]">
           <span className="eyebrow !text-[0.6rem] !tracking-[0.35em] text-muted">South pole · 3D terrain</span>
           {focused && (
             <span className="text-sm text-foreground">
@@ -525,9 +545,12 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
             </span>
           )}
         </div>
-        {focused && (
-          <div className="absolute bottom-[10%] right-[8%] flex gap-2">
-            <a href="#sky" className="btn btn-solid !py-1.5 text-xs">
+        {focused && !photo && (
+          <div className="absolute bottom-3 right-4 flex flex-wrap justify-end gap-2 sm:bottom-[6%] sm:right-[6%]">
+            <button className="btn btn-solid !py-1.5 text-xs" onClick={() => setPhoto(focused.id)}>
+              Photo &amp; details
+            </button>
+            <a href="#sky" className="btn !py-1.5 text-xs">
               Sky view ↓
             </a>
             <button
@@ -541,10 +564,134 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
             </button>
           </div>
         )}
+        {photo && (
+          <StationCard
+            id={photo}
+            onPick={(id) => {
+              setPhoto(id);
+              goTo(id);
+            }}
+            onClose={() => setPhoto(null)}
+          />
+        )}
       </div>
       <figcaption className="text-center text-xs text-muted">
-        NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time. Lander models are ~300× real size: panels face the real Sun, dishes point at the real Earth (shown 2.5× larger). Drag to rotate, click a pin to fly in.
+        NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time. Lander models are ~300× real size: panels face the real Sun, dishes point at the real
+        Earth (shown 2.5× larger). Drag to rotate; click a pin to fly in, click it again for photos.
       </figcaption>
     </figure>
   );
 }
+
+/** Photo + plain-language card for a station, with previous/next and a list of all stations. */
+function StationCard({ id, onPick, onClose }: { id: string; onPick: (id: string) => void; onClose: () => void }) {
+  const idx = SOUTH_SITES.findIndex((s) => s.id === id);
+  const site = SOUTH_SITES[idx];
+  const prev = SOUTH_SITES[(idx - 1 + SOUTH_SITES.length) % SOUTH_SITES.length];
+  const next = SOUTH_SITES[(idx + 1) % SOUTH_SITES.length];
+  const [from] = useState(() => alignTime(Date.now(), DAY));
+  const [small] = useState(() => window.matchMedia("(max-width: 639px)").matches);
+  const m = useMemo(() => {
+    const to = from + 14 * DAY;
+    return windowMetrics(sampleSeries(resolvePreset(site), from, to, 30 * 60_000), from, to);
+  }, [site, from]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") onPick(next.id);
+      if (e.key === "ArrowLeft") onPick(prev.id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose, onPick, next.id, prev.id]);
+
+  if (!site) return null;
+  const card = (
+    <div
+      className={
+        small
+          ? "fixed inset-0 z-[60] flex items-stretch justify-center bg-black/90 p-3 backdrop-blur-sm"
+          : "absolute inset-0 z-20 flex items-stretch justify-center bg-black/70 p-6 backdrop-blur-sm"
+      }
+      role="dialog" aria-modal="true" aria-label={`${site.name}: photo and details`}>
+      <div className={`card flex max-h-full w-full max-w-5xl overflow-x-hidden ${small ? "flex-col overflow-y-auto" : "flex-row overflow-hidden"}`}>
+        <div className={`relative shrink-0 bg-black ${small ? "h-64" : "flex-1"}`}>
+          {site.photo ? (
+            // eslint-disable-next-line @next/next/no-img-element -- local, pre-sized WebP; loaded only when the card opens
+            <img key={site.photo.src} src={site.photo.src} alt={site.photo.caption} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+          ) : (
+            <div className="grid h-full place-items-center text-sm text-muted">No photo available</div>
+          )}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-3 text-[11px] leading-snug text-muted">
+            {site.photo?.caption}{" "}
+            {site.photo && (
+              <a href={site.photo.link} target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-foreground">
+                {site.photo.credit}
+              </a>
+            )}
+          </div>
+        </div>
+        <div className={`flex min-w-0 flex-col gap-4 p-5 ${small ? "w-full" : "w-[380px] shrink-0 overflow-y-auto"}`}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="eyebrow !text-[0.58rem] !tracking-[0.3em] text-muted">
+                Station {idx + 1} / {SOUTH_SITES.length}
+              </div>
+              <h3 className="display mt-2 text-xl">{site.name}</h3>
+              <div className="mt-1 text-xs text-muted">{fmtLatLon(site.lat, site.lon)}</div>
+            </div>
+            <button className="btn !px-2.5 !py-1 text-xs" onClick={onClose} aria-label="Close and return to 3D">
+              ✕
+            </button>
+          </div>
+          {site.description && <p className="text-sm leading-relaxed text-muted">{site.description}</p>}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="frame p-3">
+              <div className="text-[11px] text-muted">☀ Sunlight, next 14 days</div>
+              <div className="num mt-1 text-lg">{Math.round(m.illuminationPct)}%</div>
+            </div>
+            <div className="frame p-3">
+              <div className="text-[11px] text-muted">⊕ Earth in view</div>
+              <div className="num mt-1 text-lg">{Math.round(m.commsPct)}%</div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button className="btn flex-1 !py-1.5 text-xs" onClick={() => onPick(prev.id)} title={prev.name}>
+              ← Previous
+            </button>
+            <button className="btn btn-solid flex-1 !py-1.5 text-xs" onClick={() => onPick(next.id)} title={next.name}>
+              Next →
+            </button>
+          </div>
+          <div>
+            <div className="mb-2 text-[11px] text-muted">All stations</div>
+            <div className="flex flex-wrap gap-1.5">
+              {SOUTH_SITES.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => onPick(s.id)}
+                  className={`border px-2 py-1 text-[11px] transition-colors ${s.id === id ? "border-foreground text-foreground" : "border-line text-muted hover:border-muted hover:text-foreground"}`}
+                  aria-current={s.id === id}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-auto flex gap-2 pt-2">
+            <a href="#sky" onClick={onClose} className="btn flex-1 !py-1.5 text-xs">
+              Open sky view ↓
+            </a>
+            <button className="btn flex-1 !py-1.5 text-xs" onClick={onClose}>
+              Back to 3D
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+  // On phones the card covers the whole screen (portal to <body>, above the sticky header).
+  return small ? createPortal(card, document.body) : card;
+}
+

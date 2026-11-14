@@ -7,7 +7,14 @@
   "kind": "south-pole",
   "note": "Point of maximum average illumination on the Shackleton rim (site S in Gläser et al. 2018, 'SR2' in Gläser et al. 2014).",
   "source": "https://ntrs.nasa.gov/citations/20170007365",
-  "sourceLabel": "Gläser et al. 2018, Planet. Space Sci. (NASA NTRS)"
+  "sourceLabel": "Gläser et al. 2018, Planet. Space Sci. (NASA NTRS)",
+  "description": "The rim of Shackleton, a 21 km wide crater almost exactly at the south pole. Spots on the rim see the Sun most of the year, while the crater floor, 4 km lower, has not seen direct sunlight for billions of years and may hold water ice. That contrast is why it is the classic “peak of eternal light” candidate.",
+  "photo": {
+   "src": "/images/sites/shackleton.webp",
+   "caption": "Shackleton crater with its permanently dark interior, rendered from Lunar Reconnaissance Orbiter data.",
+   "credit": "NASA's Scientific Visualization Studio (LRO data)",
+   "link": "https://svs.gsfc.nasa.gov/4716"
+  }
  },
  {
   "id": "connecting-ridge",
@@ -17,7 +24,14 @@
   "kind": "south-pole",
   "note": "Site C1 on the ridge between Shackleton and de Gerlache; Artemis III candidate region.",
   "source": "https://ntrs.nasa.gov/citations/20170007365",
-  "sourceLabel": "Gläser et al. 2018, Planet. Space Sci. (NASA NTRS)"
+  "sourceLabel": "Gläser et al. 2018, Planet. Space Sci. (NASA NTRS)",
+  "description": "A ridge that links Shackleton and de Gerlache craters. Over a 20-year study it is one of the best-lit places near the pole (about 88% of the time) and it is an Artemis III candidate landing region.",
+  "photo": {
+   "src": "/images/sites/connecting-ridge-de-gerlache.webp",
+   "caption": "Artemis III candidate regions Connecting Ridge, Connecting Ridge Extension and de Gerlache Rim 1.",
+   "credit": "NASA's Scientific Visualization Studio (LRO data)",
+   "link": "https://svs.gsfc.nasa.gov/5013"
+  }
  },
  {
   "id": "de-gerlache-rim",
@@ -27,7 +41,14 @@
   "kind": "south-pole",
   "note": "Point C of Bussey et al. 2010; Artemis III candidate region.",
   "source": "https://ipnpr.jpl.nasa.gov/progress_report/42-176/176C.pdf",
-  "sourceLabel": "Bryant 2009, JPL IPN Progress Report 42-176; Bussey et al. 2010"
+  "sourceLabel": "Bryant 2009, JPL IPN Progress Report 42-176; Bussey et al. 2010",
+  "description": "The rim of de Gerlache, a 32 km crater next to Shackleton. It is lit roughly half of the time and sits right beside permanently shadowed ground; two Artemis III candidate regions lie on this rim.",
+  "photo": {
+   "src": "/images/sites/connecting-ridge-de-gerlache.webp",
+   "caption": "de Gerlache Rim 1 (upper left) with Connecting Ridge and its extension, Artemis III candidate regions.",
+   "credit": "NASA's Scientific Visualization Studio (LRO data)",
+   "link": "https://svs.gsfc.nasa.gov/5013"
+  }
  },
  {
   "id": "nobile-rim",
@@ -42,7 +63,14 @@
   "snappedFrom": [
    -84.6,
    58.0
-  ]
+  ],
+  "description": "The rim of Nobile, a 73 km crater about 165 km from the pole. Artemis III regions “Nobile Rim 1” and “Nobile Rim 2” lie here. Being further from the pole, the Sun climbs a little higher, but surrounding hills block parts of the sky.",
+  "photo": {
+   "src": "/images/sites/leibnitz-nobile.webp",
+   "caption": "Artemis III candidate regions Nobile Rim 1 and Leibnitz Beta Plateau.",
+   "credit": "NASA's Scientific Visualization Studio (LRO data)",
+   "link": "https://svs.gsfc.nasa.gov/5013"
+  }
  },
  {
   "id": "malapert-massif",
@@ -57,7 +85,14 @@
   "snappedFrom": [
    -86.04,
    2.7
-  ]
+  ],
+  "description": "A 5 km high mountain about 120 km from the pole. Its upper slopes face Earth almost all the time, which makes it one of the best places near the pole for direct radio contact with home.",
+  "photo": {
+   "src": "/images/sites/haworth-malapert.webp",
+   "caption": "Artemis III candidate regions Malapert Massif (upper right) and Haworth.",
+   "credit": "NASA's Scientific Visualization Studio (LRO data)",
+   "link": "https://svs.gsfc.nasa.gov/5013"
+  }
  },
  {
   "id": "leibnitz-beta",
@@ -72,7 +107,14 @@
   "snappedFrom": [
    -85.44,
    31.85
-  ]
+  ],
+  "description": "A high, fairly flat plateau near Mons Mouton, now part of the “Mons Mouton Plateau” Artemis region. Flat high ground is attractive for landing: fewer slopes and long sunlit periods.",
+  "photo": {
+   "src": "/images/sites/leibnitz-nobile.webp",
+   "caption": "Artemis III candidate regions Leibnitz Beta Plateau (left) and Nobile Rim 1.",
+   "credit": "NASA's Scientific Visualization Studio (LRO data)",
+   "link": "https://svs.gsfc.nasa.gov/5013"
+  }
  },
  {
   "id": "haworth",
@@ -87,7 +129,14 @@
   "snappedFrom": [
    -86.6,
    -3.0
-  ]
+  ],
+  "description": "Haworth is a 51 km crater whose floor is permanently shadowed; the candidate region is on its rim. In this app’s terrain model the Malapert massif hides Earth from this spot, so direct communication is poor.",
+  "photo": {
+   "src": "/images/sites/haworth-malapert.webp",
+   "caption": "Artemis III candidate regions Haworth (lower left) and Malapert Massif.",
+   "credit": "NASA's Scientific Visualization Studio (LRO data)",
+   "link": "https://svs.gsfc.nasa.gov/5013"
+  }
  },
  {
   "id": "mons-mouton",
@@ -102,7 +151,14 @@
   "snappedFrom": [
    -84.3,
    30.6
-  ]
+  ],
+  "description": "A 6 km tall, flat-topped mountain named after NASA mathematician Melba Roy Mouton. It was the planned target of the VIPER rover, and Intuitive Machines’ IM-2 Athena lander touched down nearby in March 2025.",
+  "photo": {
+   "src": "/images/sites/mons-mouton-earthview.webp",
+   "caption": "Mons Mouton with Earth above the horizon, as seen from the lunar south pole.",
+   "credit": "NASA's Scientific Visualization Studio (LRO data)",
+   "link": "https://svs.gsfc.nasa.gov/5074"
+  }
  },
  {
   "id": "shackleton-floor",
@@ -112,7 +168,14 @@
   "kind": "contrast",
   "note": "Crater floor, a permanently shadowed region: contrast case for the sunlit rim 10 km away.",
   "source": "https://www.lroc.asu.edu/images/1105",
-  "sourceLabel": "LROC: Shackleton crater (89.66S, 129.20E)"
+  "sourceLabel": "LROC: Shackleton crater (89.66S, 129.20E)",
+  "description": "The floor of Shackleton crater: a permanently shadowed region that has not seen direct sunlight for billions of years. It is one of the coldest places in the Solar System and a prime target in the search for water ice.",
+  "photo": {
+   "src": "/images/sites/shackleton-floor-shadowcam.webp",
+   "caption": "Inside the permanently shadowed Shackleton crater, imaged by ShadowCam using light reflected off the sunlit rim (about 2 km across).",
+   "credit": "NASA/KARI/Arizona State University",
+   "link": "https://www.shadowcam.asu.edu/images/1284"
+  }
  },
  {
   "id": "im1-odysseus",
@@ -122,7 +185,14 @@
   "kind": "lander",
   "note": "Landed 2024-02-22 near Malapert A.",
   "source": "https://www.lroc.asu.edu/posts/1338",
-  "sourceLabel": "LROC: Odysseus landing site"
+  "sourceLabel": "LROC: Odysseus landing site",
+  "description": "Intuitive Machines’ Odysseus landed here on 22 February 2024, the first US landing on the Moon since Apollo 17. It came down about 1.5 km from its target near Malapert A crater on a ~12° slope and tipped onto its side, but kept working for several days.",
+  "photo": {
+   "src": "/images/sites/odysseus-lro.webp",
+   "caption": "Lunar Reconnaissance Orbiter image of the landing area; the arrow marks the Odysseus lander.",
+   "credit": "NASA/GSFC/Arizona State University",
+   "link": "https://www.nasa.gov/missions/lro/nasas-lro-images-intuitive-machines-odysseus-lander/"
+  }
  },
  {
   "id": "chandrayaan3-vikram",

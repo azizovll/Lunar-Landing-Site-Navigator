@@ -36,7 +36,8 @@ for (const vp of [{ name: "desktop", width: 1440, height: 1000 }, { name: "phone
     await page.goto(base + p, { waitUntil: "networkidle0", timeout: 60000 });
     await new Promise((r) => setTimeout(r, 1500));
     const ms = Date.now() - t0;
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+    // compare with the device width: on mobile emulation innerWidth grows with overflowing content
+    const overflow = await page.evaluate((w) => document.documentElement.scrollWidth > w + 1 || window.innerWidth > w + 1, vp.width);
     const file = `${out}/${vp.name}${p.replace(/[/?&=:]/g, "_") || "_home"}.png`;
     await page.screenshot({ path: file, fullPage: true });
     console.log(`${vp.name} ${p}: ${ms} ms, errors=${errors.length}${overflow ? ", HORIZONTAL OVERFLOW" : ""} -> ${file}`);

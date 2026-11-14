@@ -14,6 +14,9 @@ export interface SiteMeta {
   /** set when a region-level coordinate was snapped to the local DEM crest */
   snapKm?: number;
   snappedFrom?: [number, number];
+  /** plain-language description shown in the station card */
+  description?: string;
+  photo?: { src: string; caption: string; credit: string; link: string };
 }
 
 interface HorizonEntry {

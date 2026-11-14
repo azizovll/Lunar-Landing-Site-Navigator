@@ -125,7 +125,9 @@ export default function AboutPage() {
             A 513×513 heightfield from the NASA LOLA polar DEMs (~1.3 km grid, ±330 km around the pole, relief ×2) on the true lunar curvature, lit by the real Sun with shadows. Earth
             texture: <A href="https://commons.wikimedia.org/wiki/File:Land_ocean_ice_2048.jpg">NASA Blue Marble</A> (public domain), shown 2.5× larger than true size. Fine relief: a ~430 m/px
             normal map from LOLA. Lander models are drawn ~300× real size; their panels face the real Sun and their dishes point at the real Earth. The hero Moon is rendered from the{" "}
-            <A href="https://svs.gsfc.nasa.gov/4720">NASA SVS CGI Moon Kit</A>.
+            <A href="https://svs.gsfc.nasa.gov/4720">NASA SVS CGI Moon Kit</A>. Station photos: NASA SVS
+            (<A href="https://svs.gsfc.nasa.gov/5013">5013</A>, <A href="https://svs.gsfc.nasa.gov/4716">4716</A>, <A href="https://svs.gsfc.nasa.gov/5074">5074</A>), ShadowCam (NASA/KARI/ASU) and
+            LRO (NASA/GSFC/ASU); each card links to its source.
           </Panel>
           <Panel title="Published illumination">
             <A href="https://ntrs.nasa.gov/citations/20170007365">Gläser et al., illumination conditions at the lunar poles (NASA NTRS)</A>: site coordinates and reference values for the terrain
