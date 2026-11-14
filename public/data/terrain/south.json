@@ -12,5 +12,9 @@
   "LDEM_75S_240M"
  ],
  "units": "int16 LE metres above 1737.4 km sphere, row-major (line, sample)",
+ "normalMap": {
+  "size": 1536,
+  "exaggeration": 2.0
+ },
  "earth": "NASA Blue Marble (land, ocean, ice), public domain, via Wikimedia Commons"
 }

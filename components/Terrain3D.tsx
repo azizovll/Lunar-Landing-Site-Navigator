@@ -23,6 +23,8 @@ const R_KM = 1737.4;
 const EXAG = 2;
 const D2R = Math.PI / 180;
 const OVERVIEW = { radius: 300, phi: 1.24 };
+/** lander model height scale (km per model unit): ~1.2 km tall, i.e. ~300x a real lander */
+const LANDER_KM = 1.15;
 const ZOOM = { radius: 55, phi: 1.2 };
 const dir = (v: Vec3): [number, number, number] => {
   const n = Math.hypot(v[0], v[1], v[2]);
@@ -76,10 +78,13 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       el.appendChild(renderer.domElement);
       renderer.domElement.style.touchAction = "pan-y";
 
-      const [meta, buf, earthTex] = await Promise.all([
+      const loader = new THREE.TextureLoader();
+      const [meta, buf, earthTex, normalTex, regolithTex] = await Promise.all([
         fetch("/data/terrain/south.json").then((r) => r.json()),
         fetch("/data/terrain/south.bin").then((r) => r.arrayBuffer()),
-        new THREE.TextureLoader().loadAsync("/data/terrain/earth.jpg"),
+        loader.loadAsync("/data/terrain/earth.jpg"),
+        loader.loadAsync("/data/terrain/normal.jpg"),
+        loader.loadAsync("/data/terrain/regolith.jpg"),
       ]);
       if (disposed) {
         renderer.dispose();
@@ -100,6 +105,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       const stride = small ? 2 : 1;
       const M = Math.floor((N - 1) / stride) + 1;
       const pos = new Float32Array(M * M * 3);
+      const uv = new Float32Array(M * M * 2);
       for (let a = 0; a < M; a++)
         for (let b = 0; b < M; b++) {
           const i = a * stride;
@@ -111,6 +117,8 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
           const lon = Math.atan2(x, y) / D2R;
           const p = surface(lat, lon, heights[i * N + j]);
           pos.set(p, (a * M + b) * 3);
+          uv[(a * M + b) * 2] = j / (N - 1);
+          uv[(a * M + b) * 2 + 1] = 1 - i / (N - 1);
         }
       const idx = new Uint32Array((M - 1) * (M - 1) * 6);
       let k = 0;
@@ -128,9 +136,23 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
       geo.setIndex(new THREE.BufferAttribute(idx, 1));
       geo.computeVertexNormals();
-      const mat = new THREE.MeshStandardMaterial({ color: 0xc4c4c8, roughness: 1, metalness: 0, flatShading: false });
+      // Fine relief: object-space normal map (~430 m/px, from LOLA) lit by the real Sun; regolith grain tiles on top.
+      normalTex.anisotropy = 8;
+      regolithTex.wrapS = regolithTex.wrapT = THREE.RepeatWrapping;
+      regolithTex.repeat.set(72, 72);
+      regolithTex.colorSpace = THREE.SRGBColorSpace;
+      regolithTex.anisotropy = 8;
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0xd2d2d6,
+        map: regolithTex,
+        normalMap: normalTex,
+        normalMapType: THREE.ObjectSpaceNormalMap,
+        roughness: 1,
+        metalness: 0,
+      });
       const ground = new THREE.Mesh(geo, mat);
       ground.receiveShadow = true;
       ground.castShadow = true;
@@ -227,10 +249,80 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       controls.update();
 
       // ---- pin anchors (world positions slightly above the ground)
+      const radial = (lat: number, lon: number) => {
+        const la = lat * D2R;
+        const lo = lon * D2R;
+        return new THREE.Vector3(Math.cos(la) * Math.cos(lo), -Math.sin(la), Math.cos(la) * Math.sin(lo));
+      };
       const anchors = SOUTH_SITES.map((s) => {
         const p = surface(s.lat, s.lon, heightAt(s.lat, s.lon));
-        return { id: s.id, pos: new THREE.Vector3(p[0], p[1], p[2]) };
+        const up = radial(s.lat, s.lon);
+        const ground = new THREE.Vector3(p[0], p[1], p[2]);
+        return { id: s.id, ground, up, pos: ground.clone().addScaledVector(up, LANDER_KM * 1.9) };
       });
+
+      // ---- lander models: built from primitives (no model files to download), shared geometry and
+      // materials, enlarged ~300x so they are visible from orbit. The solar panel turns to the real Sun
+      // and the dish points at the real Earth.
+      const metal = new THREE.MeshStandardMaterial({ color: 0xd8d8dc, roughness: 0.45, metalness: 0.6 });
+      const dark = new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.6, metalness: 0.3 });
+      const cell = new THREE.MeshStandardMaterial({ color: 0x1d2a44, roughness: 0.35, metalness: 0.5, emissive: 0x0a1222 });
+      const gBody = new THREE.CylinderGeometry(0.34, 0.42, 0.5, 8);
+      const gTop = new THREE.CylinderGeometry(0.2, 0.34, 0.18, 8);
+      const gLeg = new THREE.CylinderGeometry(0.025, 0.025, 0.62, 6);
+      const gPad = new THREE.CylinderGeometry(0.09, 0.09, 0.03, 10);
+      const gMast = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 6);
+      const gPanel = new THREE.BoxGeometry(0.9, 0.42, 0.02);
+      const gDish = new THREE.CylinderGeometry(0.2, 0.03, 0.1, 16, 1, true).rotateX(Math.PI / 2);
+      const landers = anchors.map((a) => {
+        const g = new THREE.Group();
+        const add = (geo: import("three").BufferGeometry, m: import("three").Material, x: number, y: number, z: number) => {
+          const mesh = new THREE.Mesh(geo, m);
+          mesh.position.set(x, y, z);
+          mesh.castShadow = true;
+          g.add(mesh);
+          return mesh;
+        };
+        add(gBody, metal, 0, 0.55, 0);
+        add(gTop, dark, 0, 0.89, 0);
+        for (let q = 0; q < 4; q++) {
+          const ang = (q * Math.PI) / 2 + Math.PI / 4;
+          const leg = add(gLeg, metal, Math.cos(ang) * 0.42, 0.28, Math.sin(ang) * 0.42);
+          leg.rotation.set(Math.sin(ang) * 0.45, 0, -Math.cos(ang) * 0.45);
+          add(gPad, dark, Math.cos(ang) * 0.56, 0.015, Math.sin(ang) * 0.56);
+        }
+        const panelPivot = new THREE.Group();
+        panelPivot.position.set(0, 0.98, 0);
+        g.add(panelPivot);
+        const mast = new THREE.Mesh(gMast, metal);
+        mast.position.set(0, 0.25, 0);
+        panelPivot.add(mast);
+        const panel = new THREE.Mesh(gPanel, cell);
+        panel.position.set(0, 0.62, 0);
+        panel.castShadow = true;
+        panelPivot.add(panel);
+        const dish = add(gDish, metal, 0.3, 1.02, 0);
+        g.scale.setScalar(LANDER_KM);
+        g.position.copy(a.ground);
+        g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), a.up);
+        scene.add(g);
+        return { g, panelPivot, dish };
+      });
+      const tmpQ = new THREE.Quaternion();
+      const tmpV = new THREE.Vector3();
+      const aimLanders = (sunDir: [number, number, number], earthDir: [number, number, number]) => {
+        for (const l of landers) {
+          // panel: rotate about the local vertical to face the Sun's azimuth (panels stand vertical at the pole)
+          tmpQ.copy(l.g.quaternion).invert();
+          tmpV.set(sunDir[0], sunDir[1], sunDir[2]).applyQuaternion(tmpQ);
+          l.panelPivot.rotation.y = Math.atan2(tmpV.x, tmpV.z);
+          // dish: point at Earth (lookAt works in world space)
+          l.g.updateMatrixWorld();
+          l.dish.getWorldPosition(tmpV);
+          l.dish.lookAt(tmpV.x + earthDir[0] * 100, tmpV.y + earthDir[1] * 100, tmpV.z + earthDir[2] * 100);
+        }
+      };
+      aimLanders(setTime(timeMs).s, earthDir);
 
       // ---- fly-to
       let flight: { t0: number; dur: number; fromT: import("three").Vector3; toT: import("three").Vector3; fromR: number; toR: number; fromPhi: number; toPhi: number } | null = null;
@@ -326,7 +418,13 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
       };
       loop();
 
-      api.current = { setTime: (t) => void setTime(t), flyTo };
+      api.current = {
+        setTime: (t) => {
+          const { s: sd, e: ed } = setTime(t);
+          aimLanders(sd, ed);
+        },
+        flyTo,
+      };
       setReady(true);
 
       cleanup = () => {
@@ -339,6 +437,10 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         earth.geometry.dispose();
         (earth.material as import("three").Material).dispose();
         earthTex.dispose();
+        normalTex.dispose();
+        regolithTex.dispose();
+        [metal, dark, cell].forEach((m) => m.dispose());
+        [gBody, gTop, gLeg, gPad, gMast, gPanel, gDish].forEach((x) => x.dispose());
         glowTex.dispose();
         sun.shadow.map?.dispose();
         renderer.dispose();
@@ -441,7 +543,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback }: Props) {
         )}
       </div>
       <figcaption className="text-center text-xs text-muted">
-        NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time; Earth shown at its real direction (2.5× larger). Drag to rotate, click a pin to fly in.
+        NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time. Lander models are ~300× real size: panels face the real Sun, dishes point at the real Earth (shown 2.5× larger). Drag to rotate, click a pin to fly in.
       </figcaption>
     </figure>
   );

@@ -25,7 +25,7 @@ A web app that runs entirely in the browser:
 - **Calendar:** a 12-month heatmap of daily light and comms, plus the best 14-day mission starts.
 - **Validation:** a live comparison with NASA JPL Horizons, and a terrain check against a published illumination study.
 - **Simple / Pro mode:** Simple (default) turns the numbers into plain language for the public: a one-sentence verdict, tiles rated in words, “Sun right now / Earth right now” sentences and a day-by-day strip. Pro shows every number, azimuths, CSV export and shareable URLs for planners.
-- **3D terrain on the home page:** an interactive **3D view of the south-polar terrain** (three.js): NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time with long shadows, Earth in the sky at its real direction (phase from the same Sun), and pins for every site; clicking a pin flies the camera there. Edges fade into the background; tilt springs back after a drag.
+- **3D terrain on the home page:** an interactive **3D view of the south-polar terrain** (three.js): NASA LOLA relief (×2) on the true lunar curvature, lit by the real Sun at the selected time with long shadows, Earth in the sky at its real direction (phase from the same Sun), and pins for every site; clicking a pin flies the camera there. Fine relief comes from a ~430 m/px LOLA normal map lit by the same Sun; lander models (built from primitives, no model files, ~300× real size) turn their solar panels to the real Sun and point their dishes at the real Earth. Edges fade into the background; tilt springs back after a drag. A decorative Moon in the hero is rendered offline from the NASA LROC mosaic (68 KB WebP).
 - **Custom points:** click the polar map or type coordinates, on the Site, Compare and Calendar screens. An approximate terrain horizon is computed in a Web Worker in about a second.
 - **Separate verdicts:** each site shows a Power verdict and a Comms verdict next to the overall one, because near the pole a perfectly lit site can still have poor direct-to-Earth comms.
 
@@ -52,7 +52,7 @@ Demo story (30 s): *“We plan Shackleton rim and Connecting Ridge for 1 Decembe
 - **JPL Horizons API**: reference Sun and Earth az/el from lunar surface points (saved fixtures and live re-check).
 - **NASA NTRS: Gläser et al.**, *Illumination conditions at the lunar poles* (20170007365): site coordinates and published illumination for validation.
 - **NASA SVS Artemis III candidate regions**, **LROC** site pages, and the **IAU/USGS Gazetteer**: site locations.
-- **NASA Blue Marble** (land, ocean, ice; public domain, via Wikimedia Commons): texture of the small Earth in the 3D view. The 3D terrain itself is a 513×513 LOLA heightfield (~1.3 km grid, ±330 km around the pole).
+- **NASA Blue Marble** (land, ocean, ice; public domain, via Wikimedia Commons): texture of the small Earth in the 3D view. **NASA SVS CGI Moon Kit** (LROC mosaic): the decorative Moon image in the hero. The 3D terrain itself is a 513×513 LOLA heightfield (~1.3 km grid, ±330 km around the pole).
 
 ## 5. The math
 

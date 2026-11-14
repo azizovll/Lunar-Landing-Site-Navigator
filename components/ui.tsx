@@ -34,7 +34,7 @@ export function SectionTitle({ eyebrow, title, sub, center = false, as: Tag = "h
 export function StatBox({ value, label, sub, tone }: { value: React.ReactNode; label: React.ReactNode; sub?: React.ReactNode; tone?: "good" | "poor" }) {
   return (
     <div className="frame flex min-w-0 flex-col justify-between gap-3 bg-panel/60 p-3 sm:p-5">
-      <div className={`num break-words text-xl sm:text-4xl ${tone === "good" ? "text-good" : tone === "poor" ? "text-poor" : ""}`}>{value}</div>
+      <div className={`num whitespace-nowrap text-xl sm:text-3xl xl:text-4xl ${tone === "good" ? "text-good" : tone === "poor" ? "text-poor" : ""}`}>{value}</div>
       <div>
         <div className="text-sm text-foreground">{label}</div>
         {sub && <div className="mt-0.5 text-xs text-muted">{sub}</div>}

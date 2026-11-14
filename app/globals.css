@@ -59,18 +59,15 @@ body {
   letter-spacing: 0.01em;
 }
 
-/* Soft top glow, like a planet limb behind the page. */
+/* Soft top glow, like a planet limb behind the page. Negative z-index keeps it under all content
+   without touching the children's own positioning (the sticky header needs position: sticky). */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   background: radial-gradient(1200px 520px at 70% -12%, rgba(255, 255, 255, 0.06), transparent 70%);
-  z-index: 0;
-}
-body > * {
-  position: relative;
-  z-index: 1;
+  z-index: -1;
 }
 
 svg text {

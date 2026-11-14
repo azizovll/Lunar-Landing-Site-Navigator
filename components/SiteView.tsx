@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { DAY, DEFAULT_SETTINGS, HOUR, alignTime, nextEvents, sampleAt, sampleSeries, windowMetrics, type Settings } from "@/lib/metrics";
 import { downloadCsv, fmtRelative, fmtUtc, parseUtc, toUtcInput } from "@/lib/format";
 import { DEFAULT_SITE_ID, SITES, fmtLatLon } from "@/lib/sites";
@@ -125,8 +126,16 @@ export function SiteView() {
   return (
     <div className="flex flex-col gap-16 sm:gap-24">
       {/* ---------- hero ---------- */}
-      <section className="flex flex-col gap-8">
-        <div className="grid items-end gap-8 lg:grid-cols-[1.25fr_1fr]">
+      <section className="relative flex flex-col gap-8">
+        {/* decorative Moon (rendered from the NASA LROC mosaic, south pole toward the viewer) */}
+        <div
+          className="pointer-events-none absolute -right-[22%] -top-10 z-0 w-[78%] max-w-[620px] opacity-45 sm:-right-[6%] sm:-top-16 sm:w-[46%] sm:opacity-80"
+          style={{ maskImage: "linear-gradient(to bottom, #000 45%, transparent 92%)", WebkitMaskImage: "linear-gradient(to bottom, #000 45%, transparent 92%)" }}
+          aria-hidden
+        >
+          <Image src="/images/moon-hero.webp" alt="" width={900} height={900} priority sizes="(min-width: 640px) 48vw, 78vw" className="h-auto w-full" />
+        </div>
+        <div className="relative z-10 grid items-end gap-8 lg:grid-cols-[1.25fr_1fr]">
         <div className="flex flex-col gap-7">
           <Eyebrow>Lunar south pole</Eyebrow>
           <h1 className="display text-4xl sm:text-6xl">Find light and signal on the Moon</h1>
@@ -168,7 +177,7 @@ export function SiteView() {
             <StatBox value="1440" label="Terrain rays" sub="per site, 200 km" />
           </div>
         </div>
-        <div className="w-full">
+        <div className="relative z-10 w-full">
           <Terrain3D
             selectedId={customPoint ? null : siteId}
             timeMs={clampedT}
