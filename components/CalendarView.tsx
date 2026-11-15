@@ -150,7 +150,8 @@ export function CalendarView() {
                       ))}
                       {m.days.map((d) => {
                         const v = d[row];
-                        const color = row === "lit" ? `rgba(226,189,106,${0.06 + 0.94 * v})` : `rgba(126,174,224,${0.06 + 0.94 * v})`;
+                        const a = (0.06 + 0.94 * v).toFixed(2);
+                        const color = row === "lit" ? `rgba(226,189,106,${a})` : `rgba(126,174,224,${a})`;
                         return (
                           <td key={d.day} className="p-0">
                             <Link

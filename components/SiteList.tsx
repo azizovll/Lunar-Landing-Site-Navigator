@@ -78,7 +78,7 @@ function Bar({ value, color, label }: { value: number; color: string; label: str
   return (
     <div className="flex items-center gap-1.5 text-xs text-muted">
       <div className="h-[3px] flex-1 overflow-hidden bg-panel3">
-        <div className="h-full" style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: color }} />
+        <div className="h-full" style={{ width: `${Math.max(0, Math.min(100, value)).toFixed(1)}%`, background: color }} />
       </div>
       <span className="tabular w-14 text-right">
         {value.toFixed(0)}% {label}

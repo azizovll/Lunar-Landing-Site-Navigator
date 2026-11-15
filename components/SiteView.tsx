@@ -8,6 +8,7 @@ import { downloadCsv, fmtRelative, fmtUtc, parseUtc, toUtcInput } from "@/lib/fo
 import { SITES, fmtLatLon, resolvePreset } from "@/lib/sites";
 import { rankSites } from "@/lib/rescue";
 import { SafeBoundary } from "./SafeBoundary";
+import { RocketIntro } from "./RocketIntro";
 import { useUrlState } from "@/lib/useUrlState";
 import { useResolvedSite } from "@/lib/useResolvedSite";
 import { Lens, Panorama } from "./Panorama";
@@ -27,7 +28,7 @@ import { NeighborsPanel } from "./NeighborsPanel";
 import { PoleExplainer } from "./PoleExplainer";
 import { MoonVsEarth } from "./MoonVsEarth";
 import { PrintButton, PrintHeader } from "./PrintReport";
-import { Eyebrow, StatBox } from "./ui";
+import { Eyebrow, Pulse, StatBox } from "./ui";
 
 const TIMELINE_DAYS = 30;
 const SERIES_DAYS = 45; // extra 15 days so countdowns near the end of the timeline still resolve
@@ -197,9 +198,17 @@ export function SiteView() {
         >
           <Image src="/images/moon-hero.webp" alt="" width={900} height={900} priority sizes="(min-width: 640px) 48vw, 78vw" className="h-auto w-full" />
         </div>
+        {/* intro: rocket lifting off the Moon (same box as the Moon, but unmasked so it can fly out of it) */}
+        <div className="pointer-events-none absolute -right-[6%] -top-16 z-[5] hidden aspect-square w-[46%] max-w-[620px] sm:block">
+          <RocketIntro />
+        </div>
         <div className="relative z-10 grid items-end gap-8 lg:grid-cols-[1.25fr_1fr]">
         <div className="flex flex-col gap-7">
-          <Eyebrow>Lunar south pole</Eyebrow>
+          {/* the pulse ornament here is drawn by the rocket intro (RocketIntro), then stays */}
+          <div className="flex items-center gap-4 text-muted">
+            <Pulse className="hero-pulse" />
+            <span className="eyebrow">Lunar south pole</span>
+          </div>
           <h1 className="display text-4xl sm:text-6xl">Find light and signal on the Moon</h1>
           <p className="max-w-xl text-base leading-relaxed text-muted">
             Compare landing sites and dates near the lunar south pole. See the Sun and Earth over the real LOLA terrain horizon, with solar-power and direct-to-Earth
@@ -391,7 +400,8 @@ export function SiteView() {
                   />
                   <div className="text-right">
                     <div className="num text-sm">{fmtUtc(clampedT)}</div>
-                    <div className="text-xs text-muted">{Math.abs(clampedT - loadTime) < 60_000 ? "now" : fmtRelative(clampedT, loadTime).replace("in ", "now + ").replace(" ago", " before now")}</div>
+                    {/* depends on the clock, which differs between server render and browser by a moment */}
+                    <div className="text-xs text-muted" suppressHydrationWarning>{Math.abs(clampedT - loadTime) < 60_000 ? "now" : fmtRelative(clampedT, loadTime).replace("in ", "now + ").replace(" ago", " before now")}</div>
                   </div>
                 </div>
 

@@ -113,7 +113,7 @@ export function SimpleSummary({ siteName, now, events, metrics, windowDays, marg
                         <button
                           onClick={() => onSeek(d.day + DAY / 2)}
                           className={`print-keep block h-6 w-6 ${i === cursorDay ? "outline outline-1 outline-foreground" : ""}`}
-                          style={{ background: `rgba(${rgb},${0.06 + 0.94 * v})` }}
+                          style={{ background: `rgba(${rgb},${(0.06 + 0.94 * v).toFixed(2)})` }}
                           title={`${new Date(d.day).toISOString().slice(0, 10)}: ${row === "sun" ? "sunlight" : "Earth in view"} ${Math.round(v * 100)}% of the day`}
                           aria-label={`${new Date(d.day).toISOString().slice(0, 10)} ${row} ${Math.round(v * 100)} percent`}
                         />
