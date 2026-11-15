@@ -18,7 +18,7 @@ import { SectionTitle } from "./ui";
 
 const KEYS = ["a", "b", "c", "d"] as const;
 const MAX_DELAY = 60;
-const DEFAULT_COLS = ["shackleton-rim", "connecting-ridge", "malapert-massif", "apollo-11"];
+const DEFAULT_COLS = ["shackleton-rim", "connecting-ridge", "malapert-massif", "mons-mouton"];
 
 interface Col {
   key: string;

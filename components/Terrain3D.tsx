@@ -964,6 +964,14 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback, custom = nul
           pin.style.opacity = onScreen ? (hidden ? "0.35" : "1") : "0";
           pin.style.pointerEvents = onScreen ? "auto" : "none";
           pin.style.transform = `translate(${((tmp.x + 1) / 2) * w}px, ${((1 - tmp.y) / 2) * h}px)`;
+          // keep the selected station's name inside the scene (it is centred on the pin)
+          const label = pin.querySelector<HTMLElement>("[data-pin-label]");
+          if (label && label.offsetWidth) {
+            const px = ((tmp.x + 1) / 2) * w;
+            const half = label.offsetWidth / 2;
+            const shift = Math.min(0, w - 8 - (px + half)) + Math.max(0, 8 - (px - half));
+            label.style.transform = shift ? `translateX(${shift}px)` : "";
+          }
           if (a.id === hoveredRef.current && thumb.current) {
             const px = ((tmp.x + 1) / 2) * w;
             const py = ((1 - tmp.y) / 2) * h;
@@ -1380,6 +1388,7 @@ export function Terrain3D({ selectedId, timeMs, onSelect, fallback, custom = nul
                       sel && hovered !== s.id ? "border-foreground bg-black/80 text-foreground" : "hidden"
                     }`}
                     style={{ fontFamily: "var(--font-orbitron)" }}
+                    data-pin-label
                   >
                     {s.name} · {scores[s.id]}
                   </span>

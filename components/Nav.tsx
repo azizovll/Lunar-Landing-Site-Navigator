@@ -35,7 +35,10 @@ export function Nav() {
           <Logo />
           <span className="display text-sm tracking-[0.18em] sm:text-base">Lunar Site Navigator</span>
         </Link>
-        <nav className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto lg:order-none lg:mx-auto lg:w-auto lg:gap-6" aria-label="Main">
+        <nav
+          className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,#000_88%,transparent)] lg:order-none lg:mx-auto lg:w-auto lg:gap-6 lg:pr-0 lg:[mask-image:none]"
+          aria-label="Main"
+        >
           {LINKS.map((l) => {
             const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
             return (

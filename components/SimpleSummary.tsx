@@ -20,6 +20,22 @@ interface Props {
   onSeek: (t: number) => void;
 }
 
+/** The one-sentence answer and verdict. On phones the page shows it above the sky chart. */
+export function SummaryHeadline({ siteName, metrics, windowDays, className = "" }: { siteName: string; metrics: WindowMetrics; windowDays: number; className?: string }) {
+  const sr = sunRating(metrics);
+  const cr = commsRating(metrics);
+  return (
+    <section className={`card flex-col gap-3 p-6 ${className || "flex"}`}>
+      <div className="eyebrow !text-[0.62rem] !tracking-[0.3em] text-muted">In short · next {windowDays} days</div>
+      <p className="text-lg leading-relaxed sm:text-xl">{headline(metrics)}</p>
+      <p className="text-sm text-muted">
+        Verdict for {siteName}: power is <b style={{ color: RATING_COLOR[sr] }}>{RATING_WORD[sr].toLowerCase()}</b>, staying in touch with Earth is{" "}
+        <b style={{ color: RATING_COLOR[cr] }}>{RATING_WORD[cr].toLowerCase()}</b>.
+      </p>
+    </section>
+  );
+}
+
 /** Simple-mode summary: one sentence, four rated tiles, "right now" in words and a day strip. */
 export function SimpleSummary({ siteName, now, events, metrics, windowDays, marginDeg, series, start, days, t, onSeek }: Props) {
   const sr = sunRating(metrics);
@@ -40,15 +56,8 @@ export function SimpleSummary({ siteName, now, events, metrics, windowDays, marg
 
   return (
     <div className="flex flex-col gap-4">
-      {/* headline */}
-      <section className="card flex flex-col gap-3 p-6">
-        <div className="eyebrow !text-[0.62rem] !tracking-[0.3em] text-muted">In short · next {windowDays} days</div>
-        <p className="text-lg leading-relaxed sm:text-xl">{headline(metrics)}</p>
-        <p className="text-sm text-muted">
-          Verdict for {siteName}: power is <b style={{ color: RATING_COLOR[sr] }}>{RATING_WORD[sr].toLowerCase()}</b>, staying in touch with Earth is{" "}
-          <b style={{ color: RATING_COLOR[cr] }}>{RATING_WORD[cr].toLowerCase()}</b>.
-        </p>
-      </section>
+      {/* headline (on phones it is shown above the sky chart instead) */}
+      <SummaryHeadline siteName={siteName} metrics={metrics} windowDays={windowDays} className="hidden sm:flex" />
 
       {/* four tiles */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

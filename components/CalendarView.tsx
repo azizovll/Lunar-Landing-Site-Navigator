@@ -110,8 +110,8 @@ export function CalendarView() {
           </select>
           {custom && <CalendarCustomInputs key={`${custom.lat},${custom.lon}`} value={custom} onChange={(ll) => set({ lat: ll.lat, lon: ll.lon })} />}
           <label className="flex items-center gap-1">
-            <span className="text-muted">margin</span>
-            <input type="number" min={0} max={10} step={0.5} value={margin} onChange={(e) => set({ margin: e.target.value })} className="w-16" />°
+            <span className="text-muted" title="How far Earth must clear the hills for a usable radio link">Earth margin (°)</span>
+            <input type="number" min={0} max={10} step={0.5} value={margin} onChange={(e) => set({ margin: e.target.value })} className="w-16" />
           </label>
         </div>
       </header>

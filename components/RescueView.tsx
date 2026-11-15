@@ -131,6 +131,14 @@ export function RescueView() {
             {SOUTH.length} sites × {2 * flex + 1} landing days around {toUtcInput(newStart, false)}, {windowDays}-day mission
           </span>
         </div>
+        {flex < 14 && top.some((c) => Math.abs(Math.round((c.start - newStart) / DAY)) === flex) && (
+          <p className="text-sm text-muted">
+            Some best days sit at the edge of the ±{flex}-day search, so even better days may lie just outside.{" "}
+            <button onClick={() => set({ flex: 14 })} className="text-foreground underline underline-offset-4 hover:text-sun">
+              Search ±14 days
+            </button>
+          </p>
+        )}
         <div className="grid gap-4 lg:grid-cols-3">
           {top.map((c, i) => (
             <AltCard
@@ -143,8 +151,6 @@ export function RescueView() {
               planId={planId}
               simple={simple}
               windowDays={windowDays}
-              atEdge={Math.abs(Math.round((c.start - newStart) / DAY)) === flex && flex < 14}
-              onWiden={() => set({ flex: 14 })}
               nb={nbOf(c.siteId)}
             />
           ))}
@@ -244,9 +250,7 @@ function AltCard({
   planId,
   simple,
   windowDays,
-  atEdge,
   nb,
-  onWiden,
 }: {
   rank: number;
   c: Candidate;
@@ -256,9 +260,7 @@ function AltCard({
   planId: string;
   simple: boolean;
   windowDays: number;
-  atEdge: boolean;
   nb: SiteNeighbors;
-  onWiden: () => void;
 }) {
   const gain = c.score - plan.score;
   const m: WindowMetrics = c.metrics;
@@ -277,11 +279,6 @@ function AltCard({
           Land {date} <span className="text-xs">{dayShift(c.start, newStart)}</span>
           {c.siteId === planId && <span className="ml-1.5 text-xs">· same site, different day</span>}
         </div>
-        {atEdge && (
-          <button onClick={onWiden} className="mt-1 text-left text-xs text-marginal underline underline-offset-4">
-            Best day is at the edge of the search window: search ±14 days
-          </button>
-        )}
       </div>
       <p className="text-sm leading-relaxed">{why(m)}.</p>
       <NeighborTags nb={nb} />

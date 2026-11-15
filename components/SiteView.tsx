@@ -20,7 +20,7 @@ import { Dot, SiteList } from "./SiteList";
 import { LIGHT_COLOR, light, why } from "@/lib/score";
 import { ExpertOnly, Tip, useMode } from "./ModeProvider";
 import { CopyLinkButton } from "./CopyLinkButton";
-import { SimpleSummary } from "./SimpleSummary";
+import { SimpleSummary, SummaryHeadline } from "./SimpleSummary";
 import { BatteryPanel } from "./BatteryPanel";
 import { LandingPrecision } from "./LandingPrecision";
 import { NeighborsPanel } from "./NeighborsPanel";
@@ -143,6 +143,46 @@ export function SiteView() {
   };
 
   const customPoint = customLat !== null && customLon !== null ? { lat: customLat, lon: customLon } : null;
+  const bestCard = (
+            <div className="card flex flex-col gap-3 p-5" style={{ borderTop: `1px solid ${LIGHT_COLOR[light(best.score)]}` }}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="eyebrow !text-[0.6rem] !tracking-[0.3em] text-muted">Best site right now</span>
+                <span className="text-xs text-muted">
+                  {settings.windowDays}-day mission from {fmtUtc(today, false)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="display text-xl">{siteName(best.siteId)}</div>
+                  <p className="mt-1 text-sm leading-relaxed text-muted">{why(best.metrics)}</p>
+                </div>
+                <ScoreBadge m={best.metrics} />
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
+                <button
+                  className="btn !py-1 text-xs"
+                  onClick={() => {
+                    selectSite(best.siteId);
+                    document.getElementById("sky")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  {siteId === best.siteId && customLat === null ? "See why ↓" : "Show this site"}
+                </button>
+                <span>
+                  Next:{" "}
+                  {ranking.slice(1, 3).map((r, i) => (
+                    <span key={r.siteId}>
+                      {i ? ", " : ""}
+                      <button className="underline underline-offset-4 hover:text-foreground" onClick={() => selectSite(r.siteId)}>
+                        {siteName(r.siteId)}
+                      </button>{" "}
+                      <span className="num">{r.score}</span>
+                    </span>
+                  ))}
+                </span>
+              </div>
+            </div>
+  );
   const map2d = <PolarMap variant="planet" selectedId={siteId} custom={customPoint} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />;
 
   return (
@@ -165,6 +205,7 @@ export function SiteView() {
             Compare landing sites and dates near the lunar south pole. See the Sun and Earth over the real LOLA terrain horizon, with solar-power and direct-to-Earth
             communication windows, computed in your browser.
           </p>
+          <div className="lg:hidden">{bestCard}</div>
           <div className="grid gap-3 sm:grid-cols-3">
             <EntryCard
               kicker="Learning"
@@ -208,44 +249,7 @@ export function SiteView() {
           </p>
         </div>
           <div className="flex flex-col gap-3">
-            <div className="card flex flex-col gap-3 p-5" style={{ borderTop: `1px solid ${LIGHT_COLOR[light(best.score)]}` }}>
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="eyebrow !text-[0.6rem] !tracking-[0.3em] text-muted">Best site right now</span>
-                <span className="text-xs text-muted">
-                  {settings.windowDays}-day mission from {fmtUtc(today, false)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="display text-xl">{siteName(best.siteId)}</div>
-                  <p className="mt-1 text-sm leading-relaxed text-muted">{why(best.metrics)}</p>
-                </div>
-                <ScoreBadge m={best.metrics} />
-              </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
-                <button
-                  className="btn !py-1 text-xs"
-                  onClick={() => {
-                    selectSite(best.siteId);
-                    document.getElementById("sky")?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                >
-                  Show this site
-                </button>
-                <span>
-                  Next:{" "}
-                  {ranking.slice(1, 3).map((r, i) => (
-                    <span key={r.siteId}>
-                      {i ? ", " : ""}
-                      <button className="underline underline-offset-4 hover:text-foreground" onClick={() => selectSite(r.siteId)}>
-                        {siteName(r.siteId)}
-                      </button>{" "}
-                      <span className="num">{r.score}</span>
-                    </span>
-                  ))}
-                </span>
-              </div>
-            </div>
+            <div className="hidden lg:block">{bestCard}</div>
             <div className="grid grid-cols-3 gap-3">
             <StatBox value="0.004°" label="Max error" sub="vs JPL Horizons" />
             <StatBox value={SITES.length} label="Sites" sub="with sources" />
@@ -284,7 +288,7 @@ export function SiteView() {
             )}
             <p className="text-sm text-muted">
               {site ? fmtLatLon(site.lat, site.lon) : ""}
-              {site?.terrain === "lola" && ` · terrain ${Math.round(site.heightM ?? 0)} m · horizon from ${site.dem}`}
+              {site?.terrain === "lola" && expert && ` · terrain ${Math.round(site.heightM ?? 0)} m · horizon from ${site.dem}`}
               {site?.terrain === "approx" && (
                 <span className="ml-1 border border-marginal/40 px-1.5 text-marginal" title="Tested on 4 preset sites: horizon RMS error 0.6–1.0°, up to 3°; annual illumination and comms within 7 percentage points of the precise masks.">
                   lower accuracy: approximate horizon from 480 m/px DEM (illumination/comms ±7 pp)
@@ -300,7 +304,7 @@ export function SiteView() {
                 </>
               )}
             </p>
-            {site?.meta?.note && (
+            {site?.meta?.note && expert && (
               <p className="max-w-3xl text-sm text-muted">
                 {site.meta.snapKm && (
                   <span className="mr-2 border border-line px-1.5 text-foreground" title="Region-level coordinate moved to the highest DEM point nearby: results describe the best local spot, not the whole region.">
@@ -309,6 +313,17 @@ export function SiteView() {
                 )}
                 {site.meta.note}
               </p>
+            )}
+            {site && (
+              <nav className="no-print flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted" aria-label="On this site">
+                <span className="text-faint">Jump to:</span>
+                <a href="#sky-summary" className="underline decoration-line underline-offset-4 hover:text-foreground hover:decoration-foreground">Summary</a>
+                <a href="#neighbours" className="underline decoration-line underline-offset-4 hover:text-foreground hover:decoration-foreground">Who else is here</a>
+                {site.terrain === "lola" && (
+                  <a href="#precision" className="underline decoration-line underline-offset-4 hover:text-foreground hover:decoration-foreground">Landing precision</a>
+                )}
+                <a href="#battery" className="underline decoration-line underline-offset-4 hover:text-foreground hover:decoration-foreground">Battery</a>
+              </nav>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -334,7 +349,7 @@ export function SiteView() {
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[300px_1fr] print:block">
+        <div id="sky-summary" className="grid scroll-mt-24 gap-4 lg:grid-cols-[300px_1fr] print:block">
           <aside className="no-print order-2 flex flex-col gap-4 lg:order-none">
             <PolarMap selectedId={siteId} custom={customPoint} onSelect={selectSite} onCustom={(lat, lon) => set({ lat, lon, site: null })} />
             <SiteList selectedId={customLat !== null ? null : siteId} from={windowFrom} settings={settings} onSelect={selectSite} />
@@ -346,6 +361,7 @@ export function SiteView() {
               <div className="card grid h-72 place-items-center text-muted">Computing terrain horizon in the browser…</div>
             ) : (
               <>
+                {mode === "simple" && <SummaryHeadline siteName={site.name} metrics={metrics} windowDays={settings.windowDays} className="flex sm:hidden" />}
                 <Panorama horizon={site.horizon} now={now} sunTrack={sunTrack} earthTrack={earthTrack} expert={expert} marginDeg={settings.marginDeg} />
 
                 {/* scrubber */}
@@ -441,9 +457,17 @@ export function SiteView() {
                 </ExpertOnly>
                   </>
                 )}
-                <NeighborsPanel siteId={site.id === "custom" ? null : site.id} lat={site.lat} lon={site.lon} simple={mode === "simple"} />
-                {site.terrain === "lola" && <LandingPrecision siteId={site.id} from={windowFrom} to={windowTo} settings={settings} centre={metrics} simple={mode === "simple"} />}
-                <BatteryPanel series={series} from={windowFrom} to={windowTo} settings={settings} t={clampedT} simple={mode === "simple"} />
+                <div id="neighbours" className="scroll-mt-24">
+                  <NeighborsPanel siteId={site.id === "custom" ? null : site.id} lat={site.lat} lon={site.lon} simple={mode === "simple"} />
+                </div>
+                {site.terrain === "lola" && (
+                  <Fold id="precision" simple={mode === "simple"} title="Landing precision" hint="What if the lander misses the target by 250 m?">
+                    <LandingPrecision siteId={site.id} from={windowFrom} to={windowTo} settings={settings} centre={metrics} simple={mode === "simple"} />
+                  </Fold>
+                )}
+                <Fold id="battery" simple={mode === "simple"} title="Battery" hint="Would a reference lander keep its power through the dark spells?">
+                  <BatteryPanel series={series} from={windowFrom} to={windowTo} settings={settings} t={clampedT} simple={mode === "simple"} />
+                </Fold>
               </>
             )}
           </div>
@@ -517,5 +541,42 @@ function EntryCard(p: { kicker: string; title: string; text: string; cta: string
         )}
       </div>
     </div>
+  );
+}
+
+/** In Simple mode, a long panel starts folded behind a one-line question; in Pro mode it is always open. */
+function Fold({ id, simple, title, hint, children }: { id: string; simple: boolean; title: string; hint: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  // the PDF report must include folded panels
+  useEffect(() => {
+    const open = () => ref.current && (ref.current.open = true);
+    // the anchor links under the site name open the panel they point to
+    const onHash = () => window.location.hash === `#${id}` && open();
+    window.addEventListener("beforeprint", open);
+    window.addEventListener("hashchange", onHash);
+    return () => {
+      window.removeEventListener("beforeprint", open);
+      window.removeEventListener("hashchange", onHash);
+    };
+  }, [id]);
+  if (!simple)
+    return (
+      <div id={id} className="scroll-mt-24">
+        {children}
+      </div>
+    );
+  return (
+    <details ref={ref} id={id} className="group scroll-mt-24">
+      <summary className="card flex cursor-pointer list-none items-center justify-between gap-3 p-5 hover:bg-panel2 group-open:mb-3 [&::-webkit-details-marker]:hidden">
+        <span>
+          <span className="display text-xs tracking-[0.3em]">{title}</span>
+          <span className="mt-1 block text-sm text-muted">{hint}</span>
+        </span>
+        <span className="text-muted transition-transform group-open:rotate-180" aria-hidden>
+          ▾
+        </span>
+      </summary>
+      {children}
+    </details>
   );
 }
