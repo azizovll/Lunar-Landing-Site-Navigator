@@ -47,3 +47,7 @@ pipeline/cache/
 
 # python
 __pycache__/
+
+# demo video output
+/demo.mp4
+/.demo-clips/
