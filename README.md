@@ -39,6 +39,16 @@ The home page opens with an interactive **3D view of the south-polar terrain** (
   - Shackleton rim: **84.3%** (published 82.1%)
   - Shackleton floor (a permanently shadowed region): 0%.
 
+## Use of AI (Super Intelligence) tools
+
+Disclosed as required by the NASA Space Apps Challenge rules.
+
+- **Code and documentation:** most of the source code, the Python terrain pipeline (`pipeline/`), the tests and the documentation were generated with an AI coding assistant, **Claude Code by Anthropic**, under a specification written by the team. The team chose the problem, the methods and the data sources and reviewed every result.
+- **Data:** no data is AI-generated. All terrain comes from NASA LRO LOLA, all reference positions from NASA JPL Horizons; results are checked against JPL Horizons and a published NASA study by automated tests, not by AI.
+- **Images and video:** none are AI-generated. Screenshots and the demo video are recordings of the app; site photos are NASA/partner imagery with credits.
+- **Audio:** none.
+- **NASA branding:** no NASA logos, flags or mission insignia are used or modified.
+
 ## Development
 
 ```bash

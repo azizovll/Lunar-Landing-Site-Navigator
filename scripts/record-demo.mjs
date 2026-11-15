@@ -147,7 +147,7 @@ const args = ["-y"];
 for (const c of clips) args.push("-i", c.file);
 const filters = clips.map((c, i) => `[${i}:v]trim=start=0.2:duration=${c.seconds},setpts=PTS-STARTPTS,fps=30,scale=1920:1080:flags=lanczos,setsar=1[v${i}]`);
 filters.push(`${clips.map((_, i) => `[v${i}]`).join("")}concat=n=${clips.length}:v=1:a=0[v]`);
-args.push("-filter_complex", filters.join(";"), "-map", "[v]", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18", "-preset", "medium", "-movflags", "+faststart", "-t", String(clips.reduce((n, c) => n + c.seconds, 0)), out);
+args.push("-filter_complex", filters.join(";"), "-map", "[v]", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18", "-preset", "medium", "-movflags", "+faststart", "-t", String(clips.reduce((n, c) => n + c.seconds, 0) - 0.2), out); // stay under the 30 s limit
 const r = spawnSync("ffmpeg", args, { stdio: ["ignore", "ignore", "pipe"] });
 if (r.status !== 0) {
   console.error(String(r.stderr).split("\n").slice(-12).join("\n"));
